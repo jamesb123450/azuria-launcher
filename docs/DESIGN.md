@@ -9,11 +9,37 @@ The actual desktop launcher interfaces, rather than only their marketing pages, 
 - Modrinth Play page: https://modrinth.com/news/article/app-personalization/ — a combined play/library workspace, fast instance selection, compact instance cards and a useful contextual pane.
 - Dawn: https://dawn.gg/ — narrow navigation rail, a large personalised world banner and concise profile controls. Reference screenshot: https://dawn.gg/img/modernui/home-modern-v6-1280.webp
 
+## Modrinth-focused refinement (2026-10-12)
+
+The current official 2026 screenshots were inspected directly:
+
+- Play/library: https://cdn.modrinth.com/app-landing/home-2026.webp
+- Instance/content: https://cdn.modrinth.com/app-landing/instance-2026.webp
+- Design explanation: https://modrinth.com/news/article/app-personalization/
+
+Observed patterns: a combined Play/library page, immediately legible instance identity,
+large icon surfaces, compact search and filters, consistent rounded controls, and a
+separate contextual pane. Azuria applies those layout principles using its own
+blue and pink identity, original assets and implementation.
+
 ## Azuria direction
 
-A desktop workspace with neutral charcoal surfaces, crisp locally bundled Inter typography, restrained blue actions and pink brand accents. An integrated draggable desktop titlebar includes working minimize/maximize/close controls. A slim navigation rail replaces the wide marketing sidebar. The main content combines a scenic world banner and compact searchable library. A contextual pane exposes selected-instance settings and truthful setup progress. A fixed bottom launch bar anchors the primary action. Grid/list controls, keyboard focus, modal operation and light/system themes remain supported. The context pane collapses at the minimum desktop width.
+A compact selected-instance spotlight replaces the oversized scenic banner. Larger
+library tiles use stable colours derived from each instance ID, so the same icon and
+colour appear in the navigation rail, library, details pane and launch dock. Cards
+expose favourite, edit, copy-settings and delete actions. The right pane contains
+truthful account status, selected-instance details (or first-use onboarding) and an
+upcoming discovery link. No friends, installed content or play history is invented.
 
-The layout is rebuilt rather than layered over the old styles. Existing SQLite data, Rust commands and authentication scope are unchanged. No friends, live players, installed content or account state are fabricated. Play still explains the current milestone boundary.
+Neutral charcoal surfaces, restrained blue/pink gradients, clearer typography,
+rounded controls and softer borders carry across Settings, updates and dialogs.
+The shared CSS is rebuilt rather than patched with accumulated overrides. The
+integrated native titlebar and fixed Play dock remain. At short desktop heights,
+headings and artwork compact so the first instance row stays above the dock; the
+context pane collapses below 1100 pixels. Dark, light and system themes remain.
+
+SQLite data, Rust commands, updater trust keys, sign-in scope and actual launch
+behavior are unchanged. Sign-in and Minecraft launch are still pending.
 
 ## Assets and provenance
 

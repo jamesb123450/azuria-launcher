@@ -9,10 +9,12 @@ import {
   UserRound,
   ChevronRight,
   CircleHelp,
+  Download,
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
 import WindowControls from "./components/WindowControls.vue";
+import InstanceIcon from "./components/InstanceIcon.vue";
 import { useUpdates } from "./stores/updates";
 const updates = useUpdates();
 const store = useLauncher();
@@ -71,8 +73,8 @@ onMounted(() => {
           :aria-label="'Select ' + item.name"
           :title="item.name"
           @click="store.selectedId = item.id"
-          >{{ item.name.slice(0, 1).toUpperCase() }}</RouterLink
-        >
+          ><InstanceIcon :loader="item.loader" :seed="item.id"
+        /></RouterLink>
       </div>
       <div class="sidebar-bottom">
         <RouterLink
@@ -93,9 +95,11 @@ onMounted(() => {
           class="rail-link"
           aria-label="Settings"
           title="Settings"
-          ><Settings :size="21" /><span class="rail-tooltip"
-            >Settings</span
-          ></RouterLink
+          ><Settings :size="21" /><span
+            v-if="updates.update"
+            class="update-dot"
+            aria-label="Update available"
+          /><span class="rail-tooltip">Settings</span></RouterLink
         >
         <div class="rail-avatar" title="Microsoft sign-in coming next">
           <UserRound :size="18" />
@@ -112,8 +116,11 @@ onMounted(() => {
           >
         </div>
         <div class="topbar-right">
-          <RouterLink v-if="updates.update" to="/settings" class="text-link"
-            >Update available</RouterLink
+          <RouterLink
+            v-if="updates.update"
+            to="/settings"
+            class="text-link update-chip"
+            ><Download :size="13" /> Update available</RouterLink
           >
           <span v-if="!desktop" class="preview-label">Browser preview</span
           ><span class="build-pill"

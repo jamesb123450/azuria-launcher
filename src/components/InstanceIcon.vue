@@ -1,9 +1,20 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type { Loader } from "../types";
-defineProps<{ loader?: Loader }>();
+const props = defineProps<{ loader?: Loader; seed?: string }>();
+const palette = computed(() => {
+  if (!props.seed) return props.loader === "fabric" ? 1 : 0;
+  let hash = 0;
+  for (const letter of props.seed)
+    hash = (hash * 31 + letter.charCodeAt(0)) >>> 0;
+  return hash % 5;
+});
 </script>
 <template>
-  <span :class="['instance-symbol', loader ?? 'vanilla']" aria-hidden="true"
+  <span
+    :class="['instance-symbol', loader ?? 'vanilla']"
+    aria-hidden="true"
+    :data-palette="palette"
     ><svg viewBox="0 0 64 64" fill="none">
       <path d="M32 7 55 20 32 34 9 20 32 7Z" fill="var(--cube-top)" />
       <path d="m9 20 23 14v25L9 45V20Z" fill="var(--cube-left)" />

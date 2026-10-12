@@ -86,8 +86,9 @@ onBeforeUnmount(closeDelete);
     <div class="play-main">
       <section class="page-heading">
         <div>
-          <h1>Let’s play<span class="heading-dot">.</span></h1>
-          <p class="muted">Your worlds. Your setup. Your next session.</p>
+          <span class="eyebrow">YOUR AZURIA WORKSPACE</span>
+          <h1>Play<span class="heading-dot">.</span></h1>
+          <p class="muted">A home for every adventure.</p>
         </div>
         <button
           class="button secondary create-top"
@@ -97,16 +98,17 @@ onBeforeUnmount(closeDelete);
           <Plus :size="16" /> Create instance
         </button>
       </section>
+      <div class="jump-heading">
+        <h2>Jump in</h2>
+        <span class="muted">Your selected adventure</span>
+      </div>
       <section class="world-banner" aria-label="Selected adventure">
         <div class="world-shade" />
         <div class="banner-top">
           <span class="edition-label"><Box :size="14" /> MINECRAFT JAVA</span
-          ><span class="banner-label">AZURIA COLLECTION / 01</span>
+          ><span class="banner-label">YOUR NEXT SESSION</span>
         </div>
         <div class="banner-content">
-          <span class="banner-eyebrow">{{
-            store.selected ? "SELECTED INSTANCE" : "WELCOME TO AZURIA"
-          }}</span>
           <h2>{{ store.selected?.name ?? "A new world awaits." }}</h2>
           <p>
             {{
@@ -126,7 +128,15 @@ onBeforeUnmount(closeDelete);
             ><span /> Not installed yet</span
           >
         </div>
-        <span class="scene-caption">THE OVERWORLD</span>
+        <button
+          v-if="store.selected"
+          class="spotlight-open"
+          :disabled="store.busy"
+          aria-label="Manage selected instance"
+          @click="open(store.selected)"
+        >
+          <ArrowUpRight :size="18" />
+        </button>
       </section>
       <section class="library-section" aria-labelledby="instances-heading">
         <div class="section-heading">
@@ -255,7 +265,12 @@ onBeforeUnmount(closeDelete);
               :aria-pressed="store.selected?.id === item.id"
               @click="store.selectedId = item.id"
             >
-              <InstanceIcon :loader="item.loader" /><span class="instance-title"
+              <span class="tile-art"
+                ><InstanceIcon :loader="item.loader" :seed="item.id" /><span
+                  class="tile-edition"
+                  >JAVA</span
+                ></span
+              ><span class="instance-title"
                 ><h3>{{ item.name }}</h3>
                 <span class="instance-version"
                   >{{ item.loader === "fabric" ? "Fabric" : "Vanilla" }}
@@ -315,12 +330,27 @@ onBeforeUnmount(closeDelete);
       </section>
     </div>
     <aside class="context-panel" aria-label="Launcher information">
-      <section class="profile-panel">
+      <section class="account-panel">
+        <div class="context-heading"><span>MINECRAFT ACCOUNT</span></div>
+        <div class="account-identity">
+          <span class="account-portrait"><UserRound :size="22" /></span>
+          <div>
+            <strong>Welcome to Azuria</strong><span>Not signed in</span>
+          </div>
+        </div>
+        <RouterLink class="button secondary full-width" to="/roadmap"
+          >Account setup <ArrowUpRight :size="14"
+        /></RouterLink>
+      </section>
+      <section v-if="store.selected" class="profile-panel">
         <div class="context-heading">
-          <span>YOUR WORKSPACE</span><span class="live-dot" />
+          <span>INSTANCE DETAILS</span><span class="live-dot" />
         </div>
         <div class="profile-identity">
-          <InstanceIcon :loader="store.selected?.loader" />
+          <InstanceIcon
+            :loader="store.selected?.loader"
+            :seed="store.selected?.id"
+          />
           <div>
             <strong>{{ store.selected?.name ?? "Make it your own" }}</strong
             ><span>{{
@@ -358,7 +388,7 @@ onBeforeUnmount(closeDelete);
           <Plus :size="14" /> Set up an instance
         </button>
       </section>
-      <section class="setup-panel">
+      <section v-if="!store.selected" class="setup-panel">
         <div class="context-heading">
           <span>GETTING STARTED</span
           ><span>{{ store.instances.length ? "1" : "0" }} / 2</span>
@@ -400,7 +430,10 @@ onBeforeUnmount(closeDelete);
   </div>
   <footer class="launch-dock" aria-label="Game launch controls">
     <div class="dock-selection">
-      <InstanceIcon :loader="store.selected?.loader" />
+      <InstanceIcon
+        :loader="store.selected?.loader"
+        :seed="store.selected?.id"
+      />
       <div>
         <span class="dock-caption">{{
           store.selected ? "SELECTED INSTANCE" : "NO INSTANCE SELECTED"

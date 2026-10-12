@@ -92,7 +92,13 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
   page,
 }) => {
   await page.goto("/");
-  for (const name of ["Survival", "Creative"]) {
+  for (const name of [
+    "Survival",
+    "Creative",
+    "Exploration",
+    "Building",
+    "Skyblock",
+  ]) {
     await page
       .getByRole("button", { name: "Create instance", exact: true })
       .click();
@@ -126,6 +132,15 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
   await page.setViewportSize({ width: 900, height: 650 });
   await expect(page.getByRole("button", { name: /Play/ })).toBeInViewport();
   await expect(page.locator(".instance-card").first()).toBeVisible();
+  await page.getByRole("button", { name: "Grid view", exact: true }).click();
+  const card = await page.locator(".instance-card").first().boundingBox();
+  const dock = await page.locator(".launch-dock").boundingBox();
+  expect(card!.y + card!.height).toBeLessThanOrEqual(dock!.y);
+  const avatar = await page.locator(".rail-avatar").boundingBox();
+  expect(avatar!.y + avatar!.height).toBeLessThanOrEqual(650);
+  await expect(
+    page.getByRole("link", { name: "Settings", exact: true }),
+  ).toBeInViewport();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
