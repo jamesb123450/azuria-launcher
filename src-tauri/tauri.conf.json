@@ -27,12 +27,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "nsis"
-    ],
-    "icon": [
-      "icons/icon.ico"
-    ],
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
     "shortDescription": "Your next adventure, beautifully organised.",
     "category": "Game"
   }

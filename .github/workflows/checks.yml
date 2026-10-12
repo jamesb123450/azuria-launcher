@@ -1,7 +1,7 @@
 name: Foundation checks
 on:
   push:
-    branches: [main, 'feat/**']
+    branches: [main, "feat/**"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -46,10 +46,10 @@ jobs:
       - run: npm run build
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - run: cargo fmt --manifest-path crates/azuria-core/Cargo.toml -- --check
-      - run: cargo test --manifest-path crates/azuria-core/Cargo.toml
-      - run: cargo clippy --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings
-      - run: cargo test --manifest-path src-tauri/Cargo.toml
-      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --locked --manifest-path crates/azuria-core/Cargo.toml
+      - run: cargo clippy --locked --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - run: npm run desktop:build
       - uses: actions/upload-artifact@v4
         with:

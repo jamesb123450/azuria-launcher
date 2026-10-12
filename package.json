@@ -10,7 +10,9 @@
     "test:e2e": "playwright test",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "tauri build",
+    "format": "prettier --write src tests docs README.md index.html *.ts *.json .github/workflows/*.yml src-tauri/*.json src-tauri/capabilities/*.json",
+    "format:check": "prettier --check src tests docs README.md index.html *.ts *.json .github/workflows/*.yml src-tauri/*.json src-tauri/capabilities/*.json"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +29,7 @@
     "@tauri-apps/cli": "^2.12.2",
     "@types/node": "^26.6.5",
     "@vitejs/plugin-vue": "^6.0.10",
+    "prettier": "^3.9.10",
     "typescript": "~5.9.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.4",
