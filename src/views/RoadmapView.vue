@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useLauncher } from "../stores/launcher";
+const store = useLauncher();
 import { Check, ArrowUpRight, Compass } from "@lucide/vue";
 const stages = [
   {
@@ -70,6 +72,7 @@ const stages = [
   <a
     class="text-link"
     href="https://github.com/jamesb123450/azuria-launcher"
+    @click.prevent="store.openProject"
     target="_blank"
     rel="noreferrer"
     >Follow development on GitHub <ArrowUpRight :size="16"

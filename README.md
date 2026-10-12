@@ -45,7 +45,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-GitHub Actions runs frontend checks and builds/tests the desktop on Windows. Installer artifacts are attached to successful desktop jobs. No releases are published automatically.
+GitHub Actions runs frontend checks and builds/tests the desktop on Windows. Unsigned debug installer artifacts are attached to successful desktop jobs. Local `desktop:build` produces a release-profile installer. No releases are published automatically.
 
 ## Storage and recovery
 

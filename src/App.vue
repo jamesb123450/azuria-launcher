@@ -48,6 +48,7 @@ onMounted(store.init);
         ><a
           class="nav-link"
           href="https://github.com/jamesb123450/azuria-launcher"
+          @click.prevent="store.openProject"
           target="_blank"
           rel="noreferrer"
           ><GitBranch :size="19" /> Project on GitHub <ArrowUpRight :size="14"

@@ -39,7 +39,22 @@ fn get_settings(state: State<'_, AppState>) -> Result<Settings, String> {
 fn save_settings(state: State<'_, AppState>, settings: Settings) -> Result<(), String> {
     lock(&state)?.save_settings(settings)
 }
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
+// The UI can open this fixed project URL only; no caller-controlled command or URL.
+#[tauri::command]
+fn open_project_page() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    let program = "explorer.exe";
+    #[cfg(target_os = "macos")]
+    let program = "open";
+    #[cfg(target_os = "linux")]
+    let program = "xdg-open";
+    std::process::Command::new(program)
+        .arg("https://github.com/jamesb123450/azuria-launcher")
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Could not open the project in your browser: {e}"))
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -55,7 +70,8 @@ pub fn run() {
             toggle_favorite,
             delete_instance,
             get_settings,
-            save_settings
+            save_settings,
+            open_project_page
         ])
         .run(tauri::generate_context!())
         .expect("Could not start Azuria Launcher");

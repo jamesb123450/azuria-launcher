@@ -86,7 +86,15 @@ export const useLauncher = defineStore("launcher", () => {
       notice.value = "Appearance saved.";
     });
   }
+  async function openProject() {
+    try {
+      await api.openProject();
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e);
+    }
+  }
   return {
+    openProject,
     instances,
     settings,
     loading,

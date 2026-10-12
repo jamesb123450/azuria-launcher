@@ -25,6 +25,14 @@ function write(value: Preview) {
   localStorage.setItem(previewKey, JSON.stringify(value));
 }
 export const api = {
+  openProject: async (): Promise<void> => {
+    if (desktop) return invoke("open_project_page");
+    window.open(
+      "https://github.com/jamesb123450/azuria-launcher",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  },
   list: async (): Promise<Instance[]> =>
     desktop ? invoke("list_instances") : read().instances,
   create: async (input: InstanceInput): Promise<Instance> => {
