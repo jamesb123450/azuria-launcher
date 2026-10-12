@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Azuria Launcher",
+  "version": "0.2.1",
+  "identifier": "com.azuria.launcher",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Azuria Launcher",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 900,
+        "minHeight": 650,
+        "backgroundColor": "#10121c",
+        "decorations": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'",
+      "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost ws://localhost:1420 ws://127.0.0.1:1420; object-src 'none'; base-uri 'self'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "shortDescription": "Your next adventure, beautifully organised.",
+    "category": "Game",
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY2QThFMzAwNzg5M0M3QUMKUldTc3g1TjRBT09vWm51NUo3S3BtTTJpZ2JwVllhV0dROXZ4dlBsdGM1RXFqUTBEUGpQL3VQOTMK",
+      "endpoints": [
+        "https://github.com/jamesb123450/azuria-launcher/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}
