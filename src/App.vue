@@ -2,7 +2,7 @@
 import { computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import {
-  Library,
+  Play,
   Settings,
   Compass,
   GitBranch,
@@ -33,19 +33,45 @@ onMounted(() => {
 </script>
 <template>
   <div class="app-shell">
+    <header class="topbar" data-tauri-drag-region>
+      <div class="topbar-brand" data-tauri-drag-region>
+        <RouterLink to="/" class="header-home" aria-label="Azuria home"
+          ><svg
+            class="header-mark"
+            viewBox="0 0 40 40"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path d="M20 6 35 33H25L20 23l-5 10H5L20 6Z" fill="currentColor" />
+            <path d="m16 27 4-7 4 7h-8Z" fill="#efb6d9" /></svg
+          >azuria<span class="brand-caption">LAUNCHER</span></RouterLink
+        ><span class="breadcrumb-divider" /><ChevronRight :size="13" /><span
+          class="breadcrumb"
+          >{{ page }}</span
+        >
+      </div>
+      <div class="topbar-right">
+        <RouterLink
+          v-if="updates.update"
+          to="/settings"
+          class="text-link update-chip"
+          ><Download :size="13" /> Update available</RouterLink
+        >
+        <span v-if="!desktop" class="preview-label">Browser preview</span
+        ><span class="build-pill"
+          >Early access <span>{{ updates.version }}</span></span
+        ><span class="activity-chip"><span /> Launch setup pending</span>
+      </div>
+      <WindowControls />
+    </header>
     <aside class="sidebar">
-      <RouterLink class="brand-symbol" to="/" aria-label="Azuria home"
-        ><svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-          <path d="M20 6 35 33H25L20 23l-5 10H5L20 6Z" fill="currentColor" />
-          <path d="m16 27 4-7 4 7h-8Z" fill="#efb6d9" /></svg
-      ></RouterLink>
       <nav aria-label="Main navigation">
         <RouterLink
           to="/"
           class="rail-link"
           aria-label="Library"
           title="Play & library"
-          ><Library :size="22" /><span class="rail-tooltip"
+          ><Play :size="22" /><span class="rail-tooltip"
             >Library</span
           ></RouterLink
         >
@@ -107,31 +133,9 @@ onMounted(() => {
       </div>
     </aside>
     <div class="main-shell">
-      <header class="topbar" data-tauri-drag-region>
-        <div class="topbar-brand" data-tauri-drag-region>
-          azuria<span class="brand-caption">LAUNCHER</span
-          ><span class="breadcrumb-divider" /><ChevronRight :size="13" /><span
-            class="breadcrumb"
-            >{{ page }}</span
-          >
-        </div>
-        <div class="topbar-right">
-          <RouterLink
-            v-if="updates.update"
-            to="/settings"
-            class="text-link update-chip"
-            ><Download :size="13" /> Update available</RouterLink
-          >
-          <span v-if="!desktop" class="preview-label">Browser preview</span
-          ><span class="build-pill"
-            >Early access <span>{{ updates.version }}</span></span
-          ><RouterLink class="account-chip" to="/roadmap"
-            ><UserRound :size="16" /><span>Not signed in</span></RouterLink
-          >
-        </div>
-        <WindowControls />
-      </header>
-      <main id="main-content"><RouterView /></main>
+      <main id="main-content" :class="{ 'is-library': route.path === '/' }">
+        <RouterView />
+      </main>
       <div v-if="store.error" class="alert error" role="alert">
         {{ store.error
         }}<button @click="store.error = ''" aria-label="Dismiss error">

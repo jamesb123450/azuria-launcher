@@ -22,24 +22,30 @@ large icon surfaces, compact search and filters, consistent rounded controls, an
 separate contextual pane. Azuria applies those layout principles using its own
 blue and pink identity, original assets and implementation.
 
-## Azuria direction
+## Supplied screenshot layout (2026-10-12)
 
-A compact selected-instance spotlight replaces the oversized scenic banner. Larger
-library tiles use stable colours derived from each instance ID, so the same icon and
-colour appear in the navigation rail, library, details pane and launch dock. Cards
-expose favourite, edit, copy-settings and delete actions. The right pane contains
-truthful account status, selected-instance details (or first-use onboarding) and an
-upcoming discovery link. No friends, installed content or play history is invented.
+The user's screenshot clarified the desired composition: a full-width titlebar,
+compact Jump in rows in two columns, a wide library search/actions row,
+collapsible library groups, icon tiles, and a continuous right-hand pane. This
+revision follows that structure directly and removes the scenic home banner
+and fixed bottom Play dock.
 
-Neutral charcoal surfaces, restrained blue/pink gradients, clearer typography,
-rounded controls and softer borders carry across Settings, updates and dialogs.
-The shared CSS is rebuilt rather than patched with accumulated overrides. The
-integrated native titlebar and fixed Play dock remain. At short desktop heights,
-headings and artwork compact so the first instance row stays above the dock; the
-context pane collapses below 1100 pixels. Dark, light and system themes remain.
+Azuria retains blue primary actions, pink favourites/account accents, original
+cube artwork and its own wordmark. The sidebar remains narrow, while the
+account/onboarding/development pane scrolls independently from the library.
+Search, sorting, grid/list mode, selection, favourites, copying settings,
+editing and deletion retain their existing behavior. Play buttons sit beside
+instances and explain the current launch milestone.
 
-SQLite data, Rust commands, updater trust keys, sign-in scope and actual launch
-behavior are unchanged. Sign-in and Minecraft launch are still pending.
+Library groups are functional derived sections by loader or favourite state;
+they can be collapsed. No custom-group storage, player counts, play history,
+Modrinth account state or news feed is fabricated. Dates are explicitly labelled
+as creation dates. The screenshot's competitor branding, mod icons, personal
+account information and promotional assets are not shipped.
+
+Dark/light themes, native titlebar controls and updater trust remain supported.
+Screenshots in docs/previews use example browser-preview instances, not the
+user's real desktop library. Microsoft sign-in and game launch remain pending.
 
 ## Assets and provenance
 

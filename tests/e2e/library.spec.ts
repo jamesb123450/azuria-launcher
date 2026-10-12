@@ -110,32 +110,26 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
       .click();
   }
   await page.reload();
-  const selection = page.getByRole("combobox", {
-    name: "Selected instance",
-    exact: true,
-  });
-  await expect(selection).not.toHaveValue("");
-  const survivalId = await selection
-    .locator("option")
-    .filter({ hasText: "Survival" })
-    .getAttribute("value");
-  await selection.selectOption(survivalId!);
+  await page
+    .getByRole("button", { name: "Select Survival", exact: true })
+    .click();
   await expect(
-    page
-      .locator(".world-banner")
-      .getByRole("heading", { name: "Survival", exact: true }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Select recent Survival", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "List view", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "List view", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.setViewportSize({ width: 900, height: 650 });
-  await expect(page.getByRole("button", { name: /Play/ })).toBeInViewport();
-  await expect(page.locator(".instance-card").first()).toBeVisible();
+  await page
+    .getByRole("button", { name: "Play Survival", exact: true })
+    .scrollIntoViewIfNeeded();
+  await expect(
+    page.getByRole("button", { name: "Play Survival", exact: true }),
+  ).toBeInViewport();
   await page.getByRole("button", { name: "Grid view", exact: true }).click();
-  const card = await page.locator(".instance-card").first().boundingBox();
-  const dock = await page.locator(".launch-dock").boundingBox();
-  expect(card!.y + card!.height).toBeLessThanOrEqual(dock!.y);
+  await page.locator(".instance-card").first().scrollIntoViewIfNeeded();
+  await expect(page.locator(".instance-card").first()).toBeInViewport();
   const avatar = await page.locator(".rail-avatar").boundingBox();
   expect(avatar!.y + avatar!.height).toBeLessThanOrEqual(650);
   await expect(
@@ -159,4 +153,47 @@ test("browser preview does not offer desktop updates", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Update & restart" }),
   ).toHaveCount(0);
+});
+
+test("library grouping and collapsed sections remain usable", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const name of ["Alpha", "Beta"]) {
+    await page
+      .getByRole("button", { name: "Create instance", exact: true })
+      .click();
+    await page.getByLabel("Instance name", { exact: true }).fill(name);
+    await page.getByLabel("Minecraft version", { exact: true }).fill("1.21.1");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Create instance", exact: true })
+      .click();
+  }
+  await page
+    .getByRole("button", { name: "Favourite Alpha", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Group instances" })
+    .selectOption("favorites");
+  const favourites = page.locator(".instance-group").filter({
+    has: page.getByRole("heading", { name: "Favourites", exact: true }),
+  });
+  await expect(favourites.locator(".instance-card")).toHaveCount(1);
+  await favourites.getByRole("button", { expanded: true }).first().click();
+  await expect(favourites.locator(".instance-card")).toHaveCount(0);
+  await favourites.getByRole("button", { expanded: false }).first().click();
+  await expect(favourites.locator(".instance-card")).toHaveCount(1);
+  await page.getByRole("button", { name: "Jump in", exact: true }).click();
+  await expect(page.locator(".jump-row")).toHaveCount(0);
+  await page
+    .getByRole("combobox", { name: "Group instances" })
+    .selectOption("none");
+  await expect(page.locator(".instance-card")).toHaveCount(2);
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Light", exact: false }).click();
+  await page.getByRole("link", { name: "Library", exact: true }).click();
+  const icon = await page.locator(".tile-art svg").first().boundingBox();
+  expect(icon!.width).toBeGreaterThan(30);
+  expect(icon!.height).toBeGreaterThan(30);
 });

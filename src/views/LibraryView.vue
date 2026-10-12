@@ -9,25 +9,29 @@ import {
   Copy,
   Trash2,
   ArrowUpRight,
-  Box,
   Layers3,
   LayoutGrid,
   List,
-  ChevronRight,
+  ChevronDown,
   Check,
   Circle,
-  ArrowRight,
   UserRound,
   X,
+  Folder,
 } from "@lucide/vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
 import { useLauncher } from "../stores/launcher";
+import { useUpdates } from "../stores/updates";
 import type { Instance } from "../types";
 const store = useLauncher();
+const updates = useUpdates();
 const search = ref("");
 const filter = ref("all");
 const sort = ref("newest");
+const grouping = ref("loader");
+const collapsed = ref(new Set<string>());
+const jumpOpen = ref(true);
 const showDialog = ref(false);
 const editing = ref<Instance>();
 const duplicate = ref(false);
@@ -36,13 +40,15 @@ const deleteDialog = ref<HTMLDialogElement>();
 const deleteCancel = ref<HTMLButtonElement>();
 const launchInfo = ref(false);
 const layout = ref<"grid" | "list">("grid");
-const selectedId = computed({
-  get: () => store.selected?.id ?? "",
-  set: (value: string) => {
-    store.selectedId = value;
-  },
+const recent = computed(() => {
+  const newest = [...store.instances].sort((a, b) => b.createdAt - a.createdAt);
+  return store.selected
+    ? [
+        store.selected,
+        ...newest.filter((i) => i.id !== store.selected?.id),
+      ].slice(0, 5)
+    : [];
 });
-let deletionFocus: HTMLElement | null = null;
 const items = computed(() =>
   [...store.instances]
     .filter(
@@ -59,11 +65,65 @@ const items = computed(() =>
         : b.createdAt - a.createdAt,
     ),
 );
+const groups = computed(() => {
+  if (grouping.value === "none")
+    return [{ key: "all", title: "All instances", items: items.value }];
+  const buckets =
+    grouping.value === "favorites"
+      ? [
+          {
+            key: "favorite",
+            title: "Favourites",
+            match: (i: Instance) => i.favorite,
+          },
+          {
+            key: "other",
+            title: "Other instances",
+            match: (i: Instance) => !i.favorite,
+          },
+        ]
+      : [
+          {
+            key: "fabric",
+            title: "Fabric",
+            match: (i: Instance) => i.loader === "fabric",
+          },
+          {
+            key: "vanilla",
+            title: "Vanilla",
+            match: (i: Instance) => i.loader === "vanilla",
+          },
+        ];
+  return buckets
+    .map((group) => ({
+      key: group.key,
+      title: group.title,
+      items: items.value.filter(group.match),
+    }))
+    .filter((group) => group.items.length);
+});
+function toggleGroup(key: string) {
+  const next = new Set(collapsed.value);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  collapsed.value = next;
+}
 function open(instance?: Instance, copy = false) {
   editing.value = instance;
   duplicate.value = copy;
   showDialog.value = true;
 }
+function play(instance: Instance) {
+  store.selectedId = instance.id;
+  launchInfo.value = true;
+}
+function created(item: Instance) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(item.createdAt));
+}
+let deletionFocus: HTMLElement | null = null;
 async function confirmDelete(item: Instance) {
   deletionFocus = document.activeElement as HTMLElement;
   deleting.value = item;
@@ -84,103 +144,132 @@ onBeforeUnmount(closeDelete);
 <template>
   <div class="play-page">
     <div class="play-main">
-      <section class="page-heading">
-        <div>
-          <span class="eyebrow">YOUR AZURIA WORKSPACE</span>
-          <h1>Play<span class="heading-dot">.</span></h1>
-          <p class="muted">A home for every adventure.</p>
-        </div>
+      <section class="jump-section" aria-labelledby="jump-heading">
         <button
-          class="button secondary create-top"
-          :disabled="store.loading || store.busy || !!store.error"
-          @click="open()"
+          id="jump-heading"
+          class="section-toggle"
+          :aria-expanded="jumpOpen"
+          aria-controls="jump-instances"
+          @click="jumpOpen = !jumpOpen"
         >
-          <Plus :size="16" /> Create instance
+          <h1>Jump in</h1>
+          <ChevronDown :size="18" :class="{ flipped: jumpOpen }" />
         </button>
-      </section>
-      <div class="jump-heading">
-        <h2>Jump in</h2>
-        <span class="muted">Your selected adventure</span>
-      </div>
-      <section class="world-banner" aria-label="Selected adventure">
-        <div class="world-shade" />
-        <div class="banner-top">
-          <span class="edition-label"><Box :size="14" /> MINECRAFT JAVA</span
-          ><span class="banner-label">YOUR NEXT SESSION</span>
-        </div>
-        <div class="banner-content">
-          <h2>{{ store.selected?.name ?? "A new world awaits." }}</h2>
-          <p>
-            {{
-              store.selected
-                ? `Minecraft ${store.selected.minecraftVersion} · ${store.selected.loader === "fabric" ? "Fabric" : "Vanilla"} · ${store.selected.memoryMb / 1024} GB allocated`
-                : "Start with Vanilla. Make it yours with Fabric."
-            }}
-          </p>
-          <button
-            v-if="!store.selected"
-            class="banner-create"
-            :disabled="store.loading || store.busy || !!store.error"
-            @click="open()"
+        <div v-if="jumpOpen" id="jump-instances" class="jump-grid">
+          <article
+            v-for="item in recent"
+            :key="item.id"
+            :class="['jump-row', { selected: store.selected?.id === item.id }]"
           >
-            Create your first instance <ArrowRight :size="16" /></button
-          ><span v-else class="installation-tag"
-            ><span /> Not installed yet</span
-          >
-        </div>
-        <button
-          v-if="store.selected"
-          class="spotlight-open"
-          :disabled="store.busy"
-          aria-label="Manage selected instance"
-          @click="open(store.selected)"
-        >
-          <ArrowUpRight :size="18" />
-        </button>
-      </section>
-      <section class="library-section" aria-labelledby="instances-heading">
-        <div class="section-heading">
-          <div class="section-title">
-            <h2 id="instances-heading">Library</h2>
-            <span class="count">{{ store.instances.length }}</span>
-          </div>
-          <div class="library-controls">
-            <label class="search-box"
-              ><Search :size="16" /><input
-                v-model="search"
-                aria-label="Search instances"
-                placeholder="Search instances" /><button
-                v-if="search"
-                class="icon-button"
-                @click="search = ''"
-                aria-label="Clear search"
+            <button
+              class="jump-select"
+              :aria-label="'Select recent ' + item.name"
+              :aria-pressed="store.selected?.id === item.id"
+              @click="store.selectedId = item.id"
+            >
+              <InstanceIcon :loader="item.loader" :seed="item.id" />
+              <span class="jump-identity"
+                ><h2>{{ item.name }}</h2>
+                <span
+                  >{{ item.loader === "fabric" ? "Fabric" : "Vanilla" }}
+                  {{ item.minecraftVersion }}
+                  <span class="meta-dot">·</span> Created
+                  {{ created(item) }}</span
+                ></span
               >
-                <X :size="13" /></button
-            ></label>
-            <div class="view-switch" role="group" aria-label="Library layout">
-              <button
-                :class="{ active: layout === 'grid' }"
-                :aria-pressed="layout === 'grid'"
-                aria-label="Grid view"
-                @click="layout = 'grid'"
-              >
-                <LayoutGrid :size="16" /></button
-              ><button
-                :class="{ active: layout === 'list' }"
-                :aria-pressed="layout === 'list'"
-                aria-label="List view"
-                @click="layout = 'list'"
-              >
-                <List :size="17" />
-              </button>
+            </button>
+            <button
+              class="button primary jump-play"
+              :aria-label="'Play ' + item.name"
+              @click="play(item)"
+            >
+              <Play :size="16" /> Play
+            </button>
+            <button
+              class="icon-button"
+              :aria-label="'Manage ' + item.name"
+              :disabled="store.busy"
+              @click="open(item)"
+            >
+              <SlidersHorizontal :size="16" />
+            </button>
+          </article>
+          <div v-if="!recent.length" class="jump-empty">
+            <Layers3 :size="28" />
+            <div>
+              <h2>Your next adventure starts here</h2>
+              <p class="muted">
+                Create a Vanilla or Fabric instance to get started.
+              </p>
             </div>
           </div>
         </div>
+      </section>
+      <div v-if="launchInfo" class="launch-message" role="status">
+        <div>
+          <strong>Game launch is coming next</strong>
+          <p>
+            Launching is not implemented in this build. Microsoft sign-in,
+            verified game downloads and Java setup are the next milestone.
+          </p>
+        </div>
+        <button
+          class="icon-button"
+          aria-label="Dismiss launch information"
+          @click="launchInfo = false"
+        >
+          <X :size="16" />
+        </button>
+      </div>
+      <section class="library-section" aria-labelledby="instances-heading">
+        <h2 id="instances-heading">
+          Library <span class="count">{{ store.instances.length }}</span>
+        </h2>
+        <div class="library-action-row">
+          <label class="search-box"
+            ><Search :size="17" /><input
+              v-model="search"
+              aria-label="Search instances"
+              placeholder="Search your library" /><button
+              v-if="search"
+              class="icon-button"
+              @click="search = ''"
+              aria-label="Clear search"
+            >
+              <X :size="14" /></button
+          ></label>
+          <button
+            class="button primary"
+            :disabled="store.loading || store.busy || !!store.error"
+            @click="open()"
+          >
+            <Plus :size="17" /> Create instance
+          </button>
+        </div>
         <div class="library-toolbar">
+          <label class="toolbar-select"
+            ><SlidersHorizontal :size="15" /><select
+              v-model="sort"
+              aria-label="Sort instances"
+            >
+              <option value="newest">Newest first</option>
+              <option value="name">Name A–Z</option>
+            </select></label
+          >
+          <label class="toolbar-select"
+            ><Folder :size="15" /><select
+              v-model="grouping"
+              aria-label="Group instances"
+            >
+              <option value="loader">Group by loader</option>
+              <option value="favorites">Group by favourites</option>
+              <option value="none">No grouping</option>
+            </select></label
+          >
           <div class="filter-tabs" role="group" aria-label="Filter instances">
             <button
               v-for="tab in [
-                { id: 'all', label: 'All instances' },
+                { id: 'all', label: 'All' },
                 { id: 'favorites', label: 'Favourites' },
                 { id: 'vanilla', label: 'Vanilla' },
                 { id: 'fabric', label: 'Fabric' },
@@ -193,12 +282,23 @@ onBeforeUnmount(closeDelete);
               {{ tab.label }}
             </button>
           </div>
-          <label class="sort-control"
-            ><select v-model="sort" aria-label="Sort instances">
-              <option value="newest">Newest first</option>
-              <option value="name">Name A–Z</option>
-            </select></label
-          >
+          <div class="view-switch" role="group" aria-label="Library layout">
+            <button
+              :class="{ active: layout === 'grid' }"
+              :aria-pressed="layout === 'grid'"
+              aria-label="Grid view"
+              @click="layout = 'grid'"
+            >
+              <LayoutGrid :size="16" /></button
+            ><button
+              :class="{ active: layout === 'list' }"
+              :aria-pressed="layout === 'list'"
+              aria-label="List view"
+              @click="layout = 'list'"
+            >
+              <List :size="17" />
+            </button>
+          </div>
         </div>
         <div v-if="store.loading" class="empty-state" role="status">
           Opening your library…
@@ -207,8 +307,10 @@ onBeforeUnmount(closeDelete);
           v-else-if="store.error && !store.instances.length"
           class="empty-state"
         >
-          <h3>We couldn’t open your library.</h3>
-          <p class="muted">Resolve the storage error, then try again.</p>
+          <div>
+            <h3>We couldn’t open your library.</h3>
+            <p class="muted">Resolve the storage error, then try again.</p>
+          </div>
           <button class="button secondary" @click="store.init">Retry</button>
         </div>
         <div v-else-if="!items.length" class="empty-state">
@@ -230,14 +332,7 @@ onBeforeUnmount(closeDelete);
             </p>
           </div>
           <button
-            v-if="!store.instances.length"
-            class="icon-button empty-add"
-            aria-label="Add your first instance"
-            @click="open()"
-          >
-            <Plus :size="20" /></button
-          ><button
-            v-else
+            v-if="store.instances.length"
             class="button secondary"
             @click="
               search = '';
@@ -247,251 +342,172 @@ onBeforeUnmount(closeDelete);
             Clear filters
           </button>
         </div>
-        <div
+        <section
+          v-for="group in groups"
           v-else
-          :class="['instance-grid', { 'list-layout': layout === 'list' }]"
+          :key="group.key"
+          class="instance-group"
         >
-          <article
-            v-for="item in items"
-            :key="item.id"
-            :class="[
-              'instance-card',
-              { selected: store.selected?.id === item.id },
-            ]"
-          >
-            <button
-              class="instance-select"
-              :aria-label="'Select ' + item.name"
-              :aria-pressed="store.selected?.id === item.id"
-              @click="store.selectedId = item.id"
-            >
-              <span class="tile-art"
-                ><InstanceIcon :loader="item.loader" :seed="item.id" /><span
-                  class="tile-edition"
-                  >JAVA</span
-                ></span
-              ><span class="instance-title"
-                ><h3>{{ item.name }}</h3>
-                <span class="instance-version"
-                  >{{ item.loader === "fabric" ? "Fabric" : "Vanilla" }}
-                  <span>·</span> {{ item.minecraftVersion }}</span
-                ></span
-              ></button
-            ><button
-              class="favorite-button icon-button"
-              :aria-label="
-                (item.favorite ? 'Unfavourite ' : 'Favourite ') + item.name
-              "
-              :aria-pressed="item.favorite"
-              :disabled="store.busy"
-              @click="store.favorite(item.id)"
-            >
-              <Star
-                :size="15"
-                :fill="item.favorite ? 'currentColor' : 'none'"
-              />
-            </button>
-            <div class="card-bottom">
-              <span class="setup-status"><span /> Not installed</span>
-              <div class="card-tools">
-                <button
-                  class="icon-button"
-                  :aria-label="'Edit ' + item.name"
-                  :disabled="store.busy"
-                  @click="open(item)"
-                >
-                  <SlidersHorizontal :size="14" /></button
-                ><button
-                  class="icon-button"
-                  :aria-label="'Copy settings for ' + item.name"
-                  :disabled="store.busy"
-                  @click="open(item, true)"
-                >
-                  <Copy :size="14" /></button
-                ><button
-                  class="icon-button danger"
-                  :aria-label="'Delete ' + item.name"
-                  :disabled="store.busy"
-                  @click="confirmDelete(item)"
-                >
-                  <Trash2 :size="14" />
-                </button>
-              </div>
-            </div>
-          </article>
           <button
-            v-if="filter === 'all' && !search"
-            class="new-instance-card"
-            @click="open()"
+            class="group-heading"
+            :aria-expanded="!collapsed.has(group.key)"
+            :aria-controls="'group-' + group.key"
+            @click="toggleGroup(group.key)"
           >
-            <Plus :size="22" /><span>New instance</span>
+            <ChevronDown
+              :size="16"
+              :class="{ flipped: !collapsed.has(group.key) }"
+            />
+            <h3>{{ group.title }}</h3>
+            <span class="count">{{ group.items.length }}</span>
           </button>
-        </div>
+          <div
+            v-if="!collapsed.has(group.key)"
+            :id="'group-' + group.key"
+            :class="['instance-grid', { 'list-layout': layout === 'list' }]"
+          >
+            <article
+              v-for="item in group.items"
+              :key="item.id"
+              :class="[
+                'instance-card',
+                { selected: store.selected?.id === item.id },
+              ]"
+            >
+              <button
+                class="instance-select"
+                :aria-label="'Select ' + item.name"
+                :aria-pressed="store.selected?.id === item.id"
+                @click="store.selectedId = item.id"
+              >
+                <span class="tile-art"
+                  ><InstanceIcon :loader="item.loader" :seed="item.id" /></span
+                ><span class="instance-title"
+                  ><h3>{{ item.name }}</h3>
+                  <span class="instance-version"
+                    >{{ item.loader === "fabric" ? "Fabric" : "Vanilla" }}
+                    {{ item.minecraftVersion }}</span
+                  ></span
+                >
+              </button>
+              <button
+                class="favorite-button icon-button"
+                :aria-label="
+                  (item.favorite ? 'Unfavourite ' : 'Favourite ') + item.name
+                "
+                :aria-pressed="item.favorite"
+                :disabled="store.busy"
+                @click="store.favorite(item.id)"
+              >
+                <Star
+                  :size="14"
+                  :fill="item.favorite ? 'currentColor' : 'none'"
+                />
+              </button>
+              <div class="card-bottom">
+                <button
+                  class="icon-button card-play"
+                  :aria-label="'Launch ' + item.name"
+                  @click="play(item)"
+                >
+                  <Play :size="14" />
+                </button>
+                <div class="card-tools">
+                  <button
+                    class="icon-button"
+                    :aria-label="'Edit ' + item.name"
+                    :disabled="store.busy"
+                    @click="open(item)"
+                  >
+                    <SlidersHorizontal :size="14" /></button
+                  ><button
+                    class="icon-button"
+                    :aria-label="'Copy settings for ' + item.name"
+                    :disabled="store.busy"
+                    @click="open(item, true)"
+                  >
+                    <Copy :size="14" /></button
+                  ><button
+                    class="icon-button danger"
+                    :aria-label="'Delete ' + item.name"
+                    :disabled="store.busy"
+                    @click="confirmDelete(item)"
+                  >
+                    <Trash2 :size="14" />
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
       </section>
     </div>
     <aside class="context-panel" aria-label="Launcher information">
-      <section class="account-panel">
-        <div class="context-heading"><span>MINECRAFT ACCOUNT</span></div>
-        <div class="account-identity">
-          <span class="account-portrait"><UserRound :size="22" /></span>
-          <div>
-            <strong>Welcome to Azuria</strong><span>Not signed in</span>
-          </div>
-        </div>
-        <RouterLink class="button secondary full-width" to="/roadmap"
-          >Account setup <ArrowUpRight :size="14"
-        /></RouterLink>
-      </section>
-      <section v-if="store.selected" class="profile-panel">
+      <section class="setup-panel">
         <div class="context-heading">
-          <span>INSTANCE DETAILS</span><span class="live-dot" />
-        </div>
-        <div class="profile-identity">
-          <InstanceIcon
-            :loader="store.selected?.loader"
-            :seed="store.selected?.id"
-          />
-          <div>
-            <strong>{{ store.selected?.name ?? "Make it your own" }}</strong
-            ><span>{{
-              store.selected ? "Selected instance" : "No instance selected"
-            }}</span>
-          </div>
-        </div>
-        <div class="profile-specs">
-          <div><span>Edition</span><strong>Java</strong></div>
-          <div>
-            <span>Loader</span
-            ><strong>{{
-              store.selected
-                ? store.selected.loader === "fabric"
-                  ? "Fabric"
-                  : "Vanilla"
-                : "—"
-            }}</strong>
-          </div>
-          <div>
-            <span>Memory</span
-            ><strong>{{
-              store.selected ? store.selected.memoryMb / 1024 + " GB" : "—"
-            }}</strong>
-          </div>
+          <h2>Getting started</h2>
+          <span>{{ store.instances.length ? "1" : "0" }} / 2</span>
         </div>
         <button
-          v-if="store.selected"
-          class="button secondary full-width"
-          :disabled="store.busy"
-          @click="open(store.selected)"
+          class="setup-item"
+          :disabled="!!store.instances.length"
+          @click="open()"
         >
-          <SlidersHorizontal :size="14" /> Instance settings</button
-        ><button v-else class="button secondary full-width" @click="open()">
-          <Plus :size="14" /> Set up an instance
-        </button>
-      </section>
-      <section v-if="!store.selected" class="setup-panel">
-        <div class="context-heading">
-          <span>GETTING STARTED</span
-          ><span>{{ store.instances.length ? "1" : "0" }} / 2</span>
-        </div>
-        <div class="setup-item">
           <span :class="['check-ring', { done: store.instances.length }]"
-            ><Check v-if="store.instances.length" :size="12" /><Circle
+            ><Check v-if="store.instances.length" :size="14" /><Circle
               v-else
-              :size="14"
-          /></span>
+              :size="14" /></span
+          ><span>{{
+            store.instances.length
+              ? "Instance created"
+              : "Create your first instance"
+          }}</span></button
+        ><RouterLink to="/roadmap" class="setup-item"
+          ><span class="check-ring"><UserRound :size="14" /></span
+          ><span
+            >Sign in to Minecraft<span class="setup-subtitle"
+              >Coming next</span
+            ></span
+          ></RouterLink
+        >
+      </section>
+      <section class="account-panel">
+        <h2>Playing as</h2>
+        <RouterLink class="account-identity" to="/roadmap"
+          ><span class="account-portrait"><UserRound :size="22" /></span>
           <div>
-            <strong>Create an instance</strong
-            ><span>Choose your version and loader</span>
+            <strong>Not signed in</strong><span>Minecraft account</span>
           </div>
-        </div>
-        <RouterLink to="/roadmap" class="setup-item"
-          ><span class="check-ring"><UserRound :size="13" /></span>
-          <div>
-            <strong>Connect Minecraft</strong
-            ><span>Sign-in is coming next</span>
-          </div>
-          <ChevronRight :size="14"
+          <ChevronDown :size="16"
         /></RouterLink>
       </section>
-      <RouterLink class="discovery-panel" to="/roadmap"
-        ><span class="discovery-art" aria-hidden="true" />
-        <div class="discovery-content">
-          <span class="small-label">ON THE HORIZON</span>
-          <h3>More ways to play.</h3>
-          <p>Modrinth & CurseForge discovery.</p>
-          <span class="discovery-link"
-            >See what’s coming <ArrowUpRight :size="14"
-          /></span></div
-      ></RouterLink>
-      <div class="workspace-footer">
-        <span class="live-dot" /> Local workspace <span>Windows / Java</span>
-      </div>
+      <section class="development-panel">
+        <h2>Development</h2>
+        <div class="development-art"><Layers3 :size="38" /></div>
+        <h3>Your launcher. Your way.</h3>
+        <p class="muted">
+          Vanilla and Fabric instances, organised in one place. Microsoft
+          sign-in and game installation are the next milestone.
+        </p>
+        <RouterLink class="text-link" to="/roadmap"
+          >View roadmap <ArrowUpRight :size="14"
+        /></RouterLink>
+      </section>
+      <section class="pane-update">
+        <h2>Azuria {{ updates.version }}</h2>
+        <p class="muted">
+          {{
+            updates.update
+              ? "A new version is available."
+              : "Signed updates, delivered in the app."
+          }}
+        </p>
+        <RouterLink class="text-link" to="/settings"
+          >Launcher settings <ArrowUpRight :size="14"
+        /></RouterLink>
+      </section>
     </aside>
   </div>
-  <footer class="launch-dock" aria-label="Game launch controls">
-    <div class="dock-selection">
-      <InstanceIcon
-        :loader="store.selected?.loader"
-        :seed="store.selected?.id"
-      />
-      <div>
-        <span class="dock-caption">{{
-          store.selected ? "SELECTED INSTANCE" : "NO INSTANCE SELECTED"
-        }}</span
-        ><select
-          v-if="store.selected"
-          v-model="selectedId"
-          aria-label="Selected instance"
-        >
-          <option
-            v-for="item in store.instances"
-            :key="item.id"
-            :value="item.id"
-          >
-            {{ item.name }}
-          </option></select
-        ><strong v-else>Ready when you are.</strong>
-      </div>
-    </div>
-    <div class="dock-right">
-      <div class="dock-status">
-        <span class="status-dot" /><span>{{
-          store.selected
-            ? "Installation coming next"
-            : "Create an instance to get started"
-        }}</span>
-      </div>
-      <button
-        v-if="store.selected"
-        class="button play-button"
-        @click="launchInfo = !launchInfo"
-      >
-        <Play :size="18" fill="currentColor" /> Play
-        <span>JAVA EDITION</span></button
-      ><button
-        v-else
-        class="button play-button"
-        :disabled="store.loading || store.busy || !!store.error"
-        @click="open()"
-      >
-        <Plus :size="17" /> New instance
-      </button>
-    </div>
-    <div v-if="launchInfo" class="launch-note" role="status">
-      <strong>Game launch is coming next</strong>
-      <p>
-        Launching is not implemented in this build. Microsoft sign-in, verified
-        game downloads and Java setup are the next milestone.
-      </p>
-      <button
-        class="icon-button"
-        aria-label="Dismiss launch information"
-        @click="launchInfo = false"
-      >
-        <X :size="15" />
-      </button>
-    </div>
-  </footer>
   <InstanceDialog
     v-if="showDialog"
     :instance="editing"
