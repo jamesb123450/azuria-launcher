@@ -5,7 +5,7 @@ import { check, type Update } from "@tauri-apps/plugin-updater";
 import { desktop } from "../api";
 
 export const useUpdates = defineStore("updates", () => {
-  const version = ref("0.2.0");
+  const version = ref("0.2.1");
   const update = shallowRef<Update | null>(null);
   const status = ref<
     | "idle"

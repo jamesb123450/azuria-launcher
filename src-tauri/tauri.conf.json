@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Azuria Launcher",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "identifier": "com.azuria.launcher",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -39,7 +39,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY2QThFMzAwNzg5M0M3QUMKUldTc3g1TjRBT09vWm51NUo3S3BtTTJpZ2JwVllhV0dROXZ4dlBsdGM1RXFqUTBEUGpQL3VQOTMK",
       "endpoints": [
-        "https://github.com/jamesb123450/azuria-launcher-releases/releases/latest/download/latest.json"
+        "https://github.com/jamesb123450/azuria-launcher/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

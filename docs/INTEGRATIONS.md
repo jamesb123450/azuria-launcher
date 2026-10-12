@@ -30,4 +30,4 @@ Tauri prerequisites: https://v2.tauri.app/start/prerequisites/
 Tauri updates: https://v2.tauri.app/plugin/updater/
 Windows signing: https://v2.tauri.app/distribute/sign/windows/
 
-Signed in-app development updates are implemented; see [the setup guide](UPDATES.md) for the public binary feed and secrets required to enable publishing. Windows executable signing is a separate later task. Do not publish unsigned foundation builds as production releases.
+Signed in-app development updates are implemented; see [the setup guide](UPDATES.md) for the repository release feed and signing secret required to enable publishing. Windows executable signing is a separate later task. Do not publish unsigned foundation builds as production releases.

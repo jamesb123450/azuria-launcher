@@ -63,4 +63,4 @@ See [implementation plan](docs/PLAN.md), [architecture](docs/ARCHITECTURE.md) an
 
 ## In-app development updates
 
-The 0.2.0 desktop build includes signed in-app updates. See [update setup](docs/UPDATES.md) for the one-time public binary host and GitHub Secrets configuration. Microsoft sign-in remains the next integration; it is not included yet.
+The 0.2.1 desktop build includes signed in-app updates. See [update setup](docs/UPDATES.md) for the one-time signing secret and release configuration. Microsoft sign-in remains the next integration; it is not included yet.
