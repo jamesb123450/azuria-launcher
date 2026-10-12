@@ -106,6 +106,7 @@ version = "0.2.0"
 dependencies = [
  "azuria-core",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-updater",
