@@ -1,0 +1,22 @@
+[package]
+name = "azuria-launcher"
+version = "0.1.0"
+description = "Azuria Minecraft Java launcher"
+edition = "2021"
+rust-version = "1.85"
+publish = false
+
+[lib]
+name = "azuria_launcher_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+azuria-core = { path = "../crates/azuria-core" }
+
+[dev-dependencies]
+tempfile = "3"
