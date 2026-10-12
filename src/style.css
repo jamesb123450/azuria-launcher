@@ -1649,3 +1649,24 @@ html[data-theme="light"] .quick-instance.fabric {
   background: #b23d57;
   color: white;
 }
+
+.update-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+.update-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  max-height: 160px;
+  overflow: auto;
+}
+.update-hint {
+  margin-top: 12px;
+  font-size: 12px;
+}
+progress {
+  width: 100%;
+  accent-color: #b98cdd;
+}

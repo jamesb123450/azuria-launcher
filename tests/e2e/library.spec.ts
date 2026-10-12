@@ -132,3 +132,16 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
     ),
   ).toBe(true);
 });
+
+test("browser preview does not offer desktop updates", async ({ page }) => {
+  await page.goto("/settings");
+  await expect(
+    page.getByRole("heading", { name: "Launcher updates" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Updates are available in the installed desktop app."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Update & restart" }),
+  ).toHaveCount(0);
+});

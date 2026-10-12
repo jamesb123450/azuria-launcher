@@ -1,6 +1,6 @@
 {
   "name": "azuria-launcher",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Azuria Minecraft Java desktop launcher",
   "scripts": {
     "dev": "vite",
@@ -21,6 +21,7 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@lucide/vue": "^1.55.0",
     "@tauri-apps/api": "^2.12.3",
+    "@tauri-apps/plugin-updater": "^2.13.3",
     "pinia": "^4.0.3",
     "vue": "^3.5.43",
     "vue-router": "^5.4.0"

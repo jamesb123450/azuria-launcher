@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Monitor, Moon, Sun, Palette, ShieldCheck } from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
+import UpdatePanel from "../components/UpdatePanel.vue";
 import type { Theme } from "../types";
 const store = useLauncher();
 const themes: {
@@ -37,6 +38,7 @@ const themes: {
       <p class="muted">Configure your launcher.</p>
     </div>
   </section>
+  <UpdatePanel />
   <section class="settings-panel">
     <div class="settings-title">
       <Palette :size="22" />

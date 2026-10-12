@@ -1,6 +1,6 @@
 [package]
 name = "azuria-launcher"
-version = "0.1.0"
+version = "0.2.0"
 description = "Azuria Minecraft Java launcher"
 edition = "2021"
 publish = false
@@ -19,3 +19,6 @@ azuria-core = { path = "../crates/azuria-core" }
 
 [dev-dependencies]
 tempfile = "3"
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-updater = "2"

@@ -60,3 +60,7 @@ Removal moves an instance directory to trash before removing its database record
 ## Project decisions
 
 See [implementation plan](docs/PLAN.md), [architecture](docs/ARCHITECTURE.md) and [external dependencies](docs/INTEGRATIONS.md). No project licence has been chosen yet; public visibility would not by itself grant redistribution rights. A licence decision is required before public release.
+
+## In-app development updates
+
+The 0.2.0 desktop build includes signed in-app updates. See [update setup](docs/UPDATES.md) for the one-time public binary host and GitHub Secrets configuration. Microsoft sign-in remains the next integration; it is not included yet.

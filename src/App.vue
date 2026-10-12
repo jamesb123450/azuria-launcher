@@ -13,6 +13,8 @@ import {
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
 import WindowControls from "./components/WindowControls.vue";
+import { useUpdates } from "./stores/updates";
+const updates = useUpdates();
 const store = useLauncher();
 const route = useRoute();
 const page = computed(() =>
@@ -22,7 +24,10 @@ const page = computed(() =>
       ? "Discover"
       : "Play",
 );
-onMounted(store.init);
+onMounted(() => {
+  void store.init();
+  void updates.init();
+});
 </script>
 <template>
   <div class="app-shell">
@@ -107,8 +112,12 @@ onMounted(store.init);
           >
         </div>
         <div class="topbar-right">
+          <RouterLink v-if="updates.update" to="/settings" class="text-link"
+            >Update available</RouterLink
+          >
           <span v-if="!desktop" class="preview-label">Browser preview</span
-          ><span class="build-pill">Early access <span>0.1.0</span></span
+          ><span class="build-pill"
+            >Early access <span>{{ updates.version }}</span></span
           ><RouterLink class="account-chip" to="/roadmap"
             ><UserRound :size="16" /><span>Not signed in</span></RouterLink
           >

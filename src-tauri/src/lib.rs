@@ -57,6 +57,7 @@ fn open_project_page() -> Result<(), String> {
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let root = app.path().app_local_data_dir()?;
             let store = Store::open(root).map_err(std::io::Error::other)?;
