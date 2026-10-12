@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 // CI controls these values; reject malformed identifiers before constructing URLs.
@@ -16,11 +16,22 @@ const installers = (await readdir(folder)).filter((name) =>
 );
 if (installers.length !== 1)
   throw new Error("Expected exactly one NSIS installer");
-const installer = installers[0];
+const original = installers[0];
+const installer = `Azuria-Launcher_${version}_x64-setup.exe`;
 const signature = (
-  await readFile(join(folder, installer + ".sig"), "utf8")
+  await readFile(join(folder, original + ".sig"), "utf8")
 ).trim();
 if (!signature) throw new Error("Missing update signature");
+// GitHub normalizes spaces in asset names. Choose an ASCII name before uploading
+// so the advertised URL and the published filename stay identical. Renaming
+// preserves the signed installer bytes and its signature.
+if (original !== installer) {
+  await rename(join(folder, original), join(folder, installer));
+  await rename(
+    join(folder, original + ".sig"),
+    join(folder, installer + ".sig"),
+  );
+}
 const manifest = {
   version,
   notes: `Azuria development build ${version}. Includes changes that passed the frontend and Windows checks.`,
