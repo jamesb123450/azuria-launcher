@@ -2,6 +2,10 @@
 
 A Windows-first Minecraft Java launcher built with Vue 3, TypeScript, Tauri 2 and Rust. Pink and blue accents, a clear instance library, and dark/light/system themes.
 
+![Azuria launcher library with example instances](docs/previews/play-dark.webp)
+
+Design preview with example instances. The app uses your persisted library and does not seed demonstration profiles. See [design reference study and asset provenance](docs/DESIGN.md).
+
 ## Current milestone: foundation
 
 Working: instance creation, editing, copying **settings only**, favourites, search/filter/sort, recoverable removal, and saved appearance. The desktop uses a Rust-managed SQLite database and UUID-named instance folders. The browser preview uses separate browser storage.

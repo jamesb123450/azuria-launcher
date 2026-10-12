@@ -4,7 +4,7 @@ const store = useLauncher();
 import { Check, ArrowUpRight, Compass } from "@lucide/vue";
 const stages = [
   {
-    title: "Your launcher, taking shape",
+    title: "Launcher & instance library",
     description: "Desktop shell, themes and a persistent instance library.",
     status: "This build",
   },
@@ -37,15 +37,15 @@ const stages = [
 <template>
   <section class="page-heading">
     <div>
-      <span class="eyebrow">THE ADVENTURE AHEAD</span>
-      <h1>Discover what’s next<span class="heading-dot">.</span></h1>
-      <p class="muted">Building a launcher worth coming back to.</p>
+      <span class="eyebrow">CONTENT LIBRARY</span>
+      <h1>Discover</h1>
+      <p class="muted">Find your next setup.</p>
     </div>
   </section>
   <div class="roadmap-intro">
     <Compass :size="30" />
     <div>
-      <h2>Content discovery is coming.</h2>
+      <h2>Modrinth & CurseForge</h2>
       <p class="muted">
         Modrinth and CurseForge browsing will arrive after the game installation
         core. CurseForge access and Minecraft authentication require Azuria’s

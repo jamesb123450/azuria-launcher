@@ -1,101 +1,133 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import {
   Library,
   Settings,
   Compass,
-  ArrowUpRight,
-  Layers3,
   GitBranch,
+  UserRound,
+  ChevronRight,
+  CircleHelp,
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import WindowControls from "./components/WindowControls.vue";
 const store = useLauncher();
+const route = useRoute();
+const page = computed(() =>
+  route.path === "/settings"
+    ? "Settings"
+    : route.path === "/roadmap"
+      ? "Discover"
+      : "Play",
+);
 onMounted(store.init);
 </script>
 <template>
   <div class="app-shell">
     <aside class="sidebar">
-      <RouterLink class="brand" to="/" aria-label="Azuria home"
-        ><span class="brand-mark">A</span
-        ><span
-          >azuria<span class="brand-caption">MINECRAFT LAUNCHER</span></span
-        ></RouterLink
-      >
-      <div class="workspace-label">YOUR WORKSPACE</div>
+      <RouterLink class="brand-symbol" to="/" aria-label="Azuria home"
+        ><svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <path d="M20 6 35 33H25L20 23l-5 10H5L20 6Z" fill="currentColor" />
+          <path d="m16 27 4-7 4 7h-8Z" fill="#efb6d9" /></svg
+      ></RouterLink>
       <nav aria-label="Main navigation">
-        <RouterLink to="/" class="nav-link"
-          ><Library :size="19" /> Library
-          <span class="nav-count">{{
-            store.instances.length
-          }}</span></RouterLink
+        <RouterLink
+          to="/"
+          class="rail-link"
+          aria-label="Library"
+          title="Play & library"
+          ><Library :size="22" /><span class="rail-tooltip"
+            >Library</span
+          ></RouterLink
         >
-        <RouterLink to="/roadmap" class="nav-link"
-          ><Compass :size="19" /> Discover
-          <span class="soon-dot" title="Planned feature"
-        /></RouterLink>
+        <RouterLink
+          to="/roadmap"
+          class="rail-link"
+          aria-label="Discover"
+          title="Discover — coming soon"
+          ><Compass :size="22" /><span class="rail-tooltip"
+            >Discover</span
+          ></RouterLink
+        >
       </nav>
-      <div class="sidebar-note">
-        <Layers3 :size="23" /><strong>A space for every world.</strong>
-        <p>Keep your adventures organised, your way.</p>
-        <RouterLink to="/roadmap"
-          >See what’s coming <ArrowUpRight :size="14"
-        /></RouterLink>
+      <div class="rail-divider" />
+      <div class="rail-instances" aria-label="Quick instance selection">
+        <RouterLink
+          v-for="item in store.instances.slice(0, 5)"
+          :key="item.id"
+          to="/"
+          :class="[
+            'quick-instance',
+            item.loader,
+            { active: store.selected?.id === item.id },
+          ]"
+          :aria-label="'Select ' + item.name"
+          :title="item.name"
+          @click="store.selectedId = item.id"
+          >{{ item.name.slice(0, 1).toUpperCase() }}</RouterLink
+        >
       </div>
       <div class="sidebar-bottom">
-        <RouterLink to="/settings" class="nav-link"
-          ><Settings :size="19" /> Settings</RouterLink
+        <RouterLink
+          to="/roadmap"
+          class="rail-link"
+          aria-label="Development information"
+          title="Development information"
+          ><CircleHelp :size="20" /></RouterLink
         ><a
-          class="nav-link"
+          class="rail-link"
           href="https://github.com/jamesb123450/azuria-launcher"
           @click.prevent="store.openProject"
-          target="_blank"
-          rel="noreferrer"
-          ><GitBranch :size="19" /> Project on GitHub <ArrowUpRight :size="14"
-        /></a>
-        <div class="build-label">
-          <span class="status-dot" /> Azuria 0.1.0 <span>FOUNDATION</span>
+          aria-label="Project on GitHub"
+          title="Project on GitHub"
+          ><GitBranch :size="20" /></a
+        ><RouterLink
+          to="/settings"
+          class="rail-link"
+          aria-label="Settings"
+          title="Settings"
+          ><Settings :size="21" /><span class="rail-tooltip"
+            >Settings</span
+          ></RouterLink
+        >
+        <div class="rail-avatar" title="Microsoft sign-in coming next">
+          <UserRound :size="18" />
         </div>
       </div>
     </aside>
     <div class="main-shell">
-      <header class="topbar">
-        <span>YOUR NEXT ADVENTURE STARTS HERE</span
-        ><RouterLink class="account-chip" to="/roadmap"
-          ><span class="avatar">A</span
-          ><span
-            >Welcome to Azuria<small>Microsoft sign-in coming next</small></span
-          ></RouterLink
-        >
-      </header>
-      <div v-if="!desktop" class="preview-banner">
-        Browser preview · Data stays in this browser. The desktop app uses Rust
-        and SQLite.
-      </div>
-      <main id="main-content">
-        <div v-if="store.error" class="alert error" role="alert">
-          {{ store.error }}
-          <button @click="store.error = ''" aria-label="Dismiss error">
-            ×
-          </button>
-        </div>
-        <div v-if="store.notice" class="alert success" role="status">
-          {{ store.notice
-          }}<button
-            @click="store.notice = ''"
-            aria-label="Dismiss notification"
+      <header class="topbar" data-tauri-drag-region>
+        <div class="topbar-brand" data-tauri-drag-region>
+          azuria<span class="brand-caption">LAUNCHER</span
+          ><span class="breadcrumb-divider" /><ChevronRight :size="13" /><span
+            class="breadcrumb"
+            >{{ page }}</span
           >
-            ×
-          </button>
         </div>
-        <RouterView />
-      </main>
-      <footer class="app-footer">
-        <span
-          ><span class="status-dot" />
-          {{ desktop ? "Local desktop workspace" : "Browser preview" }}</span
-        ><span>Made for your next chapter.</span>
-      </footer>
+        <div class="topbar-right">
+          <span v-if="!desktop" class="preview-label">Browser preview</span
+          ><span class="build-pill">Early access <span>0.1.0</span></span
+          ><RouterLink class="account-chip" to="/roadmap"
+            ><UserRound :size="16" /><span>Not signed in</span></RouterLink
+          >
+        </div>
+        <WindowControls />
+      </header>
+      <main id="main-content"><RouterView /></main>
+      <div v-if="store.error" class="alert error" role="alert">
+        {{ store.error
+        }}<button @click="store.error = ''" aria-label="Dismiss error">
+          ×
+        </button>
+      </div>
+      <div v-else-if="store.notice" class="alert success" role="status">
+        {{ store.notice
+        }}<button @click="store.notice = ''" aria-label="Dismiss notification">
+          ×
+        </button>
+      </div>
     </div>
   </div>
 </template>

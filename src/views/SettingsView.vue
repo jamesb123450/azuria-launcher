@@ -19,22 +19,22 @@ const themes: {
     value: "dark",
     label: "Dark",
     icon: Moon,
-    description: "A little after-hours",
+    description: "Dark surfaces, quiet contrast",
   },
   {
     value: "light",
     label: "Light",
     icon: Sun,
-    description: "A brighter perspective",
+    description: "Light surfaces, clear contrast",
   },
 ];
 </script>
 <template>
   <section class="page-heading">
     <div>
-      <span class="eyebrow">MAKE YOURSELF AT HOME</span>
-      <h1>Settings<span class="heading-dot">.</span></h1>
-      <p class="muted">The details that make Azuria yours.</p>
+      <span class="eyebrow">PREFERENCES</span>
+      <h1>Settings</h1>
+      <p class="muted">Configure your launcher.</p>
     </div>
   </section>
   <section class="settings-panel">
@@ -57,7 +57,9 @@ const themes: {
         :disabled="store.loading || store.busy"
         @click="store.theme(theme.value)"
       >
-        <component :is="theme.icon" :size="25" /><strong>{{
+        <span :class="['theme-preview', theme.value]" aria-hidden="true"
+          ><span class="preview-line" /></span
+        ><component :is="theme.icon" :size="18" /><strong>{{
           theme.label
         }}</strong
         ><span>{{ theme.description }}</span>
@@ -68,7 +70,7 @@ const themes: {
     <div class="settings-title">
       <ShieldCheck :size="22" />
       <div>
-        <h2>A local-first foundation</h2>
+        <h2>Storage & privacy</h2>
         <p class="muted">
           Your desktop library and preferences stay on your computer.
         </p>

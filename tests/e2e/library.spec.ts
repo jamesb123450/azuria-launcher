@@ -87,3 +87,48 @@ test("themes persist and modal cancellation restores focus", async ({
     ),
   ).toBe(true);
 });
+
+test("instance selection and grid/list views work at minimum desktop size", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const name of ["Survival", "Creative"]) {
+    await page
+      .getByRole("button", { name: "Create instance", exact: true })
+      .click();
+    await page.getByLabel("Instance name", { exact: true }).fill(name);
+    await page.getByLabel("Minecraft version", { exact: true }).fill("1.21.1");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Create instance", exact: true })
+      .click();
+  }
+  await page.reload();
+  const selection = page.getByRole("combobox", {
+    name: "Selected instance",
+    exact: true,
+  });
+  await expect(selection).not.toHaveValue("");
+  const survivalId = await selection
+    .locator("option")
+    .filter({ hasText: "Survival" })
+    .getAttribute("value");
+  await selection.selectOption(survivalId!);
+  await expect(
+    page
+      .locator(".world-banner")
+      .getByRole("heading", { name: "Survival", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "List view", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "List view", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.setViewportSize({ width: 900, height: 650 });
+  await expect(page.getByRole("button", { name: /Play/ })).toBeInViewport();
+  await expect(page.locator(".instance-card").first()).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
