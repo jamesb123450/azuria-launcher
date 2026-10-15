@@ -24,6 +24,7 @@ import InstanceDialog from "../components/InstanceDialog.vue";
 import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
 import type { Instance } from "../types";
+import { LOADERS, loaderName } from "../types";
 const store = useLauncher();
 const updates = useUpdates();
 const search = ref("");
@@ -82,18 +83,11 @@ const groups = computed(() => {
             match: (i: Instance) => !i.favorite,
           },
         ]
-      : [
-          {
-            key: "fabric",
-            title: "Fabric",
-            match: (i: Instance) => i.loader === "fabric",
-          },
-          {
-            key: "vanilla",
-            title: "Vanilla",
-            match: (i: Instance) => i.loader === "vanilla",
-          },
-        ];
+      : LOADERS.map((loader) => ({
+          key: loader.id,
+          title: loader.name,
+          match: (i: Instance) => i.loader === loader.id,
+        }));
   return buckets
     .map((group) => ({
       key: group.key,
@@ -169,11 +163,15 @@ onBeforeUnmount(closeDelete);
               :aria-pressed="store.selected?.id === item.id"
               @click="store.selectedId = item.id"
             >
-              <InstanceIcon :loader="item.loader" :seed="item.id" />
+              <InstanceIcon
+                :loader="item.loader"
+                :seed="item.id"
+                :icon="item.icon"
+              />
               <span class="jump-identity"
                 ><h2>{{ item.name }}</h2>
                 <span
-                  >{{ item.loader === "fabric" ? "Fabric" : "Vanilla" }}
+                  >{{ loaderName(item.loader) }}
                   {{ item.minecraftVersion }}
                   <span class="meta-dot">·</span> Created
                   {{ created(item) }}</span
@@ -273,8 +271,10 @@ onBeforeUnmount(closeDelete);
               v-for="tab in [
                 { id: 'all', label: 'All' },
                 { id: 'favorites', label: 'Favourites' },
-                { id: 'vanilla', label: 'Vanilla' },
-                { id: 'fabric', label: 'Fabric' },
+                ...LOADERS.map((loader) => ({
+                  id: loader.id,
+                  label: loader.name,
+                })),
               ]"
               :key="tab.id"
               :class="{ active: filter === tab.id }"
@@ -380,11 +380,14 @@ onBeforeUnmount(closeDelete);
                 @click="store.selectedId = item.id"
               >
                 <span class="tile-art"
-                  ><InstanceIcon :loader="item.loader" :seed="item.id" /></span
+                  ><InstanceIcon
+                    :loader="item.loader"
+                    :seed="item.id"
+                    :icon="item.icon" /></span
                 ><span class="instance-title"
                   ><h3>{{ item.name }}</h3>
                   <span class="instance-version"
-                    >{{ item.loader === "fabric" ? "Fabric" : "Vanilla" }}
+                    >{{ loaderName(item.loader) }}
                     {{ item.minecraftVersion }}</span
                   ></span
                 >

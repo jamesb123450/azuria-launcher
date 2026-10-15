@@ -1,4 +1,19 @@
 import { expect, test } from "@playwright/test";
+test.use({ colorScheme: "dark" });
+test.beforeEach(async ({ page }) => {
+  await page.route("https://piston-meta.mojang.com/**", (route) =>
+    route.fulfill({
+      json: {
+        versions: [
+          { id: "1.21.1", type: "release" },
+          { id: "1.20.1", type: "release" },
+          { id: "24w14a", type: "snapshot" },
+        ],
+      },
+    }),
+  );
+});
+
 test("persistent library lifecycle and honest launch state", async ({
   page,
 }) => {
@@ -8,8 +23,11 @@ test("persistent library lifecycle and honest launch state", async ({
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
+  await page.getByRole("button", { name: /Custom setup/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("Aurora");
-  await page.getByLabel("Minecraft version", { exact: true }).fill("1.21.1");
+  await page
+    .getByRole("combobox", { name: "Game version", exact: true })
+    .selectOption("1.21.1");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Create instance", exact: true })
@@ -70,6 +88,7 @@ test("themes persist and modal cancellation restores focus", async ({
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
+  await page.getByRole("button", { name: /Custom setup/ }).click();
   await expect(page.getByLabel("Instance name", { exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -102,8 +121,11 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
     await page
       .getByRole("button", { name: "Create instance", exact: true })
       .click();
+    await page.getByRole("button", { name: /Custom setup/ }).click();
     await page.getByLabel("Instance name", { exact: true }).fill(name);
-    await page.getByLabel("Minecraft version", { exact: true }).fill("1.21.1");
+    await page
+      .getByRole("combobox", { name: "Game version", exact: true })
+      .selectOption("1.21.1");
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Create instance", exact: true })
@@ -163,8 +185,11 @@ test("library grouping and collapsed sections remain usable", async ({
     await page
       .getByRole("button", { name: "Create instance", exact: true })
       .click();
+    await page.getByRole("button", { name: /Custom setup/ }).click();
     await page.getByLabel("Instance name", { exact: true }).fill(name);
-    await page.getByLabel("Minecraft version", { exact: true }).fill("1.21.1");
+    await page
+      .getByRole("combobox", { name: "Game version", exact: true })
+      .selectOption("1.21.1");
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Create instance", exact: true })
@@ -205,8 +230,11 @@ test("failed saves retain input and unrelated errors do not block creation", asy
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
+  await page.getByRole("button", { name: /Custom setup/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("Retry world");
-  await page.getByLabel("Minecraft version", { exact: true }).fill("1.21.1");
+  await page
+    .getByRole("combobox", { name: "Game version", exact: true })
+    .selectOption("1.21.1");
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
@@ -248,4 +276,186 @@ test("failed saves retain input and unrelated errors do not block creation", asy
   await expect(create).toBeEnabled();
   await create.click();
   await expect(page.getByRole("dialog").getByRole("alert")).toHaveCount(0);
+});
+
+test("custom setup preserves selections, icons and all loader types", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  for (const name of [
+    /Start from a mod/,
+    /Upload a modpack/,
+    /Import instance/,
+  ])
+    await expect(dialog.getByRole("button", { name })).toBeDisabled();
+  await expect(
+    dialog.getByRole("button", { name: /Custom setup/ }),
+  ).toBeFocused();
+  await page.screenshot({ path: "test-results/create-choice-dark.png" });
+  await dialog.getByRole("button", { name: /Custom setup/ }).click();
+  await page.getByLabel("Instance name", { exact: true }).fill("Moonlight");
+  await dialog.getByRole("button", { name: "Randomize", exact: true }).click();
+  await dialog.getByRole("button", { name: "Customize", exact: true }).click();
+  await dialog.getByRole("button", { name: "Cube icon", exact: true }).click();
+  const icon = await dialog
+    .locator(".create-icon-preview img")
+    .getAttribute("src");
+  await dialog.getByRole("button", { name: "Moon icon", exact: true }).click();
+  await expect(dialog.locator(".create-icon-preview img")).not.toHaveAttribute(
+    "src",
+    icon!,
+  );
+  await dialog.getByRole("button", { name: "Forge", exact: true }).click();
+  await dialog.getByRole("button", { name: "Latest", exact: true }).click();
+  await dialog.getByRole("button", { name: "Other", exact: true }).click();
+  await dialog.getByLabel("Loader version number").fill("47.3.0");
+  await dialog
+    .getByRole("combobox", { name: "Game version", exact: true })
+    .selectOption("1.20.1");
+  await dialog.getByRole("button", { name: "Back", exact: true }).click();
+  await dialog.getByRole("button", { name: /Custom setup/ }).click();
+  await expect(page.getByLabel("Instance name", { exact: true })).toHaveValue(
+    "Moonlight",
+  );
+  await expect(
+    dialog.getByRole("button", { name: "Forge", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const savedIcon = await dialog
+    .locator(".create-icon-preview img")
+    .getAttribute("src");
+  await page.screenshot({ path: "test-results/create-setup-dark.png" });
+  await dialog
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await expect(page.locator(".instance-card")).toHaveCount(1);
+  await page.reload();
+  await expect(page.locator(".instance-card .instance-version")).toHaveText(
+    "Forge 1.20.1",
+  );
+  await expect(
+    page.locator(".instance-card .instance-symbol img"),
+  ).toHaveAttribute("src", savedIcon!);
+  await page
+    .getByRole("button", { name: "Edit Moonlight", exact: true })
+    .click();
+  await expect(page.getByLabel("Loader version number")).toHaveValue("47.3.0");
+  await page.keyboard.press("Escape");
+
+  for (const loader of ["NeoForge", "Quilt"]) {
+    await page
+      .getByRole("button", { name: "Create instance", exact: true })
+      .click();
+    await page.getByRole("button", { name: /Custom setup/ }).click();
+    await dialog.getByRole("button", { name: loader, exact: true }).click();
+    await dialog
+      .getByRole("button", { name: "Create instance", exact: true })
+      .click();
+    await expect(
+      page
+        .locator(".instance-card .instance-version")
+        .filter({ hasText: loader }),
+    ).toHaveCount(1);
+  }
+});
+
+test("icon uploads, manual versions and minimum-height light layout work", async ({
+  page,
+}) => {
+  await page.goto("/#/settings");
+  await page.getByRole("button", { name: "Light", exact: false }).click();
+  await page.getByRole("link", { name: "Library", exact: true }).click();
+  await page.setViewportSize({ width: 900, height: 650 });
+  await page
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await page.screenshot({ path: "test-results/create-choice-light.png" });
+  await page.getByRole("button", { name: /Custom setup/ }).click();
+  const dialog = page.getByRole("dialog");
+  await page.getByLabel("Upload instance icon").setInputFiles({
+    name: "bad.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from("<svg/>"),
+  });
+  await expect(dialog.getByRole("alert")).toContainText("PNG, JPEG or WebP");
+  await page.getByLabel("Upload instance icon").setInputFiles({
+    name: "icon.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      await page.evaluate(() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 16;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "#b9a4ed";
+        ctx.fillRect(0, 0, 16, 16);
+        return canvas.toDataURL("image/png").split(",")[1]!;
+      }),
+      "base64",
+    ),
+  });
+  await expect(dialog.locator(".create-icon-preview img")).toBeVisible();
+  await dialog.getByRole("button", { name: "Fabric", exact: true }).click();
+  await dialog.getByLabel("Show snapshots").check();
+  await expect(
+    dialog.locator("#game-version option[value='24w14a']"),
+  ).toHaveCount(1);
+  await dialog
+    .getByRole("combobox", { name: "Game version", exact: true })
+    .selectOption("__manual");
+  await page.getByLabel("Minecraft version", { exact: true }).fill("24w14a");
+  await page.getByLabel("Instance name", { exact: true }).fill("Uploaded");
+  await dialog.getByText("Memory allocation", { exact: false }).first().click();
+  await page
+    .getByLabel("Memory allocation (MB)", { exact: true })
+    .fill("32768");
+  await expect(
+    dialog.getByRole("button", { name: "Create instance", exact: true }),
+  ).toBeInViewport();
+  await expect(
+    dialog.getByRole("heading", { name: "Create instance", exact: true }),
+  ).toBeInViewport();
+  await page.screenshot({ path: "test-results/create-setup-light.png" });
+  const box = await dialog.boundingBox();
+  expect(box!.height).toBeLessThanOrEqual(610);
+  await dialog
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await expect(page.locator(".instance-card .instance-version")).toHaveText(
+    "Fabric 24w14a",
+  );
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Edit Uploaded", exact: true })
+    .click();
+  await page.getByText("Memory allocation", { exact: false }).first().click();
+  await expect(
+    page.getByLabel("Memory allocation (MB)", { exact: true }),
+  ).toHaveValue("32768");
+});
+
+test("catalogue failures leave manual creation available", async ({ page }) => {
+  await page.unroute("https://piston-meta.mojang.com/**");
+  await page.route("https://piston-meta.mojang.com/**", (route) =>
+    route.abort(),
+  );
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Custom setup/ }).click();
+  await expect(page.getByText(/Couldn’t load the version list/)).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Game version", exact: true })
+    .selectOption("__manual");
+  await page.getByLabel("Minecraft version", { exact: true }).fill("1.19.2");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await expect(page.locator(".instance-card .instance-version")).toHaveText(
+    "Vanilla 1.19.2",
+  );
 });

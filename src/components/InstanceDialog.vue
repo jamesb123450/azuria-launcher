@@ -1,15 +1,56 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
-import { X, Box, Layers3 } from "@lucide/vue";
-import type { Instance } from "../types";
-import { DEFAULT_INPUT, validateInput } from "../types";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+} from "vue";
+import {
+  X,
+  Search,
+  Boxes,
+  Compass,
+  Upload,
+  PackageOpen,
+  Shuffle,
+  Palette,
+  Check,
+  ArrowLeft,
+  Plus,
+  ChevronDown,
+  Mountain,
+  Moon,
+  Box,
+} from "@lucide/vue";
+import type { Instance, Loader } from "../types";
+import { DEFAULT_INPUT, LOADERS, loaderName, validateInput } from "../types";
 import { useLauncher } from "../stores/launcher";
+import InstanceIcon from "./InstanceIcon.vue";
+import {
+  ICON_COLORS,
+  ICON_GLYPHS,
+  makeIcon,
+  uploadIcon,
+  type IconGlyph,
+} from "../lib/instance-icons";
+import { gameVersions, type GameVersion } from "../lib/game-versions";
+
 const props = defineProps<{ instance?: Instance; duplicate?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 const store = useLauncher();
 const dialog = ref<HTMLDialogElement>();
 const nameInput = ref<HTMLInputElement>();
+const setupButton = ref<HTMLButtonElement>();
+const fileInput = ref<HTMLInputElement>();
+const edit = Boolean(props.instance && !props.duplicate);
+const step = ref<"choose" | "setup">(props.instance ? "setup" : "choose");
 const error = ref("");
+const iconBusy = ref(false);
+const customizing = ref(false);
+const color = ref(ICON_COLORS[0]!);
+const glyph = ref<IconGlyph>("cube");
 const form = reactive({
   ...DEFAULT_INPUT,
   ...(props.instance ?? {}),
@@ -17,138 +58,491 @@ const form = reactive({
     ? `${props.instance?.name ?? ""} copy`
     : (props.instance?.name ?? ""),
 });
-const edit = Boolean(props.instance && !props.duplicate);
+const versionChoice = ref(form.minecraftVersion || "1.21.1");
+const manualVersion = ref(false);
+const versions = ref<GameVersion[]>([{ id: "1.21.1", type: "release" }]);
+const versionsLoading = ref(false);
+const versionsError = ref("");
+const snapshots = ref(false);
+const loaderPolicy = ref(
+  form.loaderVersion && !["stable", "latest"].includes(form.loaderVersion)
+    ? "other"
+    : (form.loaderVersion ?? "stable"),
+);
+const customLoaderVersion = ref(
+  loaderPolicy.value === "other" ? (form.loaderVersion ?? "") : "",
+);
+const suggestedName = computed(
+  () =>
+    `${loaderName(form.loader)} ${form.minecraftVersion || versionChoice.value}`,
+);
+const availableVersions = computed(() => {
+  const list = versions.value.filter(
+    (entry) => snapshots.value || entry.type === "release",
+  );
+  if (
+    versionChoice.value &&
+    versionChoice.value !== "__manual" &&
+    !list.some((entry) => entry.id === versionChoice.value)
+  )
+    return [{ id: versionChoice.value, type: "selected" }, ...list];
+  return list;
+});
 let previousFocus: HTMLElement | null = null;
+let disposed = false;
+let versionTouched = false;
+let uploadSequence = 0;
+
 onMounted(async () => {
   previousFocus = document.activeElement as HTMLElement;
   dialog.value?.showModal();
   await nextTick();
-  nameInput.value?.focus();
+  if (step.value === "choose") setupButton.value?.focus();
+  else nameInput.value?.focus();
+  void loadVersions();
 });
 onBeforeUnmount(() => {
+  disposed = true;
   dialog.value?.close();
   previousFocus?.focus();
 });
+async function loadVersions() {
+  versionsLoading.value = true;
+  versionsError.value = "";
+  try {
+    const entries = await gameVersions();
+    if (!disposed) {
+      versions.value = entries;
+      const latest = entries.find((entry) => entry.type === "release");
+      if (!props.instance && !versionTouched && latest) {
+        versionChoice.value = latest.id;
+        form.minecraftVersion = latest.id;
+      }
+    }
+  } catch {
+    if (!disposed)
+      versionsError.value =
+        "Couldn’t load the version list. You can enter a version manually.";
+  } finally {
+    if (!disposed) versionsLoading.value = false;
+  }
+}
+async function customSetup() {
+  step.value = "setup";
+  if (!form.minecraftVersion && !manualVersion.value)
+    form.minecraftVersion = versionChoice.value;
+  await nextTick();
+  nameInput.value?.focus();
+}
+async function back() {
+  step.value = "choose";
+  error.value = "";
+  await nextTick();
+  setupButton.value?.focus();
+}
+function selectVersion() {
+  versionTouched = true;
+  manualVersion.value = versionChoice.value === "__manual";
+  if (!manualVersion.value) form.minecraftVersion = versionChoice.value;
+  else form.minecraftVersion = "";
+}
+function selectLoader(loader: Loader) {
+  form.loader = loader;
+}
+function generateIcon() {
+  try {
+    form.icon = makeIcon(color.value, glyph.value);
+  } catch (e) {
+    error.value = String(e);
+  }
+}
+function randomize() {
+  color.value = ICON_COLORS[Math.floor(Math.random() * ICON_COLORS.length)]!;
+  glyph.value = ICON_GLYPHS[Math.floor(Math.random() * ICON_GLYPHS.length)]!;
+  // A repeated random choice must still visibly change the current icon.
+  const next = makeIcon(color.value, glyph.value);
+  if (next === form.icon) {
+    color.value =
+      ICON_COLORS[(ICON_COLORS.indexOf(color.value) + 1) % ICON_COLORS.length]!;
+  }
+  generateIcon();
+}
+async function chooseUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const sequence = ++uploadSequence;
+  iconBusy.value = true;
+  error.value = "";
+  try {
+    const icon = await uploadIcon(file);
+    if (!disposed && sequence === uploadSequence) form.icon = icon;
+  } catch (e) {
+    if (!disposed)
+      error.value =
+        e instanceof Error ? e.message : "Could not read this image.";
+  } finally {
+    if (!disposed && sequence === uploadSequence) iconBusy.value = false;
+    input.value = "";
+  }
+}
 async function save() {
-  error.value = validateInput(form) ?? "";
+  if (iconBusy.value || store.busy) return;
+  const input = {
+    name: form.name.trim() || suggestedName.value,
+    minecraftVersion: form.minecraftVersion,
+    loader: form.loader,
+    memoryMb: Number(form.memoryMb),
+    icon: form.icon ?? null,
+    loaderVersion:
+      form.loader === "vanilla"
+        ? null
+        : loaderPolicy.value === "other"
+          ? customLoaderVersion.value.trim()
+          : loaderPolicy.value,
+  };
+  error.value = validateInput(input) ?? "";
   if (error.value) return;
-  const result = await store.save(
-    {
-      name: form.name,
-      minecraftVersion: form.minecraftVersion,
-      loader: form.loader,
-      memoryMb: Number(form.memoryMb),
-    },
-    edit ? props.instance?.id : undefined,
-  );
-  if (result) emit("close");
+  if (await store.save(input, edit ? props.instance?.id : undefined))
+    emit("close");
 }
 </script>
 <template>
   <dialog
     ref="dialog"
-    class="instance-dialog"
+    class="instance-dialog create-dialog"
     aria-labelledby="dialog-title"
-    @cancel.prevent="!store.busy && emit('close')"
+    @cancel.prevent="!store.busy && !iconBusy && emit('close')"
   >
-    <form @submit.prevent="save">
-      <div class="dialog-heading">
-        <div>
-          <span class="eyebrow">YOUR WORLD, YOUR RULES</span>
-          <h2 id="dialog-title">
-            {{
-              edit
-                ? "Edit instance"
-                : duplicate
-                  ? "Copy instance settings"
-                  : "Create an instance"
-            }}
-          </h2>
-        </div>
+    <header class="create-heading">
+      <h2 id="dialog-title">
+        {{
+          edit
+            ? "Edit instance"
+            : duplicate
+              ? "Copy instance settings"
+              : "Create instance"
+        }}
+      </h2>
+      <button
+        type="button"
+        class="create-close icon-button"
+        aria-label="Close dialog"
+        :disabled="store.busy || iconBusy"
+        @click="emit('close')"
+      >
+        <X :size="19" />
+      </button>
+    </header>
+
+    <div v-if="step === 'choose'" class="create-choice-body">
+      <label class="create-search-label" for="create-search"
+        >Already know what you want to play?</label
+      >
+      <div class="create-search">
+        <Search :size="18" /><input
+          id="create-search"
+          disabled
+          placeholder="Modpack search coming soon"
+        />
+      </div>
+      <div class="create-divider"><span>or</span></div>
+      <h3>Choose instance type</h3>
+      <div class="create-options">
         <button
+          ref="setupButton"
           type="button"
-          class="icon-button"
-          aria-label="Close dialog"
-          :disabled="store.busy"
-          @click="emit('close')"
+          class="create-option available"
+          @click="customSetup"
         >
-          <X :size="20" />
+          <span class="create-option-icon"><Boxes :size="26" /></span>
+          <span
+            ><strong>Custom setup</strong
+            ><small
+              >Start fresh with your choice of loader and game version.</small
+            ></span
+          >
+          <span class="option-arrow">→</span>
+        </button>
+        <button
+          v-for="option in [
+            {
+              title: 'Start from a mod or modpack',
+              description: 'Choose a project and use its latest version.',
+              icon: Compass,
+            },
+            {
+              title: 'Upload a modpack',
+              description: 'Install a modpack from a file on your device.',
+              icon: Upload,
+            },
+            {
+              title: 'Import instance',
+              description: 'Bring an instance from another launcher.',
+              icon: PackageOpen,
+            },
+          ]"
+          :key="option.title"
+          type="button"
+          class="create-option"
+          disabled
+        >
+          <span class="create-option-icon"
+            ><component :is="option.icon" :size="24"
+          /></span>
+          <span
+            ><strong>{{ option.title }}</strong
+            ><small>{{ option.description }}</small></span
+          >
+          <span class="coming-label">Soon</span>
         </button>
       </div>
-      <p class="muted">
-        {{
-          duplicate
-            ? "Creates a fresh instance with these settings. Worlds and files are not copied."
-            : "Give your next adventure a home. Installation comes in the next milestone."
-        }}
+      <p class="create-footnote">
+        Your instances and settings stay on your device.
       </p>
-      <label class="field"
-        >Instance name<input
-          ref="nameInput"
-          v-model="form.name"
-          required
-          maxlength="80"
-          placeholder="e.g. A little adventure"
-      /></label>
-      <label class="field"
-        >Minecraft version<input
-          v-model="form.minecraftVersion"
-          aria-label="Minecraft version"
-          aria-describedby="version-help"
-          required
-          maxlength="40"
-          pattern="[a-zA-Z0-9][a-zA-Z0-9._\-]{0,39}"
-          placeholder="e.g. 1.21.1"
-        /><small id="version-help"
-          >Enter an exact version ID. Availability will be checked when game
-          installation is added.</small
-        ></label
-      >
-      <fieldset class="loader-field">
-        <legend>Mod loader</legend>
-        <label :class="['loader-option', { active: form.loader === 'vanilla' }]"
-          ><input v-model="form.loader" type="radio" value="vanilla" /><Box
-            :size="20"
-          /><span>Vanilla<small>The original experience</small></span></label
-        ><label :class="['loader-option', { active: form.loader === 'fabric' }]"
-          ><input v-model="form.loader" type="radio" value="fabric" /><Layers3
-            :size="20"
-          /><span>Fabric<small>A home for your mods</small></span></label
-        >
-      </fieldset>
-      <label class="field"
-        >Memory allocation
-        <span class="memory-value"
-          >{{ (form.memoryMb / 1024).toFixed(2) }} GB</span
-        ><input
-          v-model.number="form.memoryMb"
-          type="range"
-          min="512"
-          max="16384"
-          step="256"
-        /><small
-          >Choose an amount suitable for your computer. Applied when launching
-          is available.</small
-        ></label
-      >
-      <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
-      <p v-if="store.saveError" class="inline-error" role="alert">
-        {{ store.saveError }}
+    </div>
+
+    <form v-else class="create-setup-body" @submit.prevent="save">
+      <div class="setup-scroll">
+        <fieldset :disabled="store.busy || iconBusy" class="setup-fields">
+          <div class="create-icon-row">
+            <div class="create-icon-preview">
+              <InstanceIcon
+                :loader="form.loader"
+                :icon="form.icon"
+                seed="new-instance"
+              />
+            </div>
+            <div class="create-icon-actions">
+              <input
+                ref="fileInput"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                class="visually-hidden"
+                tabindex="-1"
+                aria-label="Upload instance icon"
+                @change="chooseUpload"
+              />
+              <button
+                type="button"
+                class="icon-action"
+                @click="fileInput?.click()"
+              >
+                <Upload :size="16" />{{ iconBusy ? "Reading…" : "Upload" }}
+              </button>
+              <button type="button" class="icon-action" @click="randomize">
+                <Shuffle :size="16" />Randomize
+              </button>
+              <button
+                type="button"
+                class="icon-action"
+                :class="{ active: customizing }"
+                :aria-expanded="customizing"
+                aria-controls="icon-customization"
+                @click="customizing = !customizing"
+              >
+                <Palette :size="16" />Customize
+              </button>
+            </div>
+            <span class="icon-help"
+              >Make it yours.<small
+                >PNG, JPEG or WebP<br />Up to 5 MB</small
+              ></span
+            >
+          </div>
+          <section
+            v-if="customizing"
+            id="icon-customization"
+            class="icon-customizer"
+            aria-label="Customize instance icon"
+          >
+            <div role="group" aria-label="Icon colour">
+              <button
+                v-for="swatch in ICON_COLORS"
+                :key="swatch"
+                type="button"
+                class="icon-swatch"
+                :style="{ background: swatch }"
+                :aria-label="'Colour ' + swatch"
+                :aria-pressed="color === swatch"
+                @click="
+                  color = swatch;
+                  generateIcon();
+                "
+              >
+                <Check v-if="color === swatch" :size="16" />
+              </button>
+            </div>
+            <div role="group" aria-label="Icon shape">
+              <button
+                v-for="shape in [
+                  { id: 'cube', icon: Box, name: 'Cube' },
+                  { id: 'mountain', icon: Mountain, name: 'Mountain' },
+                  { id: 'moon', icon: Moon, name: 'Moon' },
+                ] as const"
+                :key="shape.id"
+                type="button"
+                class="icon-shape"
+                :aria-label="shape.name + ' icon'"
+                :aria-pressed="glyph === shape.id"
+                @click="
+                  glyph = shape.id;
+                  generateIcon();
+                "
+              >
+                <component :is="shape.icon" :size="18" />
+              </button>
+            </div>
+          </section>
+          <label class="setup-field"
+            >Name<input
+              ref="nameInput"
+              v-model="form.name"
+              aria-label="Instance name"
+              maxlength="80"
+              :placeholder="suggestedName"
+          /></label>
+          <fieldset class="setup-loader-field">
+            <legend>Loader</legend>
+            <div class="setup-pills" role="group" aria-label="Mod loader">
+              <button
+                v-for="loader in LOADERS"
+                :key="loader.id"
+                type="button"
+                :class="{ active: form.loader === loader.id }"
+                :aria-pressed="form.loader === loader.id"
+                @click="selectLoader(loader.id)"
+              >
+                <Check v-if="form.loader === loader.id" :size="15" />{{
+                  loader.name
+                }}
+              </button>
+            </div>
+          </fieldset>
+          <div class="setup-field">
+            <div class="setup-label-row">
+              <label for="game-version">Game version</label
+              ><label class="snapshot-choice"
+                ><input v-model="snapshots" type="checkbox" />Show
+                snapshots</label
+              >
+            </div>
+            <div class="setup-select">
+              <select
+                id="game-version"
+                v-model="versionChoice"
+                @change="selectVersion"
+              >
+                <option
+                  v-for="version in availableVersions"
+                  :key="version.id"
+                  :value="version.id"
+                >
+                  {{ version.id
+                  }}{{ version.type === "snapshot" ? " · Snapshot" : "" }}
+                </option>
+                <option value="__manual">
+                  Enter version manually…
+                </option></select
+              ><ChevronDown :size="16" />
+            </div>
+            <input
+              v-if="manualVersion"
+              v-model="form.minecraftVersion"
+              aria-label="Minecraft version"
+              required
+              maxlength="40"
+              placeholder="e.g. 1.21.1 or 24w14a"
+            />
+            <small v-if="versionsLoading">Loading Minecraft versions…</small>
+            <small v-else-if="versionsError" class="version-warning"
+              >{{ versionsError }}
+              <button type="button" @click="loadVersions">Retry</button></small
+            >
+          </div>
+          <fieldset v-if="form.loader !== 'vanilla'" class="setup-loader-field">
+            <legend>Loader version</legend>
+            <div class="setup-pills" role="group" aria-label="Loader version">
+              <button
+                v-for="policy in [
+                  { id: 'stable', name: 'Stable' },
+                  { id: 'latest', name: 'Latest' },
+                  { id: 'other', name: 'Other' },
+                ]"
+                :key="policy.id"
+                type="button"
+                :class="{ active: loaderPolicy === policy.id }"
+                :aria-pressed="loaderPolicy === policy.id"
+                @click="loaderPolicy = policy.id"
+              >
+                <Check v-if="loaderPolicy === policy.id" :size="15" />{{
+                  policy.name
+                }}
+              </button>
+            </div>
+            <label v-if="loaderPolicy === 'other'" class="custom-loader-version"
+              >Loader version number<input
+                v-model="customLoaderVersion"
+                required
+                maxlength="80"
+                placeholder="Enter an exact loader version"
+            /></label>
+            <small class="loader-policy-help"
+              >Saved as a setup preference. Compatibility will be checked when
+              installation is available.</small
+            >
+          </fieldset>
+          <details class="create-advanced">
+            <summary>
+              Memory allocation
+              <span>{{ (form.memoryMb / 1024).toFixed(2) }} GB</span>
+            </summary>
+            <label class="setup-field"
+              >Memory allocation (MB)<input
+                v-model.number="form.memoryMb"
+                aria-label="Memory allocation (MB)"
+                type="number"
+                min="512"
+                max="65536"
+                step="256"
+                required
+            /></label>
+          </details>
+        </fieldset>
+      </div>
+      <p v-if="duplicate" class="create-footnote">
+        Copies settings and the icon. Worlds and files are not copied.
       </p>
-      <div class="dialog-actions">
+      <p v-if="error || store.saveError" class="inline-error" role="alert">
+        {{ error || store.saveError }}
+      </p>
+      <footer class="create-actions">
         <button
+          v-if="!props.instance"
           type="button"
           class="button secondary"
-          :disabled="store.busy"
+          :disabled="store.busy || iconBusy"
+          @click="back"
+        >
+          <ArrowLeft :size="16" />Back
+        </button>
+        <button
+          v-else
+          type="button"
+          class="button secondary"
+          :disabled="store.busy || iconBusy"
           @click="emit('close')"
         >
-          Cancel</button
-        ><button class="button primary" :disabled="store.busy">
-          {{
+          Cancel
+        </button>
+        <button class="button primary" :disabled="store.busy || iconBusy">
+          <Plus v-if="!edit && !store.busy" :size="16" />{{
             store.busy ? "Saving…" : edit ? "Save changes" : "Create instance"
           }}
         </button>
-      </div>
+      </footer>
     </form>
   </dialog>
 </template>
+
+<style src="./instance-dialog.css"></style>

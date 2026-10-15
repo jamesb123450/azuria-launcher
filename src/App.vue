@@ -99,7 +99,10 @@ onMounted(() => {
           :aria-label="'Select ' + item.name"
           :title="item.name"
           @click="store.selectedId = item.id"
-          ><InstanceIcon :loader="item.loader" :seed="item.id"
+          ><InstanceIcon
+            :loader="item.loader"
+            :seed="item.id"
+            :icon="item.icon"
         /></RouterLink>
       </div>
       <div class="sidebar-bottom">

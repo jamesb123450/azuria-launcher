@@ -12,12 +12,18 @@ use uuid::Uuid;
 pub enum Loader {
     Vanilla,
     Fabric,
+    NeoForge,
+    Forge,
+    Quilt,
 }
 impl Loader {
     fn value(&self) -> &'static str {
         match self {
             Self::Vanilla => "vanilla",
             Self::Fabric => "fabric",
+            Self::NeoForge => "neoforge",
+            Self::Forge => "forge",
+            Self::Quilt => "quilt",
         }
     }
 }
@@ -28,6 +34,10 @@ pub struct InstanceInput {
     pub minecraft_version: String,
     pub loader: Loader,
     pub memory_mb: u32,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub loader_version: Option<String>,
 }
 impl InstanceInput {
     pub fn validate(&self) -> Result<(), String> {
@@ -50,6 +60,30 @@ impl InstanceInput {
         if !(512..=65536).contains(&self.memory_mb) || self.memory_mb & 255 != 0 {
             return Err("Memory must be 512–65536 MB in increments of 256 MB.".into());
         }
+        if let Some(icon) = &self.icon {
+            let data = icon
+                .strip_prefix("data:image/png;base64,")
+                .ok_or("Choose a valid PNG instance icon.")?;
+            if icon.len() > 131072
+                || !data.starts_with("iVBORw0KGgo")
+                || !data
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || b"+/=".contains(&c))
+            {
+                return Err("Choose a valid PNG instance icon.".into());
+            }
+        }
+        if let Some(version) = &self.loader_version {
+            if version.is_empty()
+                || version.len() > 80
+                || !version.as_bytes()[0].is_ascii_alphanumeric()
+                || !version
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || b"._+-".contains(&c))
+            {
+                return Err("Enter a valid loader version.".into());
+            }
+        }
         Ok(())
     }
 }
@@ -61,6 +95,10 @@ pub struct Instance {
     pub minecraft_version: String,
     pub loader: Loader,
     pub memory_mb: u32,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub loader_version: Option<String>,
     pub favorite: bool,
     pub created_at: i64,
 }
@@ -97,6 +135,9 @@ fn row_instance(row: &rusqlite::Row<'_>) -> rusqlite::Result<Instance> {
     let loader = match loader.as_str() {
         "vanilla" => Loader::Vanilla,
         "fabric" => Loader::Fabric,
+        "neoforge" => Loader::NeoForge,
+        "forge" => Loader::Forge,
+        "quilt" => Loader::Quilt,
         _ => return Err(rusqlite::Error::InvalidQuery),
     };
     Ok(Instance {
@@ -107,6 +148,8 @@ fn row_instance(row: &rusqlite::Row<'_>) -> rusqlite::Result<Instance> {
         memory_mb: row.get(4)?,
         favorite: row.get(5)?,
         created_at: row.get(6)?,
+        icon: row.get(7)?,
+        loader_version: row.get(8)?,
     })
 }
 impl Store {
@@ -132,7 +175,7 @@ impl Store {
         let version: i64 = conn
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .map_err(error)?;
-        if version > 2 {
+        if version > 3 {
             return Err(
                 "This database was created by a newer Azuria version. Upgrade the launcher.".into(),
             );
@@ -158,6 +201,19 @@ impl Store {
             )
             .map_err(error)?;
         }
+        if version < 3 {
+            conn.execute_batch("BEGIN IMMEDIATE;
+              ALTER TABLE instances RENAME TO instances_v2;
+              CREATE TABLE instances (id TEXT PRIMARY KEY, name TEXT NOT NULL, minecraft_version TEXT NOT NULL,
+                loader TEXT NOT NULL CHECK(loader IN ('vanilla','fabric','neoforge','forge','quilt')),
+                memory_mb INTEGER NOT NULL CHECK(memory_mb BETWEEN 512 AND 65536 AND memory_mb % 256 = 0),
+                favorite INTEGER NOT NULL DEFAULT 0 CHECK(favorite IN (0,1)), created_at INTEGER NOT NULL,
+                icon TEXT, loader_version TEXT);
+              INSERT INTO instances (id,name,minecraft_version,loader,memory_mb,favorite,created_at)
+                SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM instances_v2;
+              DROP TABLE instances_v2;
+              PRAGMA user_version=3; COMMIT;").map_err(error)?;
+        }
         let mut store = Self {
             conn,
             root,
@@ -168,13 +224,13 @@ impl Store {
     }
     pub fn list(&mut self) -> Result<Vec<Instance>, String> {
         self.recover_deletions()?;
-        let mut stmt = self.conn.prepare("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM instances ORDER BY created_at DESC,id").map_err(error)?;
+        let mut stmt = self.conn.prepare("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version FROM instances ORDER BY created_at DESC,id").map_err(error)?;
         let rows = stmt.query_map([], row_instance).map_err(error)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(error)
     }
     fn get(&self, id: &str) -> Result<Instance, String> {
         valid_id(id)?;
-        self.conn.query_row("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM instances WHERE id=?1", [id], row_instance).map_err(|_| "Instance no longer exists.".into())
+        self.conn.query_row("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version FROM instances WHERE id=?1", [id], row_instance).map_err(|_| "Instance no longer exists.".into())
     }
     pub fn create(&mut self, input: InstanceInput) -> Result<Instance, String> {
         self.recover_deletions()?;
@@ -187,7 +243,7 @@ impl Store {
         let path = self.root.join("instances").join(&id);
         // IDs, never user-provided names, determine disk paths.
         fs::create_dir(&path).map_err(error)?;
-        let result = self.conn.execute("INSERT INTO instances (id,name,minecraft_version,loader,memory_mb,created_at) VALUES (?1,?2,?3,?4,?5,?6)", params![id,input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,created_at]);
+        let result = self.conn.execute("INSERT INTO instances (id,name,minecraft_version,loader,memory_mb,created_at,icon,loader_version) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)", params![id,input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,created_at,input.icon,input.loader_version]);
         if let Err(e) = result {
             let _ = fs::remove_dir(&path);
             return Err(error(e));
@@ -198,7 +254,7 @@ impl Store {
         self.recover_deletions()?;
         input.validate()?;
         self.get(id)?;
-        self.conn.execute("UPDATE instances SET name=?1,minecraft_version=?2,loader=?3,memory_mb=?4 WHERE id=?5", params![input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,id]).map_err(error)?;
+        self.conn.execute("UPDATE instances SET name=?1,minecraft_version=?2,loader=?3,memory_mb=?4,icon=?6,loader_version=?7 WHERE id=?5", params![input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,id,input.icon,input.loader_version]).map_err(error)?;
         self.get(id)
     }
     pub fn favorite(&mut self, id: &str) -> Result<Instance, String> {
@@ -342,6 +398,8 @@ mod tests {
             minecraft_version: "1.21.1".into(),
             loader: Loader::Fabric,
             memory_mb: 4096,
+            icon: None,
+            loader_version: None,
         }
     }
     #[test]
@@ -530,7 +588,11 @@ mod tests {
         let item = store.create(input()).unwrap();
         store
             .conn
-            .execute_batch("DROP TABLE deletions; PRAGMA user_version=1;")
+            .execute_batch("DROP TABLE deletions;
+                ALTER TABLE instances RENAME TO current_instances;
+                CREATE TABLE instances (id TEXT PRIMARY KEY, name TEXT NOT NULL, minecraft_version TEXT NOT NULL, loader TEXT NOT NULL CHECK(loader IN ('vanilla','fabric')), memory_mb INTEGER NOT NULL, favorite INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
+                INSERT INTO instances SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM current_instances;
+                DROP TABLE current_instances; PRAGMA user_version=1;")
             .unwrap();
         drop(store);
         let store = Store::open(dir.path().into()).unwrap();
@@ -540,8 +602,91 @@ mod tests {
                 .conn
                 .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
                 .unwrap(),
-            2
+            3
         );
+    }
+
+    #[test]
+    fn schema_two_migration_preserves_pending_deletion_recovery() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+        let mut store = Store::open(root.clone()).unwrap();
+        let item = store.create(input()).unwrap();
+        let trash_name = store.begin_delete(&item.id).unwrap();
+        let source = root.join("instances").join(&item.id);
+        fs::write(source.join("world.txt"), "retained").unwrap();
+        fs::rename(&source, root.join("trash").join(&trash_name)).unwrap();
+        store.conn.execute_batch("ALTER TABLE instances RENAME TO current_instances;
+            CREATE TABLE instances (id TEXT PRIMARY KEY, name TEXT NOT NULL, minecraft_version TEXT NOT NULL,
+                loader TEXT NOT NULL CHECK(loader IN ('vanilla','fabric')), memory_mb INTEGER NOT NULL,
+                favorite INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
+            INSERT INTO instances SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM current_instances;
+            DROP TABLE current_instances; PRAGMA user_version=2;").unwrap();
+        drop(store);
+        let store = Store::open(root).unwrap();
+        let saved = store.get(&item.id).unwrap();
+        assert_eq!(saved.name, item.name);
+        assert!(saved.icon.is_none());
+        assert!(saved.loader_version.is_none());
+        assert_eq!(
+            fs::read_to_string(source.join("world.txt")).unwrap(),
+            "retained"
+        );
+    }
+
+    #[test]
+    fn custom_icons_and_loader_preferences_survive_edit_reopen_and_removal() {
+        let dir = tempfile::tempdir().unwrap();
+        for loader in [
+            Loader::Vanilla,
+            Loader::Fabric,
+            Loader::NeoForge,
+            Loader::Forge,
+            Loader::Quilt,
+        ] {
+            let mut store = Store::open(dir.path().into()).unwrap();
+            let mut data = input();
+            data.loader = loader.clone();
+            data.icon = Some("data:image/png;base64,iVBORw0KGgoAAA==".into());
+            data.loader_version = Some("latest".into());
+            let item = store.create(data.clone()).unwrap();
+            assert_eq!(item.loader, loader);
+            data.loader_version = Some("0.16.10+build.1".into());
+            store.update(&item.id, data.clone()).unwrap();
+            drop(store);
+            let mut store = Store::open(dir.path().into()).unwrap();
+            let saved = store.get(&item.id).unwrap();
+            assert_eq!(saved.icon, data.icon);
+            assert_eq!(saved.loader_version, data.loader_version);
+            store.delete(&item.id).unwrap();
+            let json: String = store
+                .conn
+                .query_row(
+                    "SELECT instance_json FROM deletions WHERE id=?1",
+                    [&item.id],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(
+                serde_json::from_str::<Instance>(&json).unwrap().icon,
+                data.icon
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_oversized_or_unsafe_icons_and_loader_versions() {
+        let mut data = input();
+        data.icon = Some("data:image/svg+xml;base64,PHN2Zz4=".into());
+        assert!(data.validate().is_err());
+        data.icon = Some(format!(
+            "data:image/png;base64,iVBORw0KGgo{}",
+            "A".repeat(131072)
+        ));
+        assert!(data.validate().is_err());
+        data.icon = None;
+        data.loader_version = Some("../loader".into());
+        assert!(data.validate().is_err());
     }
 
     #[test]

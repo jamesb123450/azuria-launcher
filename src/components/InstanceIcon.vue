@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Loader } from "../types";
-const props = defineProps<{ loader?: Loader; seed?: string }>();
+const props = defineProps<{
+  loader?: Loader;
+  seed?: string;
+  icon?: string | null;
+}>();
 const palette = computed(() => {
   if (!props.seed) return props.loader === "fabric" ? 1 : 0;
   let hash = 0;
@@ -15,7 +19,11 @@ const palette = computed(() => {
     :class="['instance-symbol', loader ?? 'vanilla']"
     aria-hidden="true"
     :data-palette="palette"
-    ><svg viewBox="0 0 64 64" fill="none">
+    ><img v-if="icon" :src="icon" alt="" draggable="false" /><svg
+      v-else
+      viewBox="0 0 64 64"
+      fill="none"
+    >
       <path d="M32 7 55 20 32 34 9 20 32 7Z" fill="var(--cube-top)" />
       <path d="m9 20 23 14v25L9 45V20Z" fill="var(--cube-left)" />
       <path d="m32 34 23-14v25L32 59V34Z" fill="var(--cube-right)" />

@@ -22,3 +22,34 @@ describe("instance input boundaries", () => {
       expect(validateInput({ ...valid, memoryMb })).toBeTruthy();
   });
 });
+
+it("accepts every setup loader and rejects unsafe icon/version data", () => {
+  for (const loader of [
+    "vanilla",
+    "fabric",
+    "neoforge",
+    "forge",
+    "quilt",
+  ] as const) {
+    expect(
+      validateInput({
+        name: "World",
+        minecraftVersion: "1.21.1",
+        memoryMb: 4096,
+        loader,
+        loaderVersion: "stable",
+      }),
+    ).toBeNull();
+  }
+  const input = {
+    name: "World",
+    minecraftVersion: "1.21.1",
+    memoryMb: 4096,
+    loader: "fabric" as const,
+  };
+  expect(
+    validateInput({ ...input, icon: "data:image/svg+xml;base64,PHN2Zz4=" }),
+  ).toBeTruthy();
+  expect(validateInput({ ...input, loaderVersion: "../loader" })).toBeTruthy();
+  expect(validateInput({ ...input, loaderVersion: "" })).toBeTruthy();
+});

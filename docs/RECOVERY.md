@@ -37,4 +37,4 @@ There is no automatic restore command yet. To recover files without editing SQLi
 
 ## Schema compatibility
 
-This change migrates schema 1 to schema 2 without changing existing instances. Older builds reject schema 2; use the updated launcher to open it. Restoring an older application version requires its matching pre-migration data backup.
+The current build migrates schema 1 or 2 to schema 3, preserving existing instances and deletion records while adding icons and loader preferences. Older builds reject schema 3; use the updated launcher to open it. Restoring an older application version requires its matching pre-migration data backup.
