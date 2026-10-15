@@ -2,7 +2,7 @@
 
 A Windows-first Minecraft Java launcher in development, built with Vue, TypeScript, Tauri and Rust.
 
-Azuria brings Vanilla and Fabric instance settings into a local library, with a compact interface, pink and blue accents, and dark, light and system themes.
+Azuria brings Minecraft instance settings into a local library, with a compact interface, pink and blue accents, and dark, light and system themes.
 
 ![Azuria Launcher library in dark mode](docs/previews/play-dark.webp)
 
@@ -10,11 +10,13 @@ _Interface preview with example instances. New installations start with an empty
 
 ## Project status
 
-Azuria is an early development project. **Minecraft sign-in, game installation and launching are not available yet.** The current build establishes the desktop interface, local storage and update system.
+Azuria is an early development project. **Minecraft sign-in, game installation and launching are not available yet.** The current build establishes the desktop interface, local storage and update system. Modpack search, upload and import options are shown as unavailable.
 
 ### Available now
 
-- Create and edit instance settings for Vanilla and Fabric.
+- Create and edit instance settings for Vanilla, Fabric, NeoForge, Forge and Quilt.
+- Choose icons with upload, randomize and colour/shape customization.
+- Browse Minecraft versions, include snapshots, or enter a version manually.
 - Copy instance settings into a new, empty instance.
 - Search, sort, group and favourite instances.
 - Remove instances while retaining their files in local trash.
@@ -22,7 +24,7 @@ Azuria is an early development project. **Minecraft sign-in, game installation a
 - Save appearance preferences locally.
 - Check for and install signed updates in updater-enabled Windows builds.
 
-Instance version IDs are syntax-checked; availability is not checked against the Minecraft catalogue yet. Selecting Fabric stores a preference and does not install Fabric.
+The version picker reads Mojang’s public catalogue, with manual entry available offline. Manual version IDs are syntax-checked. Loader choices and Stable/Latest/custom loader versions are saved preferences; compatibility checks and installation are not implemented yet.
 
 ### Planned
 
