@@ -6,6 +6,7 @@ import {
   onMounted,
   reactive,
   ref,
+  watch,
 } from "vue";
 import {
   X,
@@ -19,7 +20,6 @@ import {
   Check,
   ArrowLeft,
   Plus,
-  ChevronDown,
   Mountain,
   Moon,
   Box,
@@ -28,6 +28,8 @@ import type { Instance, Loader } from "../types";
 import { DEFAULT_INPUT, LOADERS, loaderName, validateInput } from "../types";
 import { useLauncher } from "../stores/launcher";
 import InstanceIcon from "./InstanceIcon.vue";
+import VersionPicker from "./VersionPicker.vue";
+import { loaderVersions, type LoaderVersion } from "../lib/loader-versions";
 import {
   ICON_COLORS,
   ICON_GLYPHS,
@@ -64,6 +66,11 @@ const versions = ref<GameVersion[]>([{ id: "1.21.1", type: "release" }]);
 const versionsLoading = ref(false);
 const versionsError = ref("");
 const snapshots = ref(false);
+const allLoaderVersions = ref(false);
+const loaderChoices = ref<LoaderVersion[]>([]);
+const loaderLoading = ref(false);
+const loaderError = ref("");
+let loaderRequest = 0;
 const loaderPolicy = ref(
   form.loaderVersion && !["stable", "latest"].includes(form.loaderVersion)
     ? "other"
@@ -72,6 +79,81 @@ const loaderPolicy = ref(
 const customLoaderVersion = ref(
   loaderPolicy.value === "other" ? (form.loaderVersion ?? "") : "",
 );
+const loaderOptions = computed(() => {
+  const list = loaderChoices.value.filter(
+    (entry) =>
+      allLoaderVersions.value ||
+      entry.stable ||
+      entry.id === customLoaderVersion.value,
+  );
+  if (
+    customLoaderVersion.value &&
+    !list.some((entry) => entry.id === customLoaderVersion.value)
+  ) {
+    return [
+      {
+        value: customLoaderVersion.value,
+        label: customLoaderVersion.value,
+        detail: "Saved version",
+      },
+      ...list.map((entry) => ({
+        value: entry.id,
+        label: entry.id,
+        detail: entry.stable ? "" : "Pre-release",
+      })),
+    ];
+  }
+  return list.map((entry) => ({
+    value: entry.id,
+    label: entry.id,
+    detail: entry.stable ? "" : "Pre-release",
+  }));
+});
+watch(
+  () => [form.loader, form.minecraftVersion],
+  () => {
+    loaderRequest++;
+    loaderLoading.value = false;
+    loaderChoices.value = [];
+    loaderError.value = "";
+    customLoaderVersion.value = "";
+    loaderPolicy.value = "stable";
+    allLoaderVersions.value = false;
+  },
+);
+watch(loaderPolicy, (policy) => {
+  if (policy === "other") void loadLoaderVersions();
+});
+async function loadLoaderVersions() {
+  if (!form.minecraftVersion || form.loader === "vanilla") return;
+  const request = ++loaderRequest;
+  loaderLoading.value = true;
+  loaderError.value = "";
+  try {
+    const list = await loaderVersions(form.loader, form.minecraftVersion);
+    if (disposed || request !== loaderRequest) return;
+    loaderChoices.value = list;
+    if (!list.length)
+      loaderError.value =
+        "No loader versions are available for this Minecraft version.";
+    if (
+      customLoaderVersion.value &&
+      !list.some((entry) => entry.id === customLoaderVersion.value)
+    ) {
+      // Existing instances retain their stored version when the provider delists it.
+      return;
+    }
+    if (!customLoaderVersion.value)
+      customLoaderVersion.value =
+        list.find((entry) => entry.stable)?.id ?? list[0]?.id ?? "";
+  } catch {
+    if (!disposed && request === loaderRequest)
+      loaderError.value =
+        "Couldn’t load loader versions. Check your connection and retry.";
+  } finally {
+    if (!disposed && request === loaderRequest) loaderLoading.value = false;
+  }
+}
 const suggestedName = computed(
   () =>
     `${loaderName(form.loader)} ${form.minecraftVersion || versionChoice.value}`,
@@ -100,6 +182,7 @@ onMounted(async () => {
   if (step.value === "choose") setupButton.value?.focus();
   else nameInput.value?.focus();
   void loadVersions();
+  if (loaderPolicy.value === "other") void loadLoaderVersions();
 });
 onBeforeUnmount(() => {
   disposed = true;
@@ -140,7 +223,8 @@ async function back() {
   await nextTick();
   setupButton.value?.focus();
 }
-function selectVersion() {
+function selectVersion(value: string) {
+  versionChoice.value = value;
   versionTouched = true;
   manualVersion.value = versionChoice.value === "__manual";
   if (!manualVersion.value) form.minecraftVersion = versionChoice.value;
@@ -187,7 +271,21 @@ async function chooseUpload(event: Event) {
   }
 }
 async function save() {
-  if (iconBusy.value || store.busy) return;
+  if (
+    iconBusy.value ||
+    store.busy ||
+    (loaderPolicy.value === "other" && loaderLoading.value)
+  )
+    return;
+  if (
+    form.loader !== "vanilla" &&
+    loaderPolicy.value === "other" &&
+    !customLoaderVersion.value
+  ) {
+    error.value =
+      "Choose a loader version from the list, or select Stable or Latest.";
+    return;
+  }
   const input = {
     name: form.name.trim() || suggestedName.value,
     minecraftVersion: form.minecraftVersion,
@@ -421,31 +519,28 @@ async function save() {
           </fieldset>
           <div class="setup-field">
             <div class="setup-label-row">
-              <label for="game-version">Game version</label
-              ><label class="snapshot-choice"
-                ><input v-model="snapshots" type="checkbox" />Show
-                snapshots</label
-              >
+              <span>Game version</span>
             </div>
-            <div class="setup-select">
-              <select
-                id="game-version"
-                v-model="versionChoice"
-                @change="selectVersion"
-              >
-                <option
-                  v-for="version in availableVersions"
-                  :key="version.id"
-                  :value="version.id"
-                >
-                  {{ version.id
-                  }}{{ version.type === "snapshot" ? " · Snapshot" : "" }}
-                </option>
-                <option value="__manual">
-                  Enter version manually…
-                </option></select
-              ><ChevronDown :size="16" />
-            </div>
+            <VersionPicker
+              :model-value="versionChoice"
+              label="Game version"
+              :options="[
+                ...availableVersions.map((version) => ({
+                  value: version.id,
+                  label: version.id,
+                  detail:
+                    version.type === 'release' || version.type === 'selected'
+                      ? ''
+                      : version.type.replace('_', ' '),
+                })),
+                { value: '__manual', label: 'Enter version manually…' },
+              ]"
+              :show-all="snapshots"
+              all-label="Show all versions"
+              :disabled="store.busy || iconBusy"
+              @update:model-value="selectVersion"
+              @toggle-all="snapshots = !snapshots"
+            />
             <input
               v-if="manualVersion"
               v-model="form.minecraftVersion"
@@ -480,34 +575,37 @@ async function save() {
                 }}
               </button>
             </div>
-            <label v-if="loaderPolicy === 'other'" class="custom-loader-version"
-              >Loader version number<input
+            <div v-if="loaderPolicy === 'other'" class="custom-loader-version">
+              <VersionPicker
                 v-model="customLoaderVersion"
-                required
-                maxlength="80"
-                placeholder="Enter an exact loader version"
-            /></label>
+                label="Loader version number"
+                :options="loaderOptions"
+                :show-all="allLoaderVersions"
+                :disabled="loaderLoading || store.busy || iconBusy"
+                :placeholder="
+                  loaderLoading
+                    ? 'Loading loader versions…'
+                    : 'Select a loader version'
+                "
+                all-label="Show all versions"
+                @toggle-all="allLoaderVersions = !allLoaderVersions"
+              />
+              <small v-if="loaderLoading" role="status"
+                >Loading loader versions…</small
+              >
+              <small
+                v-else-if="loaderError"
+                class="version-warning"
+                role="alert"
+                >{{ loaderError }}
+                <button type="button" @click="loadLoaderVersions">Retry</button>
+              </small>
+            </div>
             <small class="loader-policy-help"
               >Saved as a setup preference. Compatibility will be checked when
               installation is available.</small
             >
           </fieldset>
-          <details class="create-advanced">
-            <summary>
-              Memory allocation
-              <span>{{ (form.memoryMb / 1024).toFixed(2) }} GB</span>
-            </summary>
-            <label class="setup-field"
-              >Memory allocation (MB)<input
-                v-model.number="form.memoryMb"
-                aria-label="Memory allocation (MB)"
-                type="number"
-                min="512"
-                max="65536"
-                step="256"
-                required
-            /></label>
-          </details>
         </fieldset>
       </div>
       <p v-if="duplicate" class="create-footnote">

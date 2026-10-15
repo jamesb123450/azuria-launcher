@@ -20,7 +20,9 @@ export function gameVersions(): Promise<GameVersion[]> {
             (entry: GameVersion) =>
               typeof entry.id === "string" &&
               /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,39}$/.test(entry.id) &&
-              ["release", "snapshot"].includes(entry.type),
+              ["release", "snapshot", "old_alpha", "old_beta"].includes(
+                entry.type,
+              ),
           )
           .map((entry: GameVersion) => ({
             id: entry.id,
