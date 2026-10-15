@@ -1,16 +1,15 @@
 ## Changes
 
-- Redesigned Create instance as a two-step menu using Azuria’s pink and blue theme.
-- Added a Custom setup screen with working icon upload, randomize, and colour/shape customization.
-- Added saved preferences for Vanilla, Fabric, NeoForge, Forge and Quilt, including Stable, Latest and custom loader versions.
-- Added Mojang’s Minecraft version catalogue, snapshot selection, and manual entry when offline.
-- Icons and setup preferences now persist through editing, copying and restarting.
-- Updated library labels, groups and filters for all five loader choices.
-- Kept the dialog header and action buttons visible while fields scroll at smaller window sizes.
-- Modpack search and the three modpack/import options remain disabled for a future update.
+- Replaced native version dropdowns with themed, scrollable menus using Azuria’s blue selection highlight.
+- Added Show all versions controls for snapshots and loader pre-releases.
+- Other now lists available loader versions instead of requiring manual entry.
+- Loader lists refresh for the selected Minecraft version, with retry controls when a provider is unavailable.
+- Added keyboard navigation and Escape dismissal for version menus.
+- Removed memory allocation from Create/Edit instance. Existing allocations are preserved; new instances keep the default.
+- Fixed initial-load dialog styling for consistent width, icon size and close-button appearance.
 
 ## Update information
 
-Install through Settings → Update & restart. This update migrates the local database to schema 3, preserving existing instances and deletion recovery. Older launcher builds cannot open the migrated database. Close Azuria and back up the application data directory before upgrading if you need the option to return to an older build.
+Install through Settings → Update & restart. This update uses the existing schema 3 database and does not require a new migration.
 
-This is a development release. Loader settings are saved preferences; compatibility checks, Microsoft sign-in, game installation, and Minecraft launching are not implemented yet.
+This is a development release. Loader settings remain saved preferences; Microsoft sign-in, game installation and Minecraft launching are not implemented yet.
