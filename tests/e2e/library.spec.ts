@@ -1,6 +1,47 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+async function chooseVersion(
+  page: Page,
+  value: string,
+  label = "Game version",
+) {
+  const trigger = page.getByRole("combobox", { name: label, exact: true });
+  await expect(trigger).toBeEnabled();
+  if ((await trigger.getAttribute("aria-expanded")) !== "true")
+    await trigger.click();
+  await page
+    .getByRole("option", {
+      name: value === "__manual" ? "Enter version manually…" : value,
+      exact: true,
+    })
+    .click();
+}
 test.use({ colorScheme: "dark" });
 test.beforeEach(async ({ page }) => {
+  await page.route("https://meta.fabricmc.net/**", (route) =>
+    route.fulfill({
+      json: [
+        { loader: { version: "0.16.10", stable: true } },
+        { loader: { version: "0.16.9", stable: true } },
+        { loader: { version: "0.17.0-beta.1", stable: false } },
+      ],
+    }),
+  );
+  await page.route("https://meta.quiltmc.org/**", (route) =>
+    route.fulfill({ json: [{ loader: { version: "0.26.0", stable: true } }] }),
+  );
+  await page.route("https://maven.minecraftforge.net/**", (route) =>
+    route.fulfill({
+      contentType: "application/xml",
+      body: "<metadata><versioning><versions><version>1.20.1-47.3.0</version><version>1.20.1-47.2.0</version><version>1.21.1-52.0.0</version></versions></versioning></metadata>",
+    }),
+  );
+  await page.route("https://maven.neoforged.net/**", (route) =>
+    route.fulfill({
+      contentType: "application/xml",
+      body: "<metadata><versioning><versions><version>21.1.100</version></versions></versioning></metadata>",
+    }),
+  );
+
   await page.route("https://piston-meta.mojang.com/**", (route) =>
     route.fulfill({
       json: {
@@ -25,9 +66,7 @@ test("persistent library lifecycle and honest launch state", async ({
     .click();
   await page.getByRole("button", { name: /Custom setup/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("Aurora");
-  await page
-    .getByRole("combobox", { name: "Game version", exact: true })
-    .selectOption("1.21.1");
+  await chooseVersion(page, "1.21.1");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Create instance", exact: true })
@@ -123,9 +162,7 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
       .click();
     await page.getByRole("button", { name: /Custom setup/ }).click();
     await page.getByLabel("Instance name", { exact: true }).fill(name);
-    await page
-      .getByRole("combobox", { name: "Game version", exact: true })
-      .selectOption("1.21.1");
+    await chooseVersion(page, "1.21.1");
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Create instance", exact: true })
@@ -187,9 +224,7 @@ test("library grouping and collapsed sections remain usable", async ({
       .click();
     await page.getByRole("button", { name: /Custom setup/ }).click();
     await page.getByLabel("Instance name", { exact: true }).fill(name);
-    await page
-      .getByRole("combobox", { name: "Game version", exact: true })
-      .selectOption("1.21.1");
+    await chooseVersion(page, "1.21.1");
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Create instance", exact: true })
@@ -232,9 +267,7 @@ test("failed saves retain input and unrelated errors do not block creation", asy
     .click();
   await page.getByRole("button", { name: /Custom setup/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("Retry world");
-  await page
-    .getByRole("combobox", { name: "Game version", exact: true })
-    .selectOption("1.21.1");
+  await chooseVersion(page, "1.21.1");
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
@@ -312,10 +345,9 @@ test("custom setup preserves selections, icons and all loader types", async ({
   await dialog.getByRole("button", { name: "Forge", exact: true }).click();
   await dialog.getByRole("button", { name: "Latest", exact: true }).click();
   await dialog.getByRole("button", { name: "Other", exact: true }).click();
-  await dialog.getByLabel("Loader version number").fill("47.3.0");
-  await dialog
-    .getByRole("combobox", { name: "Game version", exact: true })
-    .selectOption("1.20.1");
+  await chooseVersion(page, "1.20.1");
+  await dialog.getByRole("button", { name: "Other", exact: true }).click();
+  await chooseVersion(page, "47.3.0", "Loader version number");
   await dialog.getByRole("button", { name: "Back", exact: true }).click();
   await dialog.getByRole("button", { name: /Custom setup/ }).click();
   await expect(page.getByLabel("Instance name", { exact: true })).toHaveValue(
@@ -342,7 +374,9 @@ test("custom setup preserves selections, icons and all loader types", async ({
   await page
     .getByRole("button", { name: "Edit Moonlight", exact: true })
     .click();
-  await expect(page.getByLabel("Loader version number")).toHaveValue("47.3.0");
+  await expect(
+    page.getByRole("combobox", { name: "Loader version number", exact: true }),
+  ).toHaveText("47.3.0");
   await page.keyboard.press("Escape");
 
   for (const loader of ["NeoForge", "Quilt"]) {
@@ -398,19 +432,17 @@ test("icon uploads, manual versions and minimum-height light layout work", async
   });
   await expect(dialog.locator(".create-icon-preview img")).toBeVisible();
   await dialog.getByRole("button", { name: "Fabric", exact: true }).click();
-  await dialog.getByLabel("Show snapshots").check();
-  await expect(
-    dialog.locator("#game-version option[value='24w14a']"),
-  ).toHaveCount(1);
   await dialog
     .getByRole("combobox", { name: "Game version", exact: true })
-    .selectOption("__manual");
+    .click();
+  await page
+    .getByRole("button", { name: "Show all versions", exact: true })
+    .click();
+  await expect(page.getByRole("option", { name: /24w14a/ })).toBeVisible();
+  await chooseVersion(page, "__manual");
   await page.getByLabel("Minecraft version", { exact: true }).fill("24w14a");
   await page.getByLabel("Instance name", { exact: true }).fill("Uploaded");
-  await dialog.getByText("Memory allocation", { exact: false }).first().click();
-  await page
-    .getByLabel("Memory allocation (MB)", { exact: true })
-    .fill("32768");
+  await expect(dialog.getByText(/Memory allocation/)).toHaveCount(0);
   await expect(
     dialog.getByRole("button", { name: "Create instance", exact: true }),
   ).toBeInViewport();
@@ -430,10 +462,9 @@ test("icon uploads, manual versions and minimum-height light layout work", async
   await page
     .getByRole("button", { name: "Edit Uploaded", exact: true })
     .click();
-  await page.getByText("Memory allocation", { exact: false }).first().click();
   await expect(
-    page.getByLabel("Memory allocation (MB)", { exact: true }),
-  ).toHaveValue("32768");
+    page.getByRole("dialog").getByText(/Memory allocation/),
+  ).toHaveCount(0);
 });
 
 test("catalogue failures leave manual creation available", async ({ page }) => {
@@ -447,9 +478,7 @@ test("catalogue failures leave manual creation available", async ({ page }) => {
     .click();
   await page.getByRole("button", { name: /Custom setup/ }).click();
   await expect(page.getByText(/Couldn’t load the version list/)).toBeVisible();
-  await page
-    .getByRole("combobox", { name: "Game version", exact: true })
-    .selectOption("__manual");
+  await chooseVersion(page, "__manual");
   await page.getByLabel("Minecraft version", { exact: true }).fill("1.19.2");
   await page
     .getByRole("dialog")
@@ -458,4 +487,157 @@ test("catalogue failures leave manual creation available", async ({ page }) => {
   await expect(page.locator(".instance-card .instance-version")).toHaveText(
     "Vanilla 1.19.2",
   );
+});
+
+test("version menus support keyboard navigation, pre-releases and game-specific loaders", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Custom setup/ }).click();
+  const game = page.getByRole("combobox", {
+    name: "Game version",
+    exact: true,
+  });
+  await game.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(game).toHaveAttribute("aria-expanded", "true");
+  await page.screenshot({ path: "test-results/game-version-menu-dark.png" });
+  await page.keyboard.press("Escape");
+  await expect(game).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(game).toHaveText("1.20.1");
+
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Forge", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Other", exact: true })
+    .click();
+  const loader = page.getByRole("combobox", {
+    name: "Loader version number",
+    exact: true,
+  });
+  await expect(loader).toBeEnabled();
+  await loader.click();
+  await expect(
+    page.getByRole("option", { name: "47.2.0", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/loader-version-menu-dark.png" });
+  await page.keyboard.press("Escape");
+  await chooseVersion(page, "1.21.1");
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Stable", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Other", exact: true })
+    .click();
+  await expect(loader).toBeEnabled();
+  await loader.click();
+  await expect(
+    page.getByRole("option", { name: "52.0.0", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("option", { name: "47.3.0", exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Fabric", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Other", exact: true })
+    .click();
+  await expect(loader).toBeEnabled();
+  await loader.click();
+  await expect(page.getByRole("option", { name: /0.17.0-beta.1/ })).toHaveCount(
+    0,
+  );
+  await page
+    .getByRole("button", { name: "Show all versions", exact: true })
+    .click();
+  await page.getByRole("option", { name: /0.17.0-beta.1/ }).click();
+  await expect(loader).toContainText("0.17.0-beta.1");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  const stored = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("azuria-preview-v1")!).instances[0],
+  );
+  expect(stored.loaderVersion).toBe("0.17.0-beta.1");
+  expect(stored.memoryMb).toBe(4096);
+});
+
+test("loader catalogue errors are retryable and editing preserves existing memory", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(() =>
+    localStorage.setItem(
+      "azuria-preview-v1",
+      JSON.stringify({
+        settings: { theme: "light" },
+        instances: [
+          {
+            id: "saved",
+            name: "Existing",
+            minecraftVersion: "1.21.1",
+            loader: "fabric",
+            memoryMb: 32768,
+            favorite: false,
+            createdAt: Date.now(),
+          },
+        ],
+      }),
+    ),
+  );
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Edit Existing", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(/Memory allocation/)).toHaveCount(0);
+  await page.unroute("https://meta.fabricmc.net/**");
+  await page.route("https://meta.fabricmc.net/**", (route) => route.abort());
+  await dialog.getByRole("button", { name: "Other", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Couldn’t load loader versions",
+  );
+  await expect(
+    dialog.getByRole("textbox", { name: "Loader version number", exact: true }),
+  ).toHaveCount(0);
+  await page.unroute("https://meta.fabricmc.net/**");
+  await page.route("https://meta.fabricmc.net/**", (route) =>
+    route.fulfill({ json: [{ loader: { version: "0.16.10", stable: true } }] }),
+  );
+  await dialog.getByRole("button", { name: "Retry", exact: true }).click();
+  const picker = page.getByRole("combobox", {
+    name: "Loader version number",
+    exact: true,
+  });
+  await expect(picker).toBeEnabled();
+  await picker.click();
+  await page.screenshot({ path: "test-results/loader-version-menu-light.png" });
+  await page.getByRole("option", { name: "0.16.10", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "Save changes", exact: true })
+    .click();
+  const stored = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("azuria-preview-v1")!).instances[0],
+  );
+  expect(stored.memoryMb).toBe(32768);
+  expect(stored.loaderVersion).toBe("0.16.10");
 });

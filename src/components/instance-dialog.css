@@ -1,5 +1,5 @@
 /* Instance creation shares the shell palette in both light and dark appearance. */
-.create-dialog {
+.instance-dialog.create-dialog {
   width: 560px;
   padding: 0;
   max-height: calc(100dvh - 40px);
@@ -18,7 +18,7 @@
   font-size: 20px;
   letter-spacing: -0.55px;
 }
-.create-close {
+.create-dialog .create-close {
   border-radius: 50%;
   background: var(--panel-soft);
   border: 1px solid var(--border-strong);
@@ -139,7 +139,7 @@
   display: grid;
   place-items: center;
 }
-.create-icon-preview svg {
+.create-dialog .create-icon-preview svg {
   width: 86px;
   height: 86px;
 }
@@ -333,23 +333,6 @@
   color: var(--muted);
   font-size: 11px;
   margin-top: 13px;
-}
-.create-advanced {
-  border-top: 1px solid var(--border-strong);
-  padding-top: 14px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.create-advanced summary {
-  cursor: pointer;
-}
-.create-advanced summary span {
-  float: right;
-  color: var(--blue);
-}
-.create-advanced .setup-field {
-  font-size: 11px;
-  margin: 16px 0 0;
 }
 .create-actions {
   display: flex;
