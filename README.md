@@ -1,66 +1,116 @@
 # Azuria Launcher
 
-A Windows-first Minecraft Java launcher built with Vue 3, TypeScript, Tauri 2 and Rust. Pink and blue accents, a clear instance library, and dark/light/system themes.
+A Windows-first Minecraft Java launcher in development, built with Vue, TypeScript, Tauri and Rust.
 
-![Azuria launcher library with example instances](docs/previews/play-dark.webp)
+Azuria brings Vanilla and Fabric instance settings into a local library, with a compact interface, pink and blue accents, and dark, light and system themes.
 
-Design preview with example instances. The app uses your persisted library and does not seed demonstration profiles. See [design reference study and asset provenance](docs/DESIGN.md).
+![Azuria Launcher library in dark mode](docs/previews/play-dark.webp)
 
-## Current milestone: foundation
+_Interface preview with example instances. New installations start with an empty library._
 
-Working: instance creation, editing, copying **settings only**, favourites, search/filter/sort, recoverable removal, and saved appearance. The desktop uses a Rust-managed SQLite database and UUID-named instance folders. The browser preview uses separate browser storage.
+## Project status
 
-**Not yet implemented:** Microsoft authentication, Minecraft or Java downloads, actual game launch, Fabric installation, Modrinth/CurseForge integration, import/export, crash reporting, and auto-updates. Version identifiers are currently syntax-checked, not checked against an online catalogue. The Play button explains this limitation. There is no custom client in this project.
+Azuria is an early development project. **Minecraft sign-in, game installation and launching are not available yet.** The current build establishes the desktop interface, local storage and update system.
 
-## Run on Windows
+### Available now
 
-Install Node.js 24 LTS, Rust stable with the MSVC target, Visual Studio Build Tools with Desktop development with C++, and WebView2. See [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
+- Create and edit instance settings for Vanilla and Fabric.
+- Copy instance settings into a new, empty instance.
+- Search, sort, group and favourite instances.
+- Remove instances while retaining their files in local trash.
+- Recover interrupted removals automatically at startup.
+- Save appearance preferences locally.
+- Check for and install signed updates in updater-enabled Windows builds.
+
+Instance version IDs are syntax-checked; availability is not checked against the Minecraft catalogue yet. Selecting Fabric stores a preference and does not install Fabric.
+
+### Planned
+
+Microsoft authentication, verified Minecraft and Java downloads, game launching, Fabric installation, and Modrinth and CurseForge integration. See the [development plan](docs/PLAN.md) for the broader direction.
+
+## Development
+
+### Requirements
+
+- Windows with WebView2.
+- Node.js 24.
+- Current stable Rust (1.89 or newer).
+- Visual Studio Build Tools with **Desktop development with C++**.
+
+See the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for native build requirements.
+
+### Run the desktop app
 
 ```powershell
 npm ci
 npm run desktop:dev
 ```
 
-Build a development installer:
+### Run the browser preview
+
+```powershell
+npm ci
+npm run dev
+```
+
+Open [localhost:1420](http://localhost:1420). The preview stores its own data in the browser and does not share the desktop library or support desktop updates.
+
+### Build a Windows installer
 
 ```powershell
 npm run desktop:build
 ```
 
-The NSIS installer is created in `src-tauri/target/release/bundle/nsis/`. It is an unsigned development artifact, not a production release. Public distribution and signed updates are a later milestone.
+The NSIS installer is written to `src-tauri/target/release/bundle/nsis/`. Local builds are development installers and are not Windows Authenticode signed.
 
-Browser-only preview:
+## Architecture
 
-```powershell
-npm run dev
-```
+| Layer               | Technology                | Responsibility                                                |
+| ------------------- | ------------------------- | ------------------------------------------------------------- |
+| Interface           | Vue, TypeScript and Pinia | Instance library, settings and update controls                |
+| Desktop integration | Tauri                     | Native commands, window controls and updater                  |
+| Storage             | Rust and SQLite           | Validated instance settings, migrations and deletion recovery |
 
-Open http://localhost:1420. Preview data does not sync to the desktop application.
+Desktop data stays in the application's local data directory. Instance directories use generated UUIDs rather than user-entered names. There is no analytics or log-upload service in the current build.
 
-## Verification
+## Storage and recovery
+
+Removing an instance moves its files to a local trash directory. It does not permanently erase worlds or mods. Copying settings does not copy those files.
+
+A deletion journal records each removal. If the app closes before removal completes, the next startup restores the instance. Completed removals retain their settings and trash location in the database. Conflicting folders are left untouched and reported with recovery instructions.
+
+There is no restore interface yet. See [storage recovery](docs/RECOVERY.md) before attempting manual restoration. Back up the entire application data directory with Azuria closed, including the database, instance folders and trash.
+
+## Updates
+
+Updater-enabled Windows builds check for updates at startup. Installation starts only after selecting **Update & restart**. Downloads are verified against the public signing key bundled with the app.
+
+Update signatures and Windows Authenticode signing are separate: development installers can support verified updates while still appearing unsigned to Windows.
+
+GitHub Actions can publish signed development releases when explicitly enabled by the maintainer. See [update configuration](docs/UPDATES.md) for setup and release details.
+
+## Checks
 
 ```powershell
 npm run build
 npm test
 npx playwright install chromium
 npm run test:e2e
-cargo test --manifest-path crates/azuria-core/Cargo.toml
-cargo test --manifest-path src-tauri/Cargo.toml
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --locked --manifest-path crates/azuria-core/Cargo.toml
+cargo clippy --locked --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings
+cargo test --locked --manifest-path src-tauri/Cargo.toml
+cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-GitHub Actions runs frontend checks and builds/tests the desktop on Windows. Unsigned debug installer artifacts are attached to successful desktop jobs. Local `desktop:build` produces a release-profile installer. No releases are published automatically.
+GitHub Actions runs frontend checks and native Windows checks. Browser tests exercise the preview; real installation and update behaviour also require Windows smoke testing.
 
-## Storage and recovery
+## Further reading
 
-The root is Tauri’s platform-specific `app_local_data_dir()` for `com.azuria.launcher` (normally under Local AppData on Windows). It contains `azuria.sqlite3`, `instances/<UUID>/`, and `trash/<UUID>-<UUID>/`. Instance names never determine paths.
+- [Architecture](docs/ARCHITECTURE.md)
+- [Design and asset provenance](docs/DESIGN.md)
+- [External integrations](docs/INTEGRATIONS.md)
+- [Development plan](docs/PLAN.md)
 
-Removal moves an instance directory to trash before removing its database record. There is no restore UI yet: retain the trash folder when backing up the database. Copy settings creates an empty instance and does not copy saves or mods. Do not manually edit the SQLite database while Azuria is running.
+## Licence
 
-## Project decisions
-
-See [implementation plan](docs/PLAN.md), [architecture](docs/ARCHITECTURE.md) and [external dependencies](docs/INTEGRATIONS.md). No project licence has been chosen yet; public visibility would not by itself grant redistribution rights. A licence decision is required before public release.
-
-## In-app development updates
-
-The 0.2.1 desktop build includes signed in-app updates. See [update setup](docs/UPDATES.md) for the one-time signing secret and release configuration. Microsoft sign-in remains the next integration; it is not included yet.
+A project licence has not been selected. Dependency and asset licences remain applicable; see the linked provenance and integration documents.

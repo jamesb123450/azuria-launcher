@@ -132,8 +132,8 @@ async function save() {
         ></label
       >
       <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
-      <p v-if="store.error" class="inline-error" role="alert">
-        {{ store.error }}
+      <p v-if="store.saveError" class="inline-error" role="alert">
+        {{ store.saveError }}
       </p>
       <div class="dialog-actions">
         <button

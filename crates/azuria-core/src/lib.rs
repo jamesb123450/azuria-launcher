@@ -1,7 +1,7 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::{
-    fs,
+    fs::{self, File, OpenOptions},
     path::PathBuf,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -79,6 +79,8 @@ pub struct Settings {
 pub struct Store {
     conn: Connection,
     root: PathBuf,
+    // Released by the OS even after a crash; never remove the lock file.
+    _lock: File,
 }
 fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -109,6 +111,17 @@ fn row_instance(row: &rusqlite::Row<'_>) -> rusqlite::Result<Instance> {
 }
 impl Store {
     pub fn open(root: PathBuf) -> Result<Self, String> {
+        fs::create_dir_all(&root).map_err(error)?;
+        let storage_lock = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(root.join("storage.lock"))
+            .map_err(error)?;
+        storage_lock.try_lock().map_err(|e| {
+            format!("Could not lock launcher storage. Close other Azuria windows and retry: {e}")
+        })?;
         fs::create_dir_all(root.join("instances")).map_err(error)?;
         fs::create_dir_all(root.join("trash")).map_err(error)?;
         let conn = Connection::open(root.join("azuria.sqlite3")).map_err(error)?;
@@ -119,7 +132,7 @@ impl Store {
         let version: i64 = conn
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .map_err(error)?;
-        if version > 1 {
+        if version > 2 {
             return Err(
                 "This database was created by a newer Azuria version. Upgrade the launcher.".into(),
             );
@@ -131,9 +144,30 @@ impl Store {
               INSERT INTO settings VALUES ('theme','system');
               PRAGMA user_version=1; COMMIT;").map_err(error)?;
         }
-        Ok(Self { conn, root })
+        if version < 2 {
+            conn.execute_batch(
+                "BEGIN IMMEDIATE;
+              CREATE TABLE deletions (
+                id TEXT PRIMARY KEY,
+                trash_name TEXT NOT NULL UNIQUE,
+                instance_json TEXT NOT NULL,
+                had_files INTEGER NOT NULL CHECK(had_files IN (0,1)),
+                completed INTEGER NOT NULL DEFAULT 0 CHECK(completed IN (0,1))
+              );
+              PRAGMA user_version=2; COMMIT;",
+            )
+            .map_err(error)?;
+        }
+        let mut store = Self {
+            conn,
+            root,
+            _lock: storage_lock,
+        };
+        store.recover_deletions()?;
+        Ok(store)
     }
-    pub fn list(&self) -> Result<Vec<Instance>, String> {
+    pub fn list(&mut self) -> Result<Vec<Instance>, String> {
+        self.recover_deletions()?;
         let mut stmt = self.conn.prepare("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM instances ORDER BY created_at DESC,id").map_err(error)?;
         let rows = stmt.query_map([], row_instance).map_err(error)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(error)
@@ -143,6 +177,7 @@ impl Store {
         self.conn.query_row("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM instances WHERE id=?1", [id], row_instance).map_err(|_| "Instance no longer exists.".into())
     }
     pub fn create(&mut self, input: InstanceInput) -> Result<Instance, String> {
+        self.recover_deletions()?;
         input.validate()?;
         let id = Uuid::new_v4().to_string();
         let created_at = SystemTime::now()
@@ -160,34 +195,114 @@ impl Store {
         self.get(&id)
     }
     pub fn update(&mut self, id: &str, input: InstanceInput) -> Result<Instance, String> {
+        self.recover_deletions()?;
         input.validate()?;
         self.get(id)?;
         self.conn.execute("UPDATE instances SET name=?1,minecraft_version=?2,loader=?3,memory_mb=?4 WHERE id=?5", params![input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,id]).map_err(error)?;
         self.get(id)
     }
     pub fn favorite(&mut self, id: &str) -> Result<Instance, String> {
+        self.recover_deletions()?;
         self.get(id)?;
         self.conn
             .execute("UPDATE instances SET favorite=1-favorite WHERE id=?1", [id])
             .map_err(error)?;
         self.get(id)
     }
-    pub fn delete(&mut self, id: &str) -> Result<(), String> {
-        self.get(id)?;
-        let source = self.root.join("instances").join(id);
-        let target = self
+    // A committed journal entry survives interruption before the filesystem move.
+    fn begin_delete(&self, id: &str) -> Result<String, String> {
+        let item = self.get(id)?;
+        let trash_name = format!("{}-{}", id, Uuid::new_v4());
+        let had_files = self
             .root
-            .join("trash")
-            .join(format!("{}-{}", id, Uuid::new_v4()));
-        let moved = source.exists();
-        if moved {
-            fs::rename(&source, &target).map_err(error)?;
+            .join("instances")
+            .join(id)
+            .try_exists()
+            .map_err(error)?;
+        let metadata = serde_json::to_string(&item).map_err(error)?;
+        self.conn.execute(
+            "INSERT INTO deletions (id,trash_name,instance_json,had_files) VALUES (?1,?2,?3,?4)",
+            params![id, trash_name, metadata, had_files],
+        ).map_err(error)?;
+        Ok(trash_name)
+    }
+
+    fn recover_deletions(&mut self) -> Result<(), String> {
+        let pending = {
+            let mut stmt = self
+                .conn
+                .prepare("SELECT id,trash_name,had_files FROM deletions WHERE completed=0")
+                .map_err(error)?;
+            let rows = stmt
+                .query_map([], |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, bool>(2)?,
+                    ))
+                })
+                .map_err(error)?;
+            rows.collect::<Result<Vec<_>, _>>().map_err(error)?
+        };
+        for (id, trash_name, had_files) in pending {
+            valid_id(&id)?;
+            let suffix = trash_name
+                .strip_prefix(&format!("{id}-"))
+                .ok_or("Invalid deletion recovery path. Files have not been changed.")?;
+            valid_id(suffix)?;
+            let source = self.root.join("instances").join(&id);
+            let target = self.root.join("trash").join(&trash_name);
+            let recover = || -> Result<(), String> {
+                match (
+                    source.try_exists().map_err(error)?,
+                    target.try_exists().map_err(error)?,
+                ) {
+                    (false, true) => fs::rename(&target, &source).map_err(error)?,
+                    (true, true) => {
+                        return Err("Both folders exist; neither was overwritten.".into())
+                    }
+                    (false, false) if had_files => {
+                        return Err("Neither expected folder was found.".into())
+                    }
+                    _ => {}
+                }
+                self.conn
+                    .execute("DELETE FROM deletions WHERE id=?1 AND completed=0", [&id])
+                    .map_err(error)?;
+                Ok(())
+            };
+            recover().map_err(|e| format!(
+                "Could not restore interrupted removal of {id}: {e} Close Azuria and check {} and {}. Keep both folders and azuria.sqlite3, then retry.",
+                source.display(), target.display()
+            ))?;
         }
-        if let Err(e) = self.conn.execute("DELETE FROM instances WHERE id=?1", [id]) {
-            if moved {
-                fs::rename(&target, &source).map_err(|restore| format!("Database error: {e}. Files retained at {} because restoration failed: {restore}", target.display()))?;
+        Ok(())
+    }
+
+    pub fn delete(&mut self, id: &str) -> Result<(), String> {
+        // Retry recovery before starting any further removal.
+        self.recover_deletions()?;
+        let trash_name = self.begin_delete(id)?;
+        let source = self.root.join("instances").join(id);
+        let target = self.root.join("trash").join(&trash_name);
+        let result = (|| -> Result<(), String> {
+            if source.try_exists().map_err(error)? {
+                fs::rename(&source, &target).map_err(error)?;
             }
-            return Err(error(e));
+            // Record completion and remove the instance together. Completed journal
+            // entries retain settings and the trash destination for manual recovery.
+            let tx = self.conn.transaction().map_err(error)?;
+            tx.execute("DELETE FROM instances WHERE id=?1", [id])
+                .map_err(error)?;
+            tx.execute("UPDATE deletions SET completed=1 WHERE id=?1", [id])
+                .map_err(error)?;
+            tx.commit().map_err(error)?;
+            Ok(())
+        })();
+        if let Err(e) = result {
+            self.recover_deletions()
+                .map_err(|recovery| format!("Removal failed: {e}. {recovery}"))?;
+            return Err(format!("Removal failed; the instance was restored: {e}"));
         }
         Ok(())
     }
@@ -273,6 +388,162 @@ mod tests {
         assert!(store.delete("../outside").is_err());
         assert!(store.list().unwrap().is_empty());
     }
+    #[test]
+    fn interrupted_deletions_restore_files_and_settings() {
+        for moved in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let root = dir.path().to_path_buf();
+            let mut store = Store::open(root.clone()).unwrap();
+            let item = store.create(input()).unwrap();
+            let source = root.join("instances").join(&item.id);
+            fs::write(source.join("world.txt"), "world").unwrap();
+            let trash_name = store.begin_delete(&item.id).unwrap();
+            if moved {
+                fs::rename(&source, root.join("trash").join(&trash_name)).unwrap();
+            }
+            drop(store); // Simulate process exit at either interruption point.
+            let store = Store::open(root.clone()).unwrap();
+            assert_eq!(store.get(&item.id).unwrap().name, item.name);
+            assert_eq!(
+                fs::read_to_string(source.join("world.txt")).unwrap(),
+                "world"
+            );
+            assert_eq!(
+                store
+                    .conn
+                    .query_row("SELECT count(*) FROM deletions", [], |r| r.get::<_, i64>(0))
+                    .unwrap(),
+                0
+            );
+            drop(store);
+            assert!(Store::open(root).unwrap().get(&item.id).is_ok());
+        }
+    }
+
+    #[test]
+    fn database_failure_restores_the_moved_folder() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+        let mut store = Store::open(root.clone()).unwrap();
+        let item = store.create(input()).unwrap();
+        fs::write(
+            root.join("instances").join(&item.id).join("save.txt"),
+            "safe",
+        )
+        .unwrap();
+        store.conn.execute_batch("CREATE TRIGGER reject_delete BEFORE DELETE ON instances BEGIN SELECT RAISE(FAIL, 'blocked'); END;").unwrap();
+        assert!(store.delete(&item.id).unwrap_err().contains("restored"));
+        assert!(store.get(&item.id).is_ok());
+        assert_eq!(
+            fs::read_to_string(root.join("instances").join(&item.id).join("save.txt")).unwrap(),
+            "safe"
+        );
+        assert_eq!(fs::read_dir(root.join("trash")).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn recovery_conflicts_preserve_both_folders_and_can_be_retried() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+        let mut store = Store::open(root.clone()).unwrap();
+        let item = store.create(input()).unwrap();
+        let trash_name = store.begin_delete(&item.id).unwrap();
+        let trash = root.join("trash").join(&trash_name);
+        fs::create_dir(&trash).unwrap();
+        fs::write(trash.join("save.txt"), "retained").unwrap();
+        drop(store);
+        let failure = Store::open(root.clone()).err().unwrap();
+        assert!(failure.contains("Both folders exist"));
+        assert!(failure.contains(&trash.display().to_string()));
+        assert_eq!(
+            fs::read_to_string(trash.join("save.txt")).unwrap(),
+            "retained"
+        );
+        // Operator resolves conflict by removing the empty original directory.
+        fs::remove_dir(root.join("instances").join(&item.id)).unwrap();
+        let store = Store::open(root.clone()).unwrap();
+        assert!(store.get(&item.id).is_ok());
+        assert_eq!(
+            fs::read_to_string(root.join("instances").join(&item.id).join("save.txt")).unwrap(),
+            "retained"
+        );
+    }
+
+    #[test]
+    fn filesystem_failure_keeps_the_instance_and_supports_retry() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+        let mut store = Store::open(root.clone()).unwrap();
+        let item = store.create(input()).unwrap();
+        let original_trash = root.join("trash");
+        fs::remove_dir(&original_trash).unwrap();
+        fs::write(&original_trash, "not a directory").unwrap();
+        assert!(store.delete(&item.id).is_err());
+        assert!(store.get(&item.id).is_ok());
+        assert!(root.join("instances").join(&item.id).is_dir());
+        fs::remove_file(&original_trash).unwrap();
+        fs::create_dir(&original_trash).unwrap();
+        store.delete(&item.id).unwrap();
+        assert!(store.list().unwrap().is_empty());
+    }
+
+    #[test]
+    fn completed_deletion_is_not_restored_and_keeps_metadata() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+        let mut store = Store::open(root.clone()).unwrap();
+        let item = store.create(input()).unwrap();
+        store.delete(&item.id).unwrap();
+        drop(store);
+        let store = Store::open(root).unwrap();
+        assert!(store.get(&item.id).is_err());
+        let metadata: String = store
+            .conn
+            .query_row(
+                "SELECT instance_json FROM deletions WHERE completed=1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<Instance>(&metadata).unwrap().name,
+            item.name
+        );
+    }
+
+    #[test]
+    fn storage_lock_prevents_overlapping_recovery_and_is_released_on_close() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::open(dir.path().into()).unwrap();
+        assert!(Store::open(dir.path().into())
+            .err()
+            .unwrap()
+            .contains("Close other Azuria"));
+        drop(store);
+        assert!(Store::open(dir.path().into()).is_ok());
+    }
+
+    #[test]
+    fn version_one_database_is_migrated_without_changing_instances() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = Store::open(dir.path().into()).unwrap();
+        let item = store.create(input()).unwrap();
+        store
+            .conn
+            .execute_batch("DROP TABLE deletions; PRAGMA user_version=1;")
+            .unwrap();
+        drop(store);
+        let store = Store::open(dir.path().into()).unwrap();
+        assert_eq!(store.get(&item.id).unwrap().name, item.name);
+        assert_eq!(
+            store
+                .conn
+                .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            2
+        );
+    }
+
     #[test]
     fn settings_survive_reopen_and_future_schema_is_rejected() {
         let dir = tempfile::tempdir().unwrap();

@@ -197,3 +197,55 @@ test("library grouping and collapsed sections remain usable", async ({
   expect(icon!.width).toBeGreaterThan(30);
   expect(icon!.height).toBeGreaterThan(30);
 });
+
+test("failed saves retain input and unrelated errors do not block creation", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await page.getByLabel("Instance name", { exact: true }).fill("Retry world");
+  await page.getByLabel("Minecraft version", { exact: true }).fill("1.21.1");
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      Storage.prototype.setItem = original;
+      throw new Error("Storage temporarily unavailable");
+    };
+  });
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Storage temporarily unavailable",
+  );
+  await expect(page.getByLabel("Instance name", { exact: true })).toHaveValue(
+    "Retry world",
+  );
+  await dialog
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      Storage.prototype.setItem = original;
+      throw new Error("Favourite temporarily unavailable");
+    };
+  });
+  await page
+    .getByRole("button", { name: "Favourite Retry world", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Favourite temporarily unavailable",
+  );
+  const create = page.getByRole("button", {
+    name: "Create instance",
+    exact: true,
+  });
+  await expect(create).toBeEnabled();
+  await create.click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toHaveCount(0);
+});

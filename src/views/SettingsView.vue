@@ -47,6 +47,16 @@ const themes: {
         <p class="muted">Pink and blue, in whichever light you prefer.</p>
       </div>
     </div>
+    <div v-if="store.settingsError">
+      <p role="alert" class="inline-error">{{ store.settingsError }}</p>
+      <button
+        class="button secondary"
+        :disabled="store.loading || store.busy"
+        @click="store.init"
+      >
+        Retry appearance settings
+      </button>
+    </div>
     <div class="theme-options">
       <button
         v-for="theme in themes"
@@ -56,7 +66,7 @@ const themes: {
           { active: store.settings.theme === theme.value },
         ]"
         :aria-pressed="store.settings.theme === theme.value"
-        :disabled="store.loading || store.busy"
+        :disabled="store.loading || store.busy || !store.settingsReady"
         @click="store.theme(theme.value)"
       >
         <span :class="['theme-preview', theme.value]" aria-hidden="true"
