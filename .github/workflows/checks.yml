@@ -98,7 +98,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = "v$env:AZURIA_RELEASE_VERSION"
-          gh release create $tag --repo $env:AZURIA_RELEASE_REPOSITORY --draft --target $env:AZURIA_RELEASE_COMMIT --title "Azuria $env:AZURIA_RELEASE_VERSION" --notes "Development build. Microsoft sign-in and Minecraft launch are still being implemented."
+          gh release create $tag --repo $env:AZURIA_RELEASE_REPOSITORY --draft --target $env:AZURIA_RELEASE_COMMIT --title "Azuria $env:AZURIA_RELEASE_VERSION" --notes-file docs/RELEASE_NOTES.md
           if ($LASTEXITCODE -ne 0) { throw "Could not create draft release" }
           $assets = Get-ChildItem src-tauri/target/release/bundle/nsis -File | Where-Object { $_.Name -match '\.exe(\.sig)?$|^latest\.json$' } | ForEach-Object { $_.FullName }
           gh release upload $tag @assets --repo $env:AZURIA_RELEASE_REPOSITORY

@@ -44,6 +44,7 @@ it("publishes matching safe filenames without changing signed bytes", async () =
   const installer = decodeURIComponent(
     basename(new URL(platform.url).pathname),
   );
+  expect(manifest.notes).toContain("Interrupted instance removals");
   expect(installer).toMatch(/^[A-Za-z0-9_.-]+$/);
   expect(await readdir(folder)).toContain(installer);
   expect(await readFile(join(folder, installer))).toEqual(payload);
