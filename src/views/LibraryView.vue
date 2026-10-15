@@ -109,6 +109,7 @@ function toggleGroup(key: string) {
   collapsed.value = next;
 }
 function open(instance?: Instance, copy = false) {
+  store.saveError = "";
   editing.value = instance;
   duplicate.value = copy;
   showDialog.value = true;
@@ -125,6 +126,7 @@ function created(item: Instance) {
 }
 let deletionFocus: HTMLElement | null = null;
 async function confirmDelete(item: Instance) {
+  store.deleteError = "";
   deletionFocus = document.activeElement as HTMLElement;
   deleting.value = item;
   deleteDialog.value?.showModal();
@@ -188,7 +190,7 @@ onBeforeUnmount(closeDelete);
             <button
               class="icon-button"
               :aria-label="'Manage ' + item.name"
-              :disabled="store.busy"
+              :disabled="store.busy || store.loading || !store.libraryReady"
               @click="open(item)"
             >
               <SlidersHorizontal :size="16" />
@@ -240,7 +242,7 @@ onBeforeUnmount(closeDelete);
           ></label>
           <button
             class="button primary"
-            :disabled="store.loading || store.busy || !!store.error"
+            :disabled="store.loading || store.busy || !store.libraryReady"
             @click="open()"
           >
             <Plus :size="17" /> Create instance
@@ -303,13 +305,10 @@ onBeforeUnmount(closeDelete);
         <div v-if="store.loading" class="empty-state" role="status">
           Opening your library…
         </div>
-        <div
-          v-else-if="store.error && !store.instances.length"
-          class="empty-state"
-        >
+        <div v-else-if="store.loadError" class="empty-state">
           <div>
             <h3>We couldn’t open your library.</h3>
-            <p class="muted">Resolve the storage error, then try again.</p>
+            <p class="muted" role="alert">{{ store.loadError }}</p>
           </div>
           <button class="button secondary" @click="store.init">Retry</button>
         </div>
@@ -396,7 +395,7 @@ onBeforeUnmount(closeDelete);
                   (item.favorite ? 'Unfavourite ' : 'Favourite ') + item.name
                 "
                 :aria-pressed="item.favorite"
-                :disabled="store.busy"
+                :disabled="store.busy || store.loading || !store.libraryReady"
                 @click="store.favorite(item.id)"
               >
                 <Star
@@ -416,21 +415,27 @@ onBeforeUnmount(closeDelete);
                   <button
                     class="icon-button"
                     :aria-label="'Edit ' + item.name"
-                    :disabled="store.busy"
+                    :disabled="
+                      store.busy || store.loading || !store.libraryReady
+                    "
                     @click="open(item)"
                   >
                     <SlidersHorizontal :size="14" /></button
                   ><button
                     class="icon-button"
                     :aria-label="'Copy settings for ' + item.name"
-                    :disabled="store.busy"
+                    :disabled="
+                      store.busy || store.loading || !store.libraryReady
+                    "
                     @click="open(item, true)"
                   >
                     <Copy :size="14" /></button
                   ><button
                     class="icon-button danger"
                     :aria-label="'Delete ' + item.name"
-                    :disabled="store.busy"
+                    :disabled="
+                      store.busy || store.loading || !store.libraryReady
+                    "
                     @click="confirmDelete(item)"
                   >
                     <Trash2 :size="14" />
@@ -525,20 +530,20 @@ onBeforeUnmount(closeDelete);
       This removes the instance from your library. Desktop instance files are
       moved to Azuria’s trash folder, not permanently erased.
     </p>
-    <p v-if="store.error" role="alert" class="inline-error">
-      {{ store.error }}
+    <p v-if="store.deleteError" role="alert" class="inline-error">
+      {{ store.deleteError }}
     </p>
     <div class="dialog-actions">
       <button
         ref="deleteCancel"
         class="button secondary"
-        :disabled="store.busy"
+        :disabled="store.busy || store.loading || !store.libraryReady"
         @click="closeDelete"
       >
         Keep instance</button
       ><button
         class="button danger-button"
-        :disabled="store.busy"
+        :disabled="store.busy || store.loading || !store.libraryReady"
         @click="remove"
       >
         {{ store.busy ? "Removing…" : "Remove instance" }}
