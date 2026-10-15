@@ -53,7 +53,7 @@ user's real desktop library. Microsoft sign-in and game launch remain pending.
 
 Final artwork prompt: “An original in-game screenshot-like panoramic voxel world with authentic small square grass blocks, a wide winding river, densely wooded pine valley, tall block-built mountains on the right, distant pale snow peaks, and pink cherry trees beside the water. Cinematic early morning golden sunlight from the upper right, cool blue atmospheric mist, natural water reflections and detailed voxel foliage. Wide approximately 21:9 composition with horizon in the upper third and a darker lower-left riverbank for interface text. Restrained natural pink/blue accents. No characters, buildings, text, logos, UI or watermark.”
 
-Instance cube icons and the Azuria mark are original code-native SVG geometry. Inter’s OFL licence is preserved in `docs/FONT-LICENSE.txt`; the bundled Latin font avoids runtime font-service requests.
+Instance cube icons use original code-native geometry. The application icon and header mark use the project owner’s supplied `AzuriaPinkA.png` artwork. Tauri’s icon generator fits the image onto a square transparent canvas without cropping or stretching, then produces the Windows ICO/PNG assets and browser branding sizes. Inter’s OFL licence is preserved in `docs/FONT-LICENSE.txt`; the bundled Latin font avoids runtime font-service requests.
 
 ## Verification
 
