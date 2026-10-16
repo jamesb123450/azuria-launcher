@@ -90,6 +90,11 @@ test("discovery fits the minimum desktop size in both themes", async ({
       .first()
       .boundingBox();
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(900);
+    const sidebar = await page
+      .getByRole("complementary", { name: "Discovery filters" })
+      .boundingBox();
+    expect(sidebar!.x).toBeGreaterThan(bounds!.x + bounds!.width);
+    expect(sidebar!.x + sidebar!.width).toBeLessThanOrEqual(900);
     await expect(
       page.getByRole("combobox", { name: "Sort projects" }),
     ).toBeVisible();

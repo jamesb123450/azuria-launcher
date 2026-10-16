@@ -61,6 +61,6 @@ Production build and TypeScript checking; existing instance-lifecycle and theme/
 
 ## Discover catalogue preview
 
-The user-supplied discovery reference informed the category tabs, search and sorting controls, compact project rows, tags and right-aligned install/metadata area. Azuria retains its pink/blue palette and adds a filter sidebar, original CSS gradient icons, theme-aware surfaces and a quieter layout. No provider logos or project artwork were copied.
+The user-supplied discovery reference informed the category tabs, search and sorting controls, compact project rows, tags and right-aligned install/metadata area. Azuria retains its pink/blue palette and adds a separate right-hand filter panel, original CSS gradient icons, theme-aware surfaces and a quieter layout. No provider logos or project artwork were copied.
 
 `src/lib/discover.ts` contains fictional catalogue fixtures, explicitly identified in the UI. Search, filters, sort order and pagination operate locally; disabled install buttons do not download files or imply a working integration. The four content types are modpacks, mods, datapacks and resource packs. Discover has its own `/discover` route; the help button still opens the development roadmap.
