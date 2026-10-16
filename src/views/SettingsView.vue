@@ -34,9 +34,8 @@ const themes: {
 <template>
   <section class="page-heading">
     <div>
-      <span class="eyebrow">PREFERENCES</span>
       <h1>Settings</h1>
-      <p class="muted">Configure your launcher.</p>
+      <p class="muted">Account, appearance and updates.</p>
     </div>
   </section>
   <AccountPanel />
@@ -96,7 +95,7 @@ const themes: {
       analytics or upload logs.
     </p>
     <RouterLink class="text-link" to="/roadmap"
-      >View the development roadmap →</RouterLink
+      >View development status</RouterLink
     >
   </section>
 </template>

@@ -10,25 +10,25 @@ const stages = [
     status: "This build",
   },
   {
-    title: "From library to launch",
+    title: "Game installation & launching",
     description:
       "Live account verification, Minecraft downloads, Java setup and a real Vanilla launch.",
     status: "Next",
   },
   {
-    title: "Make it your own",
+    title: "Fabric & modded instances",
     description:
       "Fabric installation, compatible mods, resource packs and shaders.",
     status: "Planned",
   },
   {
-    title: "Find your next favourite",
+    title: "Modpack discovery",
     description:
       "Modrinth and CurseForge discovery, dependencies and content updates.",
     status: "Planned",
   },
   {
-    title: "Bring your worlds with you",
+    title: "Import, export & recovery",
     description:
       "Modpack import/export, diagnostics, recovery and public Windows releases.",
     status: "Planned",
@@ -38,9 +38,8 @@ const stages = [
 <template>
   <section class="page-heading">
     <div>
-      <span class="eyebrow">CONTENT LIBRARY</span>
-      <h1>Discover</h1>
-      <p class="muted">Find your next setup.</p>
+      <h1>Development</h1>
+      <p class="muted">Current capabilities and planned work.</p>
     </div>
   </section>
   <div class="roadmap-intro">

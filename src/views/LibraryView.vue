@@ -148,16 +148,17 @@ onBeforeUnmount(closeDelete);
         class="jump-section"
         aria-labelledby="jump-heading"
       >
-        <button
-          id="jump-heading"
-          class="section-toggle"
-          :aria-expanded="jumpOpen"
-          aria-controls="jump-instances"
-          @click="jumpOpen = !jumpOpen"
-        >
-          <h1>Jump in</h1>
-          <ChevronDown :size="18" :class="{ flipped: jumpOpen }" />
-        </button>
+        <h1 id="jump-heading" class="jump-heading">
+          <button
+            class="section-toggle"
+            :aria-expanded="jumpOpen"
+            aria-controls="jump-instances"
+            @click="jumpOpen = !jumpOpen"
+          >
+            <span>Recent instances</span>
+            <ChevronDown :size="18" :class="{ flipped: jumpOpen }" />
+          </button>
+        </h1>
         <div v-if="jumpOpen" id="jump-instances" class="jump-grid">
           <article
             v-for="item in recent"
@@ -176,7 +177,7 @@ onBeforeUnmount(closeDelete);
                 :icon="item.icon"
               />
               <span class="jump-identity"
-                ><h2>{{ item.name }}</h2>
+                ><strong>{{ item.name }}</strong>
                 <span
                   >{{ loaderName(item.loader) }}
                   {{ item.minecraftVersion }}

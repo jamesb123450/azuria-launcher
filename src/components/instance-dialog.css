@@ -81,7 +81,7 @@
 .create-option small {
   display: block;
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--muted);
 }
@@ -100,12 +100,12 @@
 }
 .coming-label {
   margin-left: auto;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .create-footnote {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   margin: 21px 0 0;
   line-height: 1.6;
@@ -163,7 +163,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 9px;
   padding: 7px 11px;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
 }
 .icon-action:hover,
@@ -173,13 +173,13 @@
 }
 .icon-help {
   color: var(--pink);
-  font-size: 12px;
+  font-size: 13px;
   margin-left: auto;
 }
 .icon-help small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.7;
   margin-top: 8px;
 }
@@ -250,7 +250,7 @@
 .loader-policy-help {
   display: block;
   font-weight: 400;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   line-height: 1.6;
   margin-top: 9px;
@@ -280,7 +280,7 @@
   border: 1px solid var(--border-strong);
   color: var(--muted);
   border-radius: 9px;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
 }
 .setup-pills button.active {
@@ -298,7 +298,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--muted);
 }
@@ -331,7 +331,7 @@
 .custom-loader-version {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   margin-top: 13px;
 }
 .create-actions {
@@ -341,7 +341,7 @@
   margin-top: 24px;
 }
 .create-actions .button {
-  font-size: 12px;
+  font-size: 13px;
   padding: 9px 13px;
 }
 @media (max-height: 740px) {
@@ -391,7 +391,7 @@
   border: 0;
   width: 100%;
   padding: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 .create-search input:disabled {
   opacity: 0.7;
@@ -402,7 +402,7 @@
   gap: 12px;
   margin: 18px 0;
   color: var(--subtle);
-  font-size: 11px;
+  font-size: 13px;
 }
 .create-divider::before,
 .create-divider::after {

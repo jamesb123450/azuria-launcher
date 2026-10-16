@@ -242,7 +242,9 @@ test("library grouping and collapsed sections remain usable", async ({
   await expect(favourites.locator(".instance-card")).toHaveCount(0);
   await favourites.getByRole("button", { expanded: false }).first().click();
   await expect(favourites.locator(".instance-card")).toHaveCount(1);
-  await page.getByRole("button", { name: "Jump in", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Recent instances", exact: true })
+    .click();
   await expect(page.locator(".jump-row")).toHaveCount(0);
   await chooseVersion(page, "No grouping", "Group instances");
   await expect(page.locator(".instance-card")).toHaveCount(2);

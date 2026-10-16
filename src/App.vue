@@ -30,8 +30,8 @@ const page = computed(() =>
     : route.path === "/discover"
       ? "Discover"
       : route.path === "/roadmap"
-        ? "Roadmap"
-        : "Play",
+        ? "Development"
+        : "Library",
 );
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
@@ -70,7 +70,7 @@ onMounted(() => {
             src="/branding/app-icon.png"
             alt=""
             aria-hidden="true"
-          />azuria<span class="brand-caption">LAUNCHER</span></RouterLink
+          />azuria<span class="brand-caption">Launcher</span></RouterLink
         ><span class="breadcrumb-divider" /><ChevronRight :size="13" /><span
           class="breadcrumb"
           >{{ page }}</span
@@ -96,7 +96,7 @@ onMounted(() => {
           to="/"
           class="rail-link"
           aria-label="Library"
-          title="Play & library"
+          title="Library"
           ><Play :size="22" /><span class="rail-tooltip"
             >Library</span
           ></RouterLink
