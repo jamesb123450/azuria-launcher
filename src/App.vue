@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import {
   Play,
@@ -13,6 +13,7 @@ import {
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import StorageMigration from "./components/StorageMigration.vue";
 import WindowControls from "./components/WindowControls.vue";
 import InstanceIcon from "./components/InstanceIcon.vue";
 import { useUpdates } from "./stores/updates";
@@ -51,14 +52,17 @@ watch(
   },
 );
 onBeforeUnmount(() => clearTimeout(noticeTimer));
-onMounted(() => {
+const storageReady = ref(false);
+function storagePrepared() {
+  storageReady.value = true;
   void store.init();
   void account.init();
   void updates.init();
-});
+}
 </script>
 <template>
-  <div class="app-shell">
+  <StorageMigration v-if="!storageReady" @ready="storagePrepared" />
+  <div v-else class="app-shell">
     <a class="skip-link" href="#main-content" @click.prevent="focusMain"
       >Skip to content</a
     >
