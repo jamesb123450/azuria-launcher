@@ -134,8 +134,8 @@ export function render(page, { siteURL, base, releases }) {
         <a class="wordmark" href="${link("")}" aria-label="Azuria home"
           ><img
             src="${asset("azuria.png")}"
-            width="36"
-            height="36"
+            width="44"
+            height="44"
             alt=""
           /><span>azuria<span class="wordmark-small">LAUNCHER</span></span></a
         ><button
@@ -148,14 +148,16 @@ export function render(page, { siteURL, base, releases }) {
           ${icon("menu")}
         </button>
         <nav id="site-navigation" aria-label="Main navigation">
-          ${page === "home" ? html`<a class="section-nav" href="#features">The launcher</a><a class="section-nav" href="#appearance">Appearance</a><a class="section-nav" href="#updates">Releases</a>` : html`<a href="${link("")}">Home</a>${nav("Downloads", "downloads/")}${nav("Changelog", "changelog/")}`}
+          ${page === "home" ? html`<a class="section-nav" href="#features">Launcher</a><a class="section-nav" href="#appearance">Appearance</a><a class="section-nav" href="#updates">Updates</a>` : html`<a href="${link("")}">Home</a>${nav("Downloads", "downloads/")}${nav("Changelog", "changelog/")}`}
           ${nav("Help", "help/")}${nav("Contact", "contact/")}<a
             class="github-link"
             href="${repository}"
             >GitHub ${icon("external", 13)}</a
           >
         </nav>
-        ${page === "home" ? "" : html`<a class="header-download" href="${link("downloads/")}">Downloads</a>`}
+        <a class="header-download" href="${link("downloads/")}"
+          >Download ${icon("download", 16)}</a
+        >
       </div>
     </header>`;
   const footer = html`<footer class="site-footer">
@@ -184,8 +186,8 @@ export function render(page, { siteURL, base, releases }) {
       >
       ·
       <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a
-      >. Converted to WebP, cropped and darkened for the hero. Not captured in
-      Azuria.
+      >. Panorama and fallback image converted to WebP and displayed with a
+      contrast overlay. Not captured in Azuria.
     </p>
     <p class="disclaimer">
       Not an official Minecraft product. Not approved by or associated with
@@ -200,19 +202,23 @@ export function render(page, { siteURL, base, releases }) {
         .find((line) => line.startsWith("- "))
         ?.slice(2) || "Read the published release notes.";
     content = html`<section class="brand-hero">
+        <canvas
+          class="hero-scene"
+          data-panorama
+          data-panorama-base="${asset("panorama-")}"
+          aria-hidden="true"
+        ></canvas>
         <div class="hero container">
           <div class="hero-copy">
             <img
               class="hero-mark"
               src="${asset("azuria.png")}"
-              width="80"
-              height="80"
+              width="160"
+              height="160"
               alt=""
             />
             <h1>Azuria Launcher</h1>
-            <p class="hero-tagline">
-              Your Minecraft instances,<br />organised your way.
-            </p>
+            <p class="hero-tagline">A home for your Minecraft instances.</p>
             <div class="hero-actions">
               ${download("View Windows download")}<a
                 class="quiet-link"
@@ -223,15 +229,31 @@ export function render(page, { siteURL, base, releases }) {
             <p class="download-meta">
               <span data-latest-version>${e(latest.tag)}</span> for Windows x64
             </p>
+            <p class="hero-disclosure">
+              <strong>Development preview.</strong> Game installation and
+              launching aren’t available yet.
+              <a href="${link("help/")}#status">Current status</a>
+            </p>
           </div>
         </div>
-        <div class="hero-status container">
-          ${status}<a href="${link("help/")}#status"
-            >Check current capabilities</a
-          >
-        </div>
       </section>
-      <section id="features" class="section container launcher-showcase">
+      <section
+        id="features"
+        class="section container launcher-showcase"
+        aria-label="Azuria launcher features"
+      >
+        <figure class="hero-shot">
+          <img
+            src="${asset("library.png")}"
+            alt="Azuria’s instance library with Vanilla and Fabric settings, favourites and version selectors."
+            width="1280"
+            height="900"
+            fetchpriority="high"
+          />
+          <figcaption>
+            Azuria’s instance library. Sample configurations shown.
+          </figcaption>
+        </figure>
         <div class="section-intro">
           <h2>Organise your Minecraft instances.</h2>
           <p>
@@ -239,18 +261,6 @@ export function render(page, { siteURL, base, releases }) {
             favourite your setups, and give each one its own icon.
           </p>
         </div>
-        <figure class="hero-shot">
-          <img
-            src="${asset("library.png")}"
-            alt="Azuria’s instance library with Vanilla and Fabric settings, favourites and version selectors."
-            width="1280"
-            height="900"
-            loading="lazy"
-          />
-          <figcaption>
-            Azuria’s instance library. Sample configurations shown.
-          </figcaption>
-        </figure>
         <div class="feature-details">
           <div>
             <h3>A setup for each version</h3>
@@ -1012,46 +1022,6 @@ export function render(page, { siteURL, base, releases }) {
       </head>
       <body class="${page === "home" ? "home-page" : "inner-page"}">
         ${header}
-        ${
-          page === "home"
-            ? html`<aside
-                class="explore-sidebar"
-                aria-label="Launcher navigation"
-              >
-                <a class="sidebar-item" href="#features"
-                  >${icon("layers", 22)}<span
-                    ><strong>The launcher</strong
-                    ><small>Instance library</small></span
-                  ></a
-                >
-                <a class="sidebar-item" href="#appearance"
-                  >${icon("sun", 22)}<span
-                    ><strong>Appearance</strong
-                    ><small>Dark and light</small></span
-                  ></a
-                >
-                <a class="sidebar-item" href="#updates"
-                  >${icon("refresh", 22)}<span
-                    ><strong>Releases</strong
-                    ><small>Latest changes</small></span
-                  ></a
-                >
-                <a class="sidebar-item" href="${link("downloads/")}"
-                  >${icon("download", 22)}<span
-                    ><strong>Downloads</strong><small>Windows x64</small></span
-                  ></a
-                >
-                <div class="sidebar-foot">
-                  <img
-                    src="${asset("azuria.png")}"
-                    width="30"
-                    height="30"
-                    alt=""
-                  /><span>Windows x64<br />Minecraft Java</span>
-                </div>
-              </aside>`
-            : ""
-        }
         <main id="main" tabindex="-1">
           ${content}
           <aside

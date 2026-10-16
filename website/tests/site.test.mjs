@@ -203,3 +203,22 @@ test("public policies, contact route and real screenshot credit are present", as
   ))
     assert.ok((await stat(resolve(root, asset))).isFile(), asset);
 });
+
+test("panorama assets are packaged and unsupported WebGL keeps the static fallback", async () => {
+  const { mountPanorama } = await import("../src/panorama.js");
+  await mountPanorama({ getContext: () => null });
+  for (let index = 0; index < 6; index++) {
+    assert.ok(
+      (await stat(resolve(root, `assets/panorama-${index}.webp`))).size > 1000,
+    );
+  }
+  const html = await readFile(resolve(root, "index.html"), "utf8");
+  assert.match(
+    html,
+    /data-panorama-base="\/azuria-launcher\/assets\/panorama-"/,
+  );
+  assert.doesNotMatch(html, /explore-sidebar/);
+  assert.ok(
+    html.indexOf('class="hero-shot"') < html.indexOf('class="section-intro"'),
+  );
+});

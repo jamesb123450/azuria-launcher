@@ -148,9 +148,9 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// Track the current homepage section without adding decorative scroll effects.
+// Indicate the current homepage section in the single navigation menu.
 const sectionLinks = [
-  ...document.querySelectorAll('.explore-sidebar a[href^="#"]'),
+  ...document.querySelectorAll('#site-navigation a[href^="#"]'),
 ];
 if (sectionLinks.length && "IntersectionObserver" in window) {
   const observer = new IntersectionObserver(
@@ -172,3 +172,9 @@ if (sectionLinks.length && "IntersectionObserver" in window) {
     if (section) observer.observe(section);
   }
 }
+
+const panorama = document.querySelector("[data-panorama]");
+if (panorama)
+  import("./panorama.js")
+    .then(({ mountPanorama }) => mountPanorama(panorama))
+    .catch(() => {});
