@@ -1,13 +1,15 @@
 ## Changes
 
-- Fixed Sign in with Microsoft opening Documents or File Explorer instead of the default browser on Windows.
-- Opened the complete Microsoft authorization URL through Windows’ registered browser handler, preserving its PKCE and callback parameters.
-- Added browser-opening error checks so failed launches show a retryable error in Azuria.
+- Added a Discover catalogue preview for modpacks, mods, datapacks and resource packs.
+- Added working local search, source/category/loader/version filters, sorting, result limits and pagination.
+- Added compact project rows, original gradient icons and themed dropdowns using Azuria’s pink-and-blue styling.
+- Supported dark and light themes, including the minimum desktop window size.
+- Kept the development roadmap available through the help button.
 
 ## Update information
 
-Install through Settings → Update & restart, then retry Settings → Minecraft account → Sign in with Microsoft. Cancel any previous pending sign-in first.
+Install through Settings → Update & restart, then open Discover from the sidebar.
 
-This update does not change saved instances, the database schema or stored account credentials. Your default browser should open the Microsoft sign-in page.
+The catalogue currently contains clearly labelled fictional example projects, creators and statistics. Live provider searches, downloads and installation are not connected; Install buttons are disabled.
 
-This is a development release. Live Microsoft/Xbox/Minecraft sign-in still requires verification with Azuria’s Entra registration. Game installation and Minecraft launching remain in development.
+This update does not change the instance database or saved accounts. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.
