@@ -137,7 +137,6 @@ watch([kind, query, category, source, loader, version, sort, perPage], () => {
   <div class="discover-page">
     <section class="discover-heading">
       <div>
-        <span class="eyebrow">CATALOGUE</span>
         <h1>Discover</h1>
         <p class="muted">Browse modpacks, mods and packs for your instances.</p>
       </div>

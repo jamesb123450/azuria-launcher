@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
 .version-option small {
   margin-left: 10px;
   color: var(--subtle);
-  font-size: 10px;
+  font-size: 12px;
 }
 .version-option.current {
   color: var(--blue);
@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-top: 1px solid var(--border-strong);
   padding: 12px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   background: var(--panel-soft);
   cursor: pointer;
