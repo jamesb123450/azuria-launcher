@@ -189,13 +189,11 @@ export function render(page, { siteURL, base, releases }) {
               height="88"
               alt=""
             />
-            <h1>Azuria<span>Launcher</span></h1>
-            <p class="hero-tagline">
-              A little more you.<br />A place for every Minecraft setup.
-            </p>
+            <h1>Azuria Launcher</h1>
+            <p class="hero-tagline">Your Minecraft setups. Your own space.</p>
             <div class="hero-actions">
-              ${download()}<a class="button secondary" href="#features"
-                >Explore Azuria ${icon("arrow", 17)}</a
+              ${download()}<a class="button secondary" href="${repository}"
+                >View source ${icon("external", 17)}</a
               >
             </div>
             <span class="download-meta"
@@ -203,51 +201,119 @@ export function render(page, { siteURL, base, releases }) {
             >
             ${status}
           </div>
-          <figure class="hero-shot">
-            <div class="shot-caption">
-              <span><i class="tiny-mark"></i> YOUR LIBRARY. YOUR WAY.</span
-              ><span>Interface preview · Example instances</span>
-            </div>
-            <img
-              src="${asset("library.png")}"
-              alt="Azuria’s dark library, showing separate Vanilla and Fabric instances, favourites, version selectors and account controls."
-              width="1280"
-              height="900"
-              fetchpriority="high"
-            />
-          </figure>
         </div>
       </section>
-      <nav class="quick-links container" aria-label="Explore Azuria">
-        <a class="quick-link" href="${link("downloads/")}"
-          ><span class="quick-icon">${icon("download", 25)}</span
-          ><span
-            ><strong>Download</strong
-            ><small>Try the Windows preview</small></span
-          >${icon("arrow", 18)}</a
-        >
-        <a class="quick-link" href="#features"
-          ><span class="quick-icon">${icon("layers", 25)}</span
-          ><span
-            ><strong>The launcher</strong
-            ><small>A closer look at Azuria</small></span
-          >${icon("arrow", 18)}</a
-        >
-        <a class="quick-link" href="${link("changelog/")}"
-          ><span class="quick-icon">${icon("refresh", 25)}</span
-          ><span
-            ><strong>Latest updates</strong
-            ><small>Follow what’s changing</small></span
-          >${icon("arrow", 18)}</a
-        >
-        <a class="quick-link" href="${link("help/")}"
-          ><span class="quick-icon">${icon("check", 25)}</span
-          ><span
-            ><strong>Need a hand?</strong
-            ><small>Setup, support & status</small></span
-          >${icon("arrow", 18)}</a
-        >
-      </nav>
+      <div class="feature-ribbon" aria-label="Azuria at a glance">
+        <div class="feature-ribbon-inner container">
+          <a href="#features"
+            >${icon("layers", 32)}<span
+              ><strong>Your own library</strong
+              ><small>Separate instance settings</small></span
+            ></a
+          >
+          <a href="#appearance"
+            >${icon("sun", 32)}<span
+              ><strong>Dark or light</strong
+              ><small>Make yourself at home</small></span
+            ></a
+          >
+          <a href="${link("help/")}#updates"
+            >${icon("refresh", 32)}<span
+              ><strong>One installation</strong
+              ><small>Signed in-app updates</small></span
+            ></a
+          >
+          <a href="${link("downloads/")}"
+            >${icon("windows", 32)}<span
+              ><strong>Windows x64</strong
+              ><small>Development preview</small></span
+            ></a
+          >
+        </div>
+      </div>
+      <div class="preview-banner container">
+        <span class="preview-label">IN DEVELOPMENT</span>
+        <p>
+          Help shape what comes next. Try the interface, follow the releases and
+          tell us what you think.
+        </p>
+        <a href="${repository}/issues">Share feedback ${icon("arrow", 17)}</a>
+      </div>
+      <section id="updates" class="section container updates-section">
+        <div class="section-topline">
+          <div>
+            <div class="section-kicker">THE LATEST FROM AZURIA</div>
+            <h2>Latest updates</h2>
+          </div>
+          <a class="text-link" href="${link("changelog/")}"
+            >All releases ${icon("arrow", 17)}</a
+          >
+        </div>
+        <div class="update-grid">
+          ${releases
+            .slice(0, 3)
+            .map((release, index) => {
+              const summary =
+                (release.notes || "")
+                  .split(/\r?\n/)
+                  .find((line) => line.startsWith("- "))
+                  ?.slice(2) ||
+                "See the changes in this published development release.";
+              const destination = safeReleaseURL(release.url)
+                ? release.url
+                : `${repository}/releases/latest`;
+              return html`<article class="update-card">
+                <a
+                  href="${e(destination)}"
+                  class="update-cover"
+                  aria-label="Read ${e(release.tag)} release notes"
+                  ><img
+                    src="${asset("azuria.png")}"
+                    width="72"
+                    height="72"
+                    alt=""
+                    loading="lazy"
+                  /><span>${e(release.tag)}</span
+                  ><small
+                    >${index === 0 ? "LATEST RELEASE" : "DEVELOPMENT RELEASE"}</small
+                  ></a
+                >
+                <div class="update-body">
+                  <time datetime="${e(release.published)}"
+                    >${e(date(release.published))}</time
+                  >
+                  <h3>Azuria ${e(release.version || release.tag)}</h3>
+                  <p>${e(summary)}</p>
+                  <a class="text-link" href="${e(destination)}"
+                    >Read the changes ${icon("arrow", 16)}</a
+                  >
+                </div>
+              </article>`;
+            })
+            .join("")}
+        </div>
+        <p class="updates-note">
+          Already have Azuria? Install published updates from Settings.
+        </p>
+      </section>
+      <section class="launcher-showcase container">
+        <div class="section-kicker">MEET YOUR NEW LIBRARY</div>
+        <h2>Everything has its place.</h2>
+        <p>A closer look at the Azuria interface.</p>
+        <figure class="hero-shot">
+          <div class="shot-caption">
+            <span><i class="tiny-mark"></i> YOUR LIBRARY. YOUR WAY.</span
+            ><span>Interface preview · Example instances</span>
+          </div>
+          <img
+            src="${asset("library.png")}"
+            alt="Azuria’s dark library, showing separate Vanilla and Fabric instances, favourites, version selectors and account controls."
+            width="1280"
+            height="900"
+            fetchpriority="high"
+          />
+        </figure>
+      </section>
       <section id="features" class="section container">
         <div class="section-kicker">A PLACE FOR EACH SETUP</div>
         <div class="split-section">
@@ -308,7 +374,7 @@ export function render(page, { siteURL, base, releases }) {
           </figure>
         </div>
       </section>
-      <section class="appearance-section">
+      <section id="appearance" class="appearance-section">
         <div class="container appearance-grid">
           <div class="section-copy">
             <div class="section-kicker">STILL AZURIA. IN EITHER LIGHT.</div>
@@ -424,63 +490,6 @@ export function render(page, { siteURL, base, releases }) {
             <p>Verified downloads, Java setup and game launching.</p>
           </div>
         </div>
-      </section>
-      <section class="section container updates-section">
-        <div class="section-topline">
-          <div>
-            <div class="section-kicker">THE LATEST FROM AZURIA</div>
-            <h2>Taking shape.</h2>
-          </div>
-          <a class="text-link" href="${link("changelog/")}"
-            >All releases ${icon("arrow", 17)}</a
-          >
-        </div>
-        <div class="update-grid">
-          ${releases
-            .slice(0, 3)
-            .map((release, index) => {
-              const summary =
-                (release.notes || "")
-                  .split(/\r?\n/)
-                  .find((line) => line.startsWith("- "))
-                  ?.slice(2) ||
-                "See the changes in this published development release.";
-              const destination = safeReleaseURL(release.url)
-                ? release.url
-                : `${repository}/releases/latest`;
-              return html`<article class="update-card">
-                <a
-                  href="${e(destination)}"
-                  class="update-cover"
-                  aria-label="Read ${e(release.tag)} release notes"
-                  ><img
-                    src="${asset("azuria.png")}"
-                    width="72"
-                    height="72"
-                    alt=""
-                    loading="lazy"
-                  /><span>${e(release.tag)}</span
-                  ><small
-                    >${index === 0 ? "LATEST RELEASE" : "DEVELOPMENT RELEASE"}</small
-                  ></a
-                >
-                <div class="update-body">
-                  <time datetime="${e(release.published)}"
-                    >${e(date(release.published))}</time
-                  >
-                  <h3>Azuria ${e(release.version || release.tag)}</h3>
-                  <p>${e(summary)}</p>
-                  <a class="text-link" href="${e(destination)}"
-                    >Read the changes ${icon("arrow", 16)}</a
-                  >
-                </div>
-              </article>`;
-            })
-            .join("")}
-        </div>
-        <p class="updates-note">
-          Already have Azuria? Install published updates from Settings.
-        </p>
       </section>
       <section class="section container questions">
         <div>
@@ -829,8 +838,63 @@ export function render(page, { siteURL, base, releases }) {
         <link rel="stylesheet" href="${link("site.css")}" />
         <script type="module" src="${link("site.js")}"></script>
       </head>
-      <body>
+      <body class="${page === "home" ? "home-page" : "inner-page"}">
         ${header}
+        ${
+          page === "home"
+            ? html`<aside
+                class="explore-sidebar"
+                aria-label="Launcher navigation"
+              >
+                <a
+                  class="sidebar-item sidebar-download"
+                  href="${link("downloads/")}"
+                  >${icon("download", 25)}<span
+                    ><strong>Download</strong
+                    ><small>Windows development build</small></span
+                  ></a
+                >
+                <a class="sidebar-item" href="#features"
+                  >${icon("layers", 25)}<span
+                    ><strong>Features</strong
+                    ><small>Get to know Azuria</small></span
+                  ></a
+                >
+                <a class="sidebar-item" href="#updates"
+                  >${icon("refresh", 25)}<span
+                    ><strong>Updates</strong
+                    ><small>The latest releases</small></span
+                  ></a
+                >
+                <a class="sidebar-item" href="#appearance"
+                  >${icon("sun", 25)}<span
+                    ><strong>Appearance</strong
+                    ><small>Find your theme</small></span
+                  ></a
+                >
+                <a class="sidebar-item" href="${link("help/")}"
+                  >${icon("check", 25)}<span
+                    ><strong>Support</strong
+                    ><small>Answers & current status</small></span
+                  ></a
+                >
+                <a class="sidebar-item" href="${repository}"
+                  >${icon("external", 25)}<span
+                    ><strong>GitHub</strong
+                    ><small>Follow development</small></span
+                  ></a
+                >
+                <div class="sidebar-foot">
+                  <img
+                    src="${asset("azuria.png")}"
+                    width="30"
+                    height="30"
+                    alt=""
+                  /><span>Made for your<br />next adventure.</span>
+                </div>
+              </aside>`
+            : ""
+        }
         <main id="main" tabindex="-1">${content}</main>
         ${footer}
       </body>
