@@ -121,6 +121,10 @@ cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D w
 
 GitHub Actions runs frontend checks and native Windows checks. Browser tests exercise the preview; real installation and update behaviour also require Windows smoke testing.
 
+## Website
+
+The public website source is in `website/`, with its own dependency-free static build and CI checks. Hosting is not configured yet. See [website development and hosting](docs/WEBSITE.md) for preview commands and the proposed GitHub Pages deployment.
+
 ## Further reading
 
 - [Architecture](docs/ARCHITECTURE.md)

@@ -1,0 +1,44 @@
+name: Website checks
+on:
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "website/**"
+      - ".github/workflows/website.yml"
+      - ".github/scripts/release-scope.mjs"
+      - "docs/WEBSITE.md"
+  pull_request:
+    paths:
+      - "website/**"
+      - ".github/workflows/website.yml"
+      - ".github/scripts/release-scope.mjs"
+      - "docs/WEBSITE.md"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: azuria-website-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Refresh public release metadata
+        run: npm --prefix website run refresh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: npm --prefix website run build
+      - run: npm --prefix website test
+      - name: Save reviewable website artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: azuria-website
+          path: website/dist/
+          include-hidden-files: true
+          if-no-files-found: error
+# Deployment to GitHub Pages is intentionally not configured yet.
+# Add the Pages environment/permissions and deployment job after review.
