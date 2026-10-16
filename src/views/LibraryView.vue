@@ -5,7 +5,9 @@ import { computed, nextTick, onBeforeUnmount, ref } from "vue";
 import {
   Plus,
   Search,
-  Play,
+  MoreHorizontal,
+  PanelRightClose,
+  PanelRightOpen,
   Star,
   SlidersHorizontal,
   Copy,
@@ -42,16 +44,16 @@ const duplicate = ref(false);
 const deleting = ref<Instance>();
 const deleteDialog = ref<HTMLDialogElement>();
 const deleteCancel = ref<HTMLButtonElement>();
-const launchInfo = ref(false);
+const filtersOpen = ref(false);
+const contextOpen = ref(true);
+const actionMenu = ref<string>();
+const setupComplete = computed(
+  () => !!store.instances.length && account.view.verified,
+);
 const layout = ref<"grid" | "list">("grid");
 const recent = computed(() => {
   const newest = [...store.instances].sort((a, b) => b.createdAt - a.createdAt);
-  return store.selected
-    ? [
-        store.selected,
-        ...newest.filter((i) => i.id !== store.selected?.id),
-      ].slice(0, 5)
-    : [];
+  return newest.filter((i) => i.id !== store.selected?.id).slice(0, 3);
 });
 const items = computed(() =>
   [...store.instances]
@@ -105,15 +107,16 @@ function toggleGroup(key: string) {
   else next.add(key);
   collapsed.value = next;
 }
+function closeActions() {
+  const trigger = document.getElementById("more-" + actionMenu.value);
+  actionMenu.value = undefined;
+  trigger?.focus();
+}
 function open(instance?: Instance, copy = false) {
   store.saveError = "";
   editing.value = instance;
   duplicate.value = copy;
   showDialog.value = true;
-}
-function play(instance: Instance) {
-  store.selectedId = instance.id;
-  launchInfo.value = true;
 }
 function created(item: Instance) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -141,24 +144,80 @@ async function remove() {
 onBeforeUnmount(closeDelete);
 </script>
 <template>
-  <div class="play-page">
+  <div :class="['play-page', { 'context-collapsed': !contextOpen }]">
     <div class="play-main" :aria-busy="store.loading || store.busy">
+      <div class="library-page-heading">
+        <h1>Library</h1>
+        <button
+          class="button secondary context-toggle"
+          :aria-expanded="contextOpen"
+          aria-controls="launcher-context"
+          @click="contextOpen = !contextOpen"
+        >
+          <PanelRightClose v-if="contextOpen" :size="16" /><PanelRightOpen
+            v-else
+            :size="16"
+          />
+          Account &amp; setup
+        </button>
+      </div>
       <section
-        v-if="store.instances.length"
+        v-if="store.selected"
+        class="selected-instance"
+        aria-labelledby="selected-instance-name"
+      >
+        <InstanceIcon
+          :loader="store.selected.loader"
+          :seed="store.selected.id"
+          :icon="store.selected.icon"
+        />
+        <div class="selected-identity">
+          <span class="muted">Selected instance</span>
+          <h2 id="selected-instance-name">{{ store.selected.name }}</h2>
+          <p>
+            {{ loaderName(store.selected.loader) }} · Minecraft
+            {{ store.selected.minecraftVersion
+            }}<template v-if="store.selected.loaderVersion">
+              · Loader {{ store.selected.loaderVersion }}</template
+            >
+          </p>
+          <p class="launch-availability" id="launch-availability">
+            Game downloads and launching are still in development.
+          </p>
+        </div>
+        <div class="selected-actions">
+          <button
+            class="button primary"
+            :disabled="store.busy || store.loading || !store.libraryReady"
+            @click="open(store.selected)"
+          >
+            <SlidersHorizontal :size="16" /> Edit instance
+          </button>
+          <button
+            class="button secondary"
+            disabled
+            aria-describedby="launch-availability"
+          >
+            Launch unavailable
+          </button>
+        </div>
+      </section>
+      <section
+        v-if="store.instances.length > 2"
         class="jump-section"
         aria-labelledby="jump-heading"
       >
-        <h1 id="jump-heading" class="jump-heading">
+        <h2 id="jump-heading" class="jump-heading">
           <button
             class="section-toggle"
             :aria-expanded="jumpOpen"
             aria-controls="jump-instances"
             @click="jumpOpen = !jumpOpen"
           >
-            <span>Recent instances</span>
+            <span>Other instances</span>
             <ChevronDown :size="18" :class="{ flipped: jumpOpen }" />
           </button>
-        </h1>
+        </h2>
         <div v-if="jumpOpen" id="jump-instances" class="jump-grid">
           <article
             v-for="item in recent"
@@ -167,7 +226,7 @@ onBeforeUnmount(closeDelete);
           >
             <button
               class="jump-select"
-              :aria-label="'Select recent ' + item.name"
+              :aria-label="'Switch to ' + item.name"
               :aria-pressed="store.selected?.id === item.id"
               @click="store.selectedId = item.id"
             >
@@ -187,13 +246,6 @@ onBeforeUnmount(closeDelete);
               >
             </button>
             <button
-              class="button primary jump-play"
-              :aria-label="'Play ' + item.name"
-              @click="play(item)"
-            >
-              <Play :size="16" /> Play
-            </button>
-            <button
               class="icon-button"
               :aria-label="'Manage ' + item.name"
               :disabled="store.busy || store.loading || !store.libraryReady"
@@ -204,29 +256,10 @@ onBeforeUnmount(closeDelete);
           </article>
         </div>
       </section>
-      <div v-if="launchInfo" class="launch-message" role="status">
-        <div>
-          <strong>Launching is not available yet</strong>
-          <p>
-            You can save and organise instance settings. Game downloads, Java
-            setup and launching are still in development.
-          </p>
-        </div>
-        <button
-          class="icon-button"
-          aria-label="Dismiss launch information"
-          @click="launchInfo = false"
-        >
-          <X :size="16" />
-        </button>
-      </div>
       <section class="library-section" aria-labelledby="instances-heading">
-        <component
-          :is="store.instances.length ? 'h2' : 'h1'"
-          id="instances-heading"
-        >
-          Library <span class="count">{{ store.instances.length }}</span>
-        </component>
+        <h2 id="instances-heading">
+          Your instances <span class="count">{{ store.instances.length }}</span>
+        </h2>
         <div class="library-action-row">
           <label class="search-box"
             ><Search :size="17" /><input
@@ -249,6 +282,49 @@ onBeforeUnmount(closeDelete);
           </button>
         </div>
         <div class="library-toolbar">
+          <button
+            class="button secondary"
+            :aria-expanded="filtersOpen"
+            aria-controls="library-filters"
+            @click="filtersOpen = !filtersOpen"
+          >
+            <SlidersHorizontal :size="15" /> Filters &amp; sorting
+          </button>
+          <button
+            v-if="filter !== 'all'"
+            class="button secondary applied-filter"
+            @click="filter = 'all'"
+          >
+            {{
+              filter === "favorites"
+                ? "Favourites"
+                : loaderName(filter as Instance["loader"])
+            }}
+            <X :size="14" /><span>Clear filter</span>
+          </button>
+          <div class="view-switch" role="group" aria-label="Library layout">
+            <button
+              :class="{ active: layout === 'grid' }"
+              :aria-pressed="layout === 'grid'"
+              aria-label="Grid view"
+              @click="layout = 'grid'"
+            >
+              <LayoutGrid :size="16" /></button
+            ><button
+              :class="{ active: layout === 'list' }"
+              :aria-pressed="layout === 'list'"
+              aria-label="List view"
+              @click="layout = 'list'"
+            >
+              <List :size="17" />
+            </button>
+          </div>
+        </div>
+        <div
+          v-if="filtersOpen"
+          id="library-filters"
+          class="library-filter-panel"
+        >
           <div class="library-select-control">
             <SlidersHorizontal :size="15" /><VersionPicker
               v-model="sort"
@@ -286,23 +362,6 @@ onBeforeUnmount(closeDelete);
               @click="filter = tab.id"
             >
               {{ tab.label }}
-            </button>
-          </div>
-          <div class="view-switch" role="group" aria-label="Library layout">
-            <button
-              :class="{ active: layout === 'grid' }"
-              :aria-pressed="layout === 'grid'"
-              aria-label="Grid view"
-              @click="layout = 'grid'"
-            >
-              <LayoutGrid :size="16" /></button
-            ><button
-              :class="{ active: layout === 'list' }"
-              :aria-pressed="layout === 'list'"
-              aria-label="List view"
-              @click="layout = 'list'"
-            >
-              <List :size="17" />
             </button>
           </div>
         </div>
@@ -411,13 +470,6 @@ onBeforeUnmount(closeDelete);
                 />
               </button>
               <div class="card-bottom">
-                <button
-                  class="icon-button card-play"
-                  :aria-label="'Launch ' + item.name"
-                  @click="play(item)"
-                >
-                  <Play :size="14" />
-                </button>
                 <div class="card-tools">
                   <button
                     class="icon-button"
@@ -427,26 +479,67 @@ onBeforeUnmount(closeDelete);
                     "
                     @click="open(item)"
                   >
-                    <SlidersHorizontal :size="14" /></button
-                  ><button
-                    class="icon-button"
-                    :aria-label="'Copy settings for ' + item.name"
-                    :disabled="
-                      store.busy || store.loading || !store.libraryReady
-                    "
-                    @click="open(item, true)"
-                  >
-                    <Copy :size="14" /></button
-                  ><button
-                    class="icon-button danger"
-                    :aria-label="'Delete ' + item.name"
-                    :disabled="
-                      store.busy || store.loading || !store.libraryReady
-                    "
-                    @click="confirmDelete(item)"
-                  >
-                    <Trash2 :size="14" />
+                    <SlidersHorizontal :size="14" /> Edit
                   </button>
+                  <div
+                    class="instance-more"
+                    @keydown.esc.stop="closeActions"
+                    @focusout="
+                      (event) => {
+                        if (
+                          !(event.currentTarget as HTMLElement).contains(
+                            event.relatedTarget as Node,
+                          )
+                        )
+                          actionMenu = undefined;
+                      }
+                    "
+                  >
+                    <button
+                      class="icon-button"
+                      :id="'more-' + item.id"
+                      :aria-label="'More actions for ' + item.name"
+                      :aria-expanded="actionMenu === item.id"
+                      :aria-controls="'actions-' + item.id"
+                      @click="
+                        actionMenu =
+                          actionMenu === item.id ? undefined : item.id
+                      "
+                    >
+                      <MoreHorizontal :size="18" />
+                    </button>
+                    <div
+                      v-if="actionMenu === item.id"
+                      :id="'actions-' + item.id"
+                      class="instance-action-menu"
+                    >
+                      <button
+                        class="button secondary"
+                        :aria-label="'Copy settings for ' + item.name"
+                        :disabled="
+                          store.busy || store.loading || !store.libraryReady
+                        "
+                        @click="
+                          closeActions();
+                          open(item, true);
+                        "
+                      >
+                        <Copy :size="14" /> Copy settings</button
+                      ><button
+                        class="icon-button danger"
+                        :aria-label="'Delete ' + item.name"
+                        :disabled="
+                          store.busy || store.loading || !store.libraryReady
+                        "
+                        @click="
+                          closeActions();
+                          confirmDelete(item);
+                        "
+                      >
+                        <Trash2 :size="14" /> Remove instance
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </article>
@@ -454,9 +547,29 @@ onBeforeUnmount(closeDelete);
         </section>
       </section>
     </div>
-    <aside class="context-panel" aria-label="Launcher information">
-      <section class="setup-panel">
-        <div class="context-heading">
+    <aside
+      v-if="contextOpen"
+      id="launcher-context"
+      class="context-panel"
+      aria-label="Launcher information"
+    >
+      <section class="account-panel">
+        <h2>Minecraft account</h2>
+        <RouterLink class="account-identity" to="/settings#account"
+          ><span class="account-portrait"><UserRound :size="22" /></span>
+          <div>
+            <strong>{{ account.label }}</strong
+            ><span>{{
+              account.view.verified
+                ? "Minecraft Java verified"
+                : "Minecraft account"
+            }}</span>
+          </div>
+          <ChevronDown :size="16"
+        /></RouterLink>
+      </section>
+      <details class="setup-panel" :open="!setupComplete">
+        <summary class="context-heading">
           <h2>Getting started</h2>
           <span
             >{{
@@ -464,7 +577,7 @@ onBeforeUnmount(closeDelete);
             }}
             / 2</span
           >
-        </div>
+        </summary>
         <button
           class="setup-item"
           :disabled="!!store.instances.length"
@@ -487,25 +600,10 @@ onBeforeUnmount(closeDelete);
             }}</span></span
           ></RouterLink
         >
-      </section>
-      <section class="account-panel">
-        <h2>Playing as</h2>
-        <RouterLink class="account-identity" to="/settings#account"
-          ><span class="account-portrait"><UserRound :size="22" /></span>
-          <div>
-            <strong>{{ account.label }}</strong
-            ><span>{{
-              account.view.verified
-                ? "Minecraft Java verified"
-                : "Minecraft account"
-            }}</span>
-          </div>
-          <ChevronDown :size="16"
-        /></RouterLink>
-      </section>
+      </details>
       <section class="development-panel">
-        <h2>Development</h2>
-        <div class="development-art"><Layers3 :size="38" /></div>
+        <h2>Azuria {{ updates.version }}</h2>
+
         <h3>What’s available</h3>
         <p class="muted">
           Manage instance settings and connect your Microsoft account. Game
@@ -515,19 +613,14 @@ onBeforeUnmount(closeDelete);
           >View roadmap <ArrowUpRight :size="14"
         /></RouterLink>
       </section>
-      <section class="pane-update">
-        <h2>Azuria {{ updates.version }}</h2>
-        <p class="muted">
-          {{
-            updates.update
-              ? "A new version is available."
-              : "Signed updates, delivered in the app."
-          }}
-        </p>
-        <RouterLink class="text-link" to="/settings"
-          >Launcher settings <ArrowUpRight :size="14"
-        /></RouterLink>
-      </section>
+      <RouterLink class="context-settings text-link" to="/settings"
+        >{{
+          updates.update
+            ? "Update available · Launcher settings"
+            : "Launcher settings"
+        }}
+        <ArrowUpRight :size="14"
+      /></RouterLink>
     </aside>
   </div>
   <InstanceDialog

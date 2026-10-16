@@ -100,7 +100,7 @@
 }
 .coming-label {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 13px;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -179,7 +179,7 @@
 .icon-help small {
   display: block;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.7;
   margin-top: 8px;
 }
@@ -472,4 +472,10 @@
   .create-setup-body .setup-fields {
     padding: 0;
   }
+}
+
+.setup-pills button[aria-pressed="true"],
+.icon-action[aria-pressed="true"] {
+  border-color: var(--blue);
+  box-shadow: inset 0 -2px var(--blue);
 }
