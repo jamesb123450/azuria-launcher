@@ -1,5 +1,5 @@
 .discover-page {
-  max-width: 1440px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 .discover-heading {
@@ -69,24 +69,45 @@
 }
 .discover-layout {
   display: grid;
-  grid-template-columns: 178px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 238px;
   gap: 26px;
   align-items: start;
 }
 .discover-filters {
-  padding: 5px 0;
+  position: sticky;
+  top: 0;
+  max-height: calc(100dvh - 102px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  padding: 20px 18px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid
+    color-mix(in srgb, var(--pink) 45%, var(--border-strong));
+  border-radius: 14px;
 }
 .discover-filter-heading {
   display: flex;
   gap: 8px;
-  align-items: center;
-  color: var(--muted);
-  margin: 0 0 24px;
+  align-items: flex-start;
+  color: var(--pink);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-strong);
+  margin: 0 0 20px;
 }
 .discover-filter-heading h2 {
-  font-size: 11px;
-  font-weight: 500;
-  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 5px;
+}
+.discover-filter-heading p {
+  font-size: 10px;
+  color: var(--subtle);
+}
+.discover-filter-heading > svg {
+  margin-top: 2px;
 }
 .discover-filters fieldset {
   padding: 0;
@@ -438,8 +459,11 @@
   background: color-mix(in srgb, var(--blue) 14%, transparent);
 }
 @media (max-width: 1100px) {
+  .discover-filters {
+    padding: 17px 13px;
+  }
   .discover-layout {
-    grid-template-columns: 152px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 200px;
     gap: 18px;
   }
   .discover-project {

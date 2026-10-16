@@ -160,80 +160,6 @@ watch([kind, query, category, source, loader, version, sort, perPage], () => {
       </button>
     </div>
     <div class="discover-layout">
-      <aside class="discover-filters" aria-label="Discovery filters">
-        <div class="discover-filter-heading">
-          <SlidersHorizontal :size="15" />
-          <h2>Refine your search</h2>
-        </div>
-        <fieldset>
-          <legend>Source</legend>
-          <button
-            v-for="provider in [
-              { value: '', label: 'All sources' },
-              { value: 'Modrinth', label: 'Modrinth' },
-              { value: 'CurseForge', label: 'CurseForge' },
-            ]"
-            :key="provider.label"
-            :class="[
-              'discover-filter-option',
-              { selected: source === provider.value },
-            ]"
-            :aria-pressed="source === provider.value"
-            @click="source = provider.value"
-          >
-            <span :class="['source-dot', provider.value.toLowerCase()]" />{{
-              provider.label
-            }}
-          </button>
-        </fieldset>
-        <div class="discover-filter-field">
-          <span>Game version</span
-          ><VersionPicker
-            v-model="version"
-            label="Discover game version"
-            :options="[
-              { value: '', label: 'All versions' },
-              { value: '1.21.1', label: '1.21.1' },
-              { value: '1.20.1', label: '1.20.1' },
-            ]"
-          />
-        </div>
-        <div v-if="loaders.length > 1" class="discover-filter-field">
-          <span>Loader</span
-          ><VersionPicker
-            v-model="loader"
-            label="Discover loader"
-            :options="[
-              { value: '', label: 'Any loader' },
-              ...loaders.map((value) => ({ value, label: value })),
-            ]"
-          />
-        </div>
-        <fieldset>
-          <legend>Categories</legend>
-          <button
-            :class="['discover-filter-option', { selected: !category }]"
-            :aria-pressed="!category"
-            @click="category = ''"
-          >
-            All categories</button
-          ><button
-            v-for="item in categories"
-            :key="item"
-            :class="['discover-filter-option', { selected: category === item }]"
-            :aria-pressed="category === item"
-            @click="category = item"
-          >
-            {{ item }}
-          </button>
-        </fieldset>
-        <button class="discover-reset" :disabled="!hasFilters" @click="reset">
-          <RotateCcw :size="13" />Reset filters
-        </button>
-        <p class="discover-sidebar-note">
-          Your next favourite belongs here.<br />Live catalogues are on the way.
-        </p>
-      </aside>
       <section class="discover-results" aria-label="Project catalogue">
         <label class="search-box discover-search"
           ><Search :size="20" /><input
@@ -385,6 +311,83 @@ watch([kind, query, category, source, loader, version, sort, perPage], () => {
           </nav>
         </footer>
       </section>
+      <aside class="discover-filters" aria-label="Discovery filters">
+        <div class="discover-filter-heading">
+          <SlidersHorizontal :size="15" />
+          <div>
+            <h2>Filters</h2>
+            <p>Narrow down your next find.</p>
+          </div>
+        </div>
+        <fieldset>
+          <legend>Source</legend>
+          <button
+            v-for="provider in [
+              { value: '', label: 'All sources' },
+              { value: 'Modrinth', label: 'Modrinth' },
+              { value: 'CurseForge', label: 'CurseForge' },
+            ]"
+            :key="provider.label"
+            :class="[
+              'discover-filter-option',
+              { selected: source === provider.value },
+            ]"
+            :aria-pressed="source === provider.value"
+            @click="source = provider.value"
+          >
+            <span :class="['source-dot', provider.value.toLowerCase()]" />{{
+              provider.label
+            }}
+          </button>
+        </fieldset>
+        <div class="discover-filter-field">
+          <span>Game version</span
+          ><VersionPicker
+            v-model="version"
+            label="Discover game version"
+            :options="[
+              { value: '', label: 'All versions' },
+              { value: '1.21.1', label: '1.21.1' },
+              { value: '1.20.1', label: '1.20.1' },
+            ]"
+          />
+        </div>
+        <div v-if="loaders.length > 1" class="discover-filter-field">
+          <span>Loader</span
+          ><VersionPicker
+            v-model="loader"
+            label="Discover loader"
+            :options="[
+              { value: '', label: 'Any loader' },
+              ...loaders.map((value) => ({ value, label: value })),
+            ]"
+          />
+        </div>
+        <fieldset>
+          <legend>Categories</legend>
+          <button
+            :class="['discover-filter-option', { selected: !category }]"
+            :aria-pressed="!category"
+            @click="category = ''"
+          >
+            All categories</button
+          ><button
+            v-for="item in categories"
+            :key="item"
+            :class="['discover-filter-option', { selected: category === item }]"
+            :aria-pressed="category === item"
+            @click="category = item"
+          >
+            {{ item }}
+          </button>
+        </fieldset>
+        <button class="discover-reset" :disabled="!hasFilters" @click="reset">
+          <RotateCcw :size="13" />Reset filters
+        </button>
+        <p class="discover-sidebar-note">
+          Your next favourite belongs here.<br />Live catalogues are on the way.
+        </p>
+      </aside>
     </div>
   </div>
 </template>
