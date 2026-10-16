@@ -31,18 +31,17 @@ CI refreshes metadata before each website build. After publishing an app release
 
 Website-only edits are ignored by the app workflow where possible. A separate release-scope check also prevents website/documentation/CI-only commits from publishing an installer. Changes to launcher source or `docs/RELEASE_NOTES.md` still permit the existing release process. Unknown paths conservatively count as launcher-relevant changes.
 
-## Proposed public hosting
+## Public hosting
 
-**GitHub Pages is not enabled or deployed by this change.** The proposed address is:
+The GitHub Pages deployment workflow targets:
 
 `https://jamesb123450.github.io/azuria-launcher/`
 
-The website is ready to be hosted as a static Pages artifact after implementation review and browser QA. A later hosting change should:
+A repository administrator must select **Settings → Pages → Build and deployment → Source → GitHub Actions** before the first deployment can succeed. The connected GitHub App cannot change this administrative setting. Once enabled, run **Website build and deploy** from the Actions tab on `main`, or rerun the failed deployment.
 
-1. Enable GitHub Pages with GitHub Actions as the source.
-2. Add Pages artifact upload and deployment to `.github/workflows/website.yml`, restricted to `main` or an explicit dispatch, with the `github-pages` environment and the required `pages: write` and `id-token: write` permissions.
-3. Preserve PR builds as checks/artifacts without deploying them.
-4. Verify the deployed pages, mobile navigation, download link and project-path assets.
+The workflow builds and tests the site, uploads a Pages artifact, and deploys only `main` through the `github-pages` environment. Pull requests and feature branches produce review artifacts without deploying. App releases dispatch the same workflow to refresh the public download and changelog pages.
+
+After the first deployment, verify the live pages, mobile navigation, appearance controls, download link and project-path assets. Local browser visual and interaction QA has not yet been completed.
 
 The build defaults to the proposed project-site URL. Set `AZURIA_SITE_URL` to an HTTPS URL ending in `/` when using a custom domain; the build derives links, canonical URLs, social metadata and sitemap paths from that value. The local preview helper is for the default `/azuria-launcher/` path.
 

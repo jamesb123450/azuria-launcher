@@ -1,4 +1,4 @@
-name: Website checks
+name: Website build and deploy
 on:
   push:
     branches: [main, "feat/**"]
@@ -40,5 +40,25 @@ jobs:
           path: website/dist/
           include-hidden-files: true
           if-no-files-found: error
-# Deployment to GitHub Pages is intentionally not configured yet.
-# Add the Pages environment/permissions and deployment job after review.
+      - name: Upload GitHub Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: website/dist/
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
