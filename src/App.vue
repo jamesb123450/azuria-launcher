@@ -124,6 +124,7 @@ onMounted(() => {
           ]"
           :aria-label="'Select ' + item.name"
           :title="item.name"
+          :aria-current="store.selected?.id === item.id ? 'true' : undefined"
           @click="store.selectedId = item.id"
           ><InstanceIcon
             :loader="item.loader"

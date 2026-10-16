@@ -27,7 +27,7 @@
   --border-strong: #ffffff1c;
   --text: #f0f2f8;
   --muted: #a0a9bd;
-  --subtle: #97a2b6;
+  --subtle: #a4aec1;
   --blue: #a4beff;
   --blue-solid: #94b1ff;
   --pink: #f0b3d4;
@@ -52,7 +52,7 @@ html[data-theme="light"] {
   --border-strong: #22385926;
   --text: #20283a;
   --muted: #56637b;
-  --subtle: #66738b;
+  --subtle: #596780;
   --blue: #3b5ebe;
   --blue-solid: #416bd8;
   --pink: #a23d74;
@@ -99,7 +99,10 @@ select {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+summary:focus-visible,
+textarea:focus-visible,
+[role="combobox"]:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 3px;
 }
@@ -145,7 +148,7 @@ p {
 .eyebrow {
   display: block;
   color: var(--subtle);
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0;
   font-weight: 650;
   margin-bottom: 8px;
@@ -197,9 +200,9 @@ p {
   color: var(--text);
 }
 .rail-link.router-link-exact-active {
-  background: var(--accent-wash);
-  color: var(--blue);
-  box-shadow: inset 0 0 0 1px #9bb6ff20;
+  background: color-mix(in srgb, var(--pink) 10%, transparent);
+  color: var(--pink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pink) 25%, transparent);
 }
 .rail-link.router-link-exact-active:before {
   content: "";
@@ -208,7 +211,7 @@ p {
   width: 3px;
   height: 18px;
   border-radius: 0 4px 4px 0;
-  background: var(--blue);
+  background: var(--pink);
 }
 .rail-tooltip {
   position: absolute;
@@ -263,8 +266,9 @@ p {
   height: 24px;
 }
 .quick-instance.active {
-  outline: 2px solid var(--blue);
-  outline-offset: 3px;
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--blue);
 }
 .quick-instance:hover {
 }
@@ -327,7 +331,7 @@ p {
   letter-spacing: -0.9px;
 }
 .brand-caption {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0;
   margin: 5px 0 0 3px;
@@ -355,11 +359,11 @@ p {
   margin-left: auto;
 }
 .preview-label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--subtle);
 }
 .build-pill {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -369,7 +373,7 @@ p {
   background: var(--panel-soft);
   padding: 3px 6px;
   border-radius: 5px;
-  font-size: 12px;
+  font-size: 13px;
 }
 .account-chip {
   display: flex;
@@ -632,7 +636,7 @@ html[data-theme="light"] .button.primary {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--subtle);
   white-space: nowrap;
 }
@@ -763,7 +767,7 @@ dialog::backdrop {
   letter-spacing: -0.7px;
 }
 .dialog-heading .eyebrow {
-  font-size: 12px;
+  font-size: 13px;
 }
 .instance-dialog > form > .muted {
   font-size: 13px;
@@ -830,7 +834,7 @@ dialog::backdrop {
 }
 .loader-option small {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -980,7 +984,7 @@ input[type="range"] {
   padding: 5px 9px;
   border-radius: 6px;
   background: var(--accent-wash);
-  font-size: 12px;
+  font-size: 13px;
 }
 .settings-panel > .text-link {
   margin-top: 18px;
@@ -1038,7 +1042,7 @@ input[type="range"] {
 }
 .stage-status {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   white-space: nowrap;
   border: 1px solid var(--border-strong);
@@ -1189,7 +1193,7 @@ main.is-library {
 }
 .count {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   padding: 2px 6px;
   border: 1px solid var(--border-strong);
   border-radius: 7px;
@@ -1373,7 +1377,7 @@ main.is-library {
 }
 .context-heading > span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   align-self: flex-start;
   margin-top: 3px;
 }
@@ -1396,7 +1400,7 @@ main.is-library {
 }
 .setup-subtitle {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   margin-top: 3px;
   color: var(--subtle);
@@ -1920,4 +1924,82 @@ html[data-theme="light"] .skip-link {
 }
 .instance-grid.list-layout {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* Readable supporting text and distinct navigation, selection and focus states. */
+:root {
+  --focus-ring: #c5d5ff;
+}
+html[data-theme="light"] {
+  --focus-ring: #234ca8;
+}
+:where(
+  button,
+  a,
+  input,
+  select,
+  summary,
+  textarea,
+  [role="combobox"]
+):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+.rail-link:focus-visible,
+.quick-instance:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 5px;
+}
+.instance-select:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -4px;
+}
+.instance-card.selected {
+  border-color: var(--blue);
+  box-shadow: inset 3px 0 var(--blue);
+}
+.filter-tabs button[aria-pressed="true"],
+.view-switch button[aria-pressed="true"] {
+  border-color: var(--blue);
+  box-shadow: inset 0 -2px var(--blue);
+  font-weight: 600;
+}
+.theme-card[aria-pressed="true"] {
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+.settings-panel h2,
+.account-panel h2,
+.development-panel h2 {
+  line-height: 1.4;
+}
+.settings-panel p,
+.empty-state p,
+.development-panel p {
+  line-height: 1.65;
+}
+.rail-avatar {
+  background: var(--panel-soft);
+  color: var(--blue);
+  border: 1px solid var(--border-strong);
+}
+html[data-theme="light"] .rail-avatar {
+  color: var(--blue);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+.instance-card .instance-select {
+  padding-right: 48px;
+}
+@media (max-width: 1100px) {
+  .jump-section {
+    display: none;
+  }
 }

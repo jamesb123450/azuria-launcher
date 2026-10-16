@@ -138,3 +138,61 @@ test("populated library remains readable at desktop size", async ({ page }) => {
     animations: "disabled",
   });
 });
+
+test("library states fit both themes at minimum and wide desktop sizes", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const theme of ["dark", "light"]) {
+    for (const count of [0, 1, 8]) {
+      await page.evaluate(
+        ({ theme, count }) =>
+          localStorage.setItem(
+            "azuria-preview-v1",
+            JSON.stringify({
+              settings: { theme },
+              instances: Array.from({ length: count }, (_, index) => ({
+                id: `state-${index}`,
+                name:
+                  index === 0
+                    ? "Weekend survival with friends"
+                    : `Instance ${index}`,
+                minecraftVersion: "1.21.1",
+                loader: index % 2 ? "fabric" : "vanilla",
+                memoryMb: 4096,
+                favorite: false,
+                createdAt: Date.now() - index * 86400000,
+              })),
+            }),
+          ),
+        { theme, count },
+      );
+      await page.reload();
+      for (const width of [900, 1920]) {
+        await page.setViewportSize({
+          width,
+          height: width === 900 ? 650 : 1080,
+        });
+        await expect(page.locator(".instance-card")).toHaveCount(count);
+        await expect(page.locator(".selected-instance")).toHaveCount(
+          count ? 1 : 0,
+        );
+        expect(
+          await page
+            .locator(".play-main")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+        await expect(
+          page.getByRole("button", { name: "Create instance", exact: true }),
+        ).toBeInViewport();
+        if (count)
+          await expect(
+            page.getByRole("button", { name: "Edit instance", exact: true }),
+          ).toBeInViewport();
+        await page.screenshot({
+          path: `test-results/library-${theme}-${count}-${width}.png`,
+        });
+      }
+    }
+  }
+});
