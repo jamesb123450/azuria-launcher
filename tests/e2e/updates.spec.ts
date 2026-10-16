@@ -13,6 +13,9 @@ async function setup(page: import("@playwright/test").Page, fail = false) {
             args?: { onEvent?: { onmessage: (event: unknown) => void } },
           ) => {
             commands.push(cmd);
+            if (cmd === "game_launches") return [];
+            if (cmd === "plugin:event|listen") return 1;
+            if (cmd === "plugin:event|unlisten") return;
             if (cmd === "storage_migration_needed") return false;
             if (cmd === "prepare_storage")
               return {

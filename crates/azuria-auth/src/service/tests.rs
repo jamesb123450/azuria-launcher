@@ -70,6 +70,7 @@ impl Provider for Fake {
             },
             access_token: "minecraft-secret".into(),
             expires_at: crate::now() + 3600,
+            xuid: None,
         })
     }
 }
@@ -239,4 +240,28 @@ async fn stalled_login_times_out_and_releases_pending_state() {
     assert_eq!(error.code, "timeout");
     assert!(service.begin().await.is_ok());
     assert!(service.status().await.account.is_none());
+}
+
+#[tokio::test]
+async fn native_launch_handoff_refreshes_expired_sessions_and_requires_verified_account() {
+    let service = AuthService::new(
+        Fake {
+            fail: false,
+            wait: false,
+        },
+        Vault::default(),
+    );
+    assert!(service.launch_session(progress()).await.is_err());
+    service.sign_in(open(), progress()).await.unwrap();
+    let session = service.launch_session(progress()).await.unwrap();
+    assert_eq!(session.access_token, "minecraft-secret");
+    {
+        let mut inner = service.inner.lock().await;
+        inner.session.as_mut().unwrap().expires_at = 0;
+    }
+    assert!(service.launch_session(progress()).await.unwrap().expires_at > crate::now() + 60);
+    let view = serde_json::to_string(&service.status().await).unwrap();
+    assert!(!view.contains("secret"));
+    service.sign_out().await.unwrap();
+    assert!(service.launch_session(progress()).await.is_err());
 }

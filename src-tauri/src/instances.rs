@@ -95,7 +95,9 @@ pub async fn duplicate_instance(
 ) -> Result<Instance, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<AppState>();
-        with_store(&state, |s| s.duplicate(&id, include_files))
+        app.state::<crate::game::Games>().with_idle(&id, || {
+            with_store(&state, |s| s.duplicate(&id, include_files))
+        })
     })
     .await
     .map_err(|e| e.to_string())?

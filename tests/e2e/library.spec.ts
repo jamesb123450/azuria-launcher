@@ -86,9 +86,12 @@ test("persistent library lifecycle and honest launch state", async ({
     page.getByRole("button", { name: "Launch unavailable", exact: true }),
   ).toBeDisabled();
   await expect(
-    page.getByText("Game downloads and launching are still in development.", {
-      exact: true,
-    }),
+    page.getByText(
+      "Open an instance to manage its worlds, files and game logs.",
+      {
+        exact: true,
+      },
+    ),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Favourite Aurora", exact: true })

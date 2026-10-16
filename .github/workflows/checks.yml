@@ -74,6 +74,9 @@ jobs:
       - run: cargo fmt --manifest-path crates/azuria-core/Cargo.toml -- --check
       - run: cargo test --locked --manifest-path crates/azuria-core/Cargo.toml
       - run: cargo clippy --locked --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings
+      - run: cargo fmt --manifest-path crates/azuria-launch/Cargo.toml -- --check
+      - run: cargo test --locked --manifest-path crates/azuria-launch/Cargo.toml
+      - run: cargo clippy --locked --manifest-path crates/azuria-launch/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - run: npm run desktop:build -- --debug

@@ -11,10 +11,12 @@ pub struct MicrosoftTokens {
     pub access_token: String,
     pub refresh_token: String,
 }
+#[derive(Clone)]
 pub struct SessionTokens {
     pub account: Account,
     pub access_token: String,
     pub expires_at: u64,
+    pub xuid: Option<String>,
 }
 #[async_trait]
 pub trait Provider: Send + Sync {
@@ -310,6 +312,10 @@ impl Provider for WebProvider {
             },
             access_token: access.into(),
             expires_at: crate::now().saturating_add(lifetime.saturating_sub(60)),
+            xuid: xsts["DisplayClaims"]["xui"][0]["xid"]
+                .as_str()
+                .filter(|s| !s.is_empty() && s.len() <= 20 && s.bytes().all(|c| c.is_ascii_digit()))
+                .map(str::to_owned),
         })
     }
 }

@@ -123,9 +123,9 @@ const themes: {
       </p>
     </template>
     <p class="muted">
-      Game downloads and provider configuration will appear as those
-      integrations are implemented. This build does not collect analytics or
-      upload logs.
+      Vanilla game downloads and Java preparation are available through Play.
+      Live content-provider integrations remain in development. This build does
+      not collect analytics or upload logs.
     </p>
     <RouterLink class="text-link" to="/roadmap"
       >View development status</RouterLink

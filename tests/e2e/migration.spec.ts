@@ -15,8 +15,12 @@ async function mockStorage(page: Page, failPrepare = false) {
         isTauri: true,
         storageCommands: commands,
         __TAURI_INTERNALS__: {
+          transformCallback: () => 1,
           invoke: async (cmd: string) => {
             commands.push(cmd);
+            if (cmd === "game_launches") return [];
+            if (cmd === "plugin:event|listen") return 1;
+            if (cmd === "plugin:event|unlisten") return;
             if (cmd === "storage_migration_needed")
               return !sessionStorage.getItem("acknowledged");
             if (cmd === "prepare_storage") {

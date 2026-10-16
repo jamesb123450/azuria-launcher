@@ -1,4 +1,5 @@
 mod browser;
+mod game;
 mod instances;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
@@ -161,19 +162,24 @@ fn create_instance(state: State<'_, AppState>, input: InstanceInput) -> Result<I
 }
 #[tauri::command]
 fn update_instance(
+    games: State<'_, game::Games>,
     state: State<'_, AppState>,
     id: String,
     input: InstanceInput,
 ) -> Result<Instance, String> {
-    with_store(&state, |store| store.update(&id, input))
+    games.with_idle(&id, || with_store(&state, |store| store.update(&id, input)))
 }
 #[tauri::command]
 fn toggle_favorite(state: State<'_, AppState>, id: String) -> Result<Instance, String> {
     with_store(&state, |store| store.favorite(&id))
 }
 #[tauri::command]
-fn delete_instance(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    with_store(&state, |store| store.delete(&id))
+fn delete_instance(
+    games: State<'_, game::Games>,
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<(), String> {
+    games.with_idle(&id, || with_store(&state, |store| store.delete(&id)))
 }
 #[tauri::command]
 fn get_settings(state: State<'_, AppState>) -> Result<Settings, String> {
@@ -276,6 +282,7 @@ pub fn run() {
                 checked: false,
                 acknowledgement_required: true,
             }));
+            app.manage(game::Games::default());
             app.manage(Accounts::new(
                 WebProvider::new().map_err(|error| std::io::Error::other(error.message))?,
                 NativeVault,
@@ -291,10 +298,16 @@ pub fn run() {
                     .unwrap_or(true);
                 if blocked {
                     api.prevent_close();
+                } else if window.state::<game::Games>().has_active() {
+                    api.prevent_close();
+                    let _ = window.emit("game-close-blocked", ());
                 }
             }
         })
         .invoke_handler(tauri::generate_handler![
+            game::launch_instance,
+            game::cancel_launch,
+            game::game_launches,
             instances::get_launch_defaults,
             instances::save_launch_defaults,
             instances::get_instance_overrides,

@@ -73,8 +73,8 @@ onMounted(load);
       </div>
     </div>
     <p class="instance-notice">
-      These preferences are saved for future use. Minecraft launching is not
-      available yet.
+      These preferences apply when launching Vanilla instances. Other mod
+      loaders are not yet supported.
     </p>
     <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
     <button v-if="!loaded && !busy" class="button secondary" @click="load">
