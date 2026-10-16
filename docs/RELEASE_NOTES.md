@@ -1,14 +1,14 @@
 ## Changes
 
-- Moved Discover filters into a separate right-hand sidebar, with catalogue results on the left.
-- Added a pink accent, clearer filter grouping and independently scrollable controls while preserving Azuria’s blue selection states.
-- Adjusted the layout for dark and light themes and the minimum desktop window size.
-- Preserved local search, filters, sorting and pagination across all four content categories.
+- Polished the interface while retaining Azuria’s layout, pink-and-blue theme and right-hand Discover filters.
+- Standardised Library sorting and grouping with themed, keyboard-accessible dropdowns.
+- Improved supporting-text readability, control sizing and card consistency, with calmer hover effects and notification shadows.
+- Replaced promotional wording with clearer descriptions and simplified the empty-library screen.
+- Added a keyboard Skip to content link and clearer account progress and update errors.
+- Made settings actions wrap when space is limited. Success notices now clear after five seconds or navigation; errors remain visible until dismissed.
 
 ## Update information
 
-Install through Settings → Update & restart, then open Discover from the sidebar.
+Install through Settings → Update & restart.
 
-The catalogue still uses clearly labelled fictional example projects, creators and statistics. Live provider searches, downloads and installation are not connected; Install buttons remain disabled.
-
-This update does not change saved instances or accounts. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.
+This update does not change saved instances, accounts or the database schema. Discover remains a fictional catalogue preview with installation disabled. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.
