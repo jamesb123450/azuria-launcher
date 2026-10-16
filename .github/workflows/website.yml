@@ -13,6 +13,8 @@ on:
       - ".github/workflows/website.yml"
       - ".github/scripts/release-scope.mjs"
       - "docs/WEBSITE.md"
+  schedule:
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 permissions:
   contents: read

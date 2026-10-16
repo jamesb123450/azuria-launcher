@@ -38,3 +38,101 @@ for (const button of document.querySelectorAll("[data-preview-image]")) {
     if (caption) caption.textContent = button.dataset.previewCaption;
   });
 }
+
+// Static content stays usable offline; successful API data refreshes the latest release only.
+async function refreshLatestRelease() {
+  const status = document.querySelector("[data-release-status]");
+  try {
+    const { latestReleaseAPI, parseRelease, releaseSummary } =
+      await import("./release-data.mjs");
+    const response = await fetch(latestReleaseAPI, {
+      headers: { Accept: "application/vnd.github+json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) throw new Error("Release lookup unavailable");
+    const latest = parseRelease(await response.json());
+    if (!latest) throw new Error("Unexpected release metadata");
+    if (latest.installer) {
+      for (const anchor of document.querySelectorAll("[data-download-link]"))
+        anchor.href = latest.installer;
+    }
+    const date = new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(latest.published));
+    for (const node of document.querySelectorAll("[data-latest-version]"))
+      node.textContent = latest.tag;
+    for (const node of document.querySelectorAll("[data-latest-date]")) {
+      node.textContent = date;
+      if (node.tagName === "TIME") node.dateTime = latest.published;
+    }
+    const card = document.querySelector("[data-latest-card]");
+    if (card) {
+      card.querySelector(".update-cover > span").textContent = latest.tag;
+      card.querySelector("h3").textContent = `Azuria ${latest.version}`;
+      card.querySelector(".update-body p").textContent = releaseSummary(
+        latest.notes,
+      );
+      const time = card.querySelector("time");
+      time.textContent = date;
+      time.dateTime = latest.published;
+      for (const anchor of card.querySelectorAll("a")) anchor.href = latest.url;
+      card
+        .querySelector(".update-cover")
+        .setAttribute("aria-label", `Read ${latest.tag} release notes`);
+    }
+    const notice = document.querySelector("[data-latest-notice]");
+    const history = document.querySelector(".release-list");
+    if (history && notice?.dataset.builtTag !== latest.tag) {
+      // Build a new entry with textContent, never release-provided HTML.
+      for (const badge of history.querySelectorAll(".outline-badge"))
+        badge.remove();
+      const entry = document.createElement("article");
+      entry.className = "release-entry";
+      const heading = document.createElement("h2");
+      heading.textContent = latest.tag;
+      const time = document.createElement("time");
+      time.dateTime = latest.published;
+      time.textContent = date;
+      const notes = document.createElement("div");
+      notes.className = "live-release-notes";
+      notes.textContent = latest.notes;
+      const anchor = document.createElement("a");
+      anchor.className = "text-link";
+      anchor.href = latest.url;
+      anchor.textContent = "View release on GitHub";
+      entry.append(heading, time, notes, anchor);
+      history.prepend(entry);
+    }
+    if (notice) notice.dataset.builtTag = latest.tag;
+    if (status)
+      status.textContent =
+        "Checked against the latest published GitHub release.";
+  } catch {
+    if (status)
+      status.textContent =
+        "Live release check unavailable. Use View latest release for the current download and notes.";
+  }
+}
+let lastReleaseCheck = Date.now();
+refreshLatestRelease();
+setInterval(
+  () => {
+    if (document.visibilityState !== "visible") return;
+    lastReleaseCheck = Date.now();
+    refreshLatestRelease();
+  },
+  15 * 60 * 1000,
+);
+document.addEventListener("visibilitychange", () => {
+  if (
+    document.visibilityState === "visible" &&
+    Date.now() - lastReleaseCheck > 5 * 60 * 1000
+  ) {
+    lastReleaseCheck = Date.now();
+    refreshLatestRelease();
+  }
+});

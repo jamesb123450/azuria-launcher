@@ -74,20 +74,18 @@ export function render(page, { siteURL, base, releases }) {
   const link = (path) => `${base}${path}`;
   const asset = (name) => link(`assets/${name}`);
   const latest = releases[0];
-  const releaseURL = safeReleaseURL(latest.url)
-    ? latest.url
-    : `${repository}/releases/latest`;
-  const installer = safeReleaseURL(latest.installer, true)
-    ? latest.installer
-    : releaseURL;
-  const size = latest.size
-    ? `${(latest.size / 1000000).toFixed(1)} MB`
-    : "Windows installer";
+  const releaseURL = `${repository}/releases/latest`;
+  // GitHub resolves this stable URL at click time, including when the static build is older.
+  const installer = `${repository}/releases/latest`;
+
   const titles = {
     home: "Azuria Launcher — Minecraft instances, organised",
     downloads: "Download Azuria Launcher for Windows",
     changelog: "Changelog — Azuria Launcher",
     help: "Help & current status — Azuria Launcher",
+    privacy: "Privacy policy — Azuria Launcher",
+    terms: "Terms of service — Azuria Launcher",
+    contact: "Contact — Azuria Launcher",
     404: "Page not found — Azuria Launcher",
   };
   const descriptions = {
@@ -97,6 +95,12 @@ export function render(page, { siteURL, base, releases }) {
     changelog:
       "Published Azuria Launcher releases, changes and update information.",
     help: "Help with Azuria installation, signed updates, Microsoft sign-in and current development limitations.",
+    privacy:
+      "How the Azuria website and launcher handle data, hosting, account connections and support requests.",
+    terms:
+      "Terms for using the Azuria website and development builds, including third-party services and content rights.",
+    contact:
+      "Get help, report a bug or contact the Azuria project through GitHub.",
     404: "This page could not be found. Return to the Azuria Launcher website.",
   };
   const nav = (name, path) =>
@@ -106,7 +110,11 @@ export function render(page, { siteURL, base, releases }) {
       >${name}</a
     >`;
   const download = (label = "Download for Windows", extra = "") =>
-    html`<a class="button primary" href="${e(installer)}" ${extra}
+    html`<a
+      class="button primary"
+      data-download-link
+      href="${e(installer)}"
+      ${extra}
       >${icon("download", 18)}${label}${icon("arrow", 17)}</a
     >`;
   const status = html`<div class="development-note">
@@ -140,7 +148,7 @@ export function render(page, { siteURL, base, releases }) {
         </button>
         <nav id="site-navigation" aria-label="Main navigation">
           <a href="${link("")}#features">Features</a
-          >${nav("Downloads", "downloads/")}${nav("Changelog", "changelog/")}${nav("Help", "help/")}<a
+          >${nav("Downloads", "downloads/")}${nav("Changelog", "changelog/")}${nav("Help", "help/")}${nav("Contact", "contact/")}<a
             class="github-link"
             href="${repository}"
             >GitHub ${icon("external", 13)}</a
@@ -158,17 +166,28 @@ export function render(page, { siteURL, base, releases }) {
           >azuria</span
         ></a
       >
-      <p>A launcher taking shape, one release at a time.</p>
+      <p>Minecraft Java, organised your way.</p>
       <a href="${repository}">View the project ${icon("external", 13)}</a>
     </div>
     <div class="footer-bottom">
       <span>An independent Minecraft Java launcher.</span>
       <div>
-        <a href="${link("help/")}#privacy">Privacy</a
-        ><a href="${link("help/")}#support">Get help</a
+        <a href="${link("privacy/")}">Privacy policy</a
+        ><a href="${link("terms/")}">Terms of service</a
+        ><a href="${link("contact/")}">Contact</a
         ><a href="${repository}/issues">Report an issue</a>
       </div>
     </div>
+    <p class="image-credit">
+      Minecraft landscape:
+      <a
+        href="https://commons.wikimedia.org/wiki/File:Minecraft_Beta_1.8.1_Gameplay_Screenshot.png"
+        >Xbox México, via Wikimedia Commons</a
+      >
+      · <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.
+      Converted to WebP, cropped and darkened for the hero. Not captured in
+      Azuria.
+    </p>
     <p class="disclaimer">
       Not an official Minecraft product. Not approved by or associated with
       Mojang or Microsoft.
@@ -197,7 +216,8 @@ export function render(page, { siteURL, base, releases }) {
               >
             </div>
             <span class="download-meta"
-              >${e(latest.tag)} · ${e(size)} · Windows development preview</span
+              ><span data-latest-version>${e(latest.tag)}</span> · Windows x64 ·
+              Development build</span
             >
             ${status}
           </div>
@@ -262,7 +282,10 @@ export function render(page, { siteURL, base, releases }) {
               const destination = safeReleaseURL(release.url)
                 ? release.url
                 : `${repository}/releases/latest`;
-              return html`<article class="update-card">
+              return html`<article
+                class="update-card"
+                ${index === 0 ? "data-latest-card" : ""}
+              >
                 <a
                   href="${e(destination)}"
                   class="update-cover"
@@ -299,11 +322,11 @@ export function render(page, { siteURL, base, releases }) {
       <section class="launcher-showcase container">
         <div class="section-kicker">MEET YOUR NEW LIBRARY</div>
         <h2>Everything has its place.</h2>
-        <p>A closer look at the Azuria interface.</p>
+        <p>Create, organise and personalise your instance settings.</p>
         <figure class="hero-shot">
           <div class="shot-caption">
             <span><i class="tiny-mark"></i> YOUR LIBRARY. YOUR WAY.</span
-            ><span>Interface preview · Example instances</span>
+            ><span>Instance library</span>
           </div>
           <img
             src="${asset("library.png")}"
@@ -392,7 +415,7 @@ export function render(page, { siteURL, base, releases }) {
                 aria-pressed="true"
                 data-preview-image="${asset("library.png")}"
                 data-preview-alt="Azuria’s library in dark mode, with example instances."
-                data-preview-caption="Dark appearance · Example instances"
+                data-preview-caption="Dark appearance · Instance library"
               >
                 Dark</button
               ><button
@@ -418,38 +441,10 @@ export function render(page, { siteURL, base, releases }) {
               loading="lazy"
             />
             <figcaption data-preview-caption>
-              Dark appearance · Example instances
+              Dark appearance · Instance library
             </figcaption>
           </figure>
         </div>
-      </section>
-      <section class="section container discover-section">
-        <div class="section-topline">
-          <div>
-            <div class="section-kicker">A LOOK AT WHAT’S NEXT</div>
-            <h2>More to discover.</h2>
-          </div>
-          <span class="outline-badge">Interface preview</span>
-        </div>
-        <div class="discover-intro">
-          <p>
-            A home for modpacks, mods, datapacks and resource packs. Search and
-            filter the example catalogue to explore the interface.
-          </p>
-          <p class="small-note">
-            The projects and statistics shown are fictional. Live provider
-            search, downloads and installation are not connected.
-          </p>
-        </div>
-        <figure class="wide-shot">
-          <img
-            src="${asset("discover.png")}"
-            width="1280"
-            height="900"
-            alt="Azuria Discover preview with category tabs, example project rows and a separate right-hand filter sidebar."
-            loading="lazy"
-          />
-        </figure>
       </section>
       <section class="section container progress-section">
         <div class="section-copy">
@@ -503,8 +498,8 @@ export function render(page, { siteURL, base, releases }) {
       <section class="closing container">
         <div>
           <span class="section-kicker">TAKE A LOOK AROUND</span>
-          <h2>Try the development preview.</h2>
-          <p>A first look at Azuria. A clearer idea of where it’s going.</p>
+          <h2>Download Azuria.</h2>
+          <p>Available for Windows x64. See requirements before installing.</p>
         </div>
         <div>
           ${download()}<a class="quiet-link" href="${link("downloads/")}"
@@ -515,7 +510,7 @@ export function render(page, { siteURL, base, releases }) {
   if (page === "downloads")
     content = html`<section class="page-intro container">
         <div class="section-kicker">DOWNLOADS</div>
-        <h1>A first look at Azuria.</h1>
+        <h1>Download Azuria.</h1>
         <p>
           Try the Windows development preview. Your instance settings stay on
           your computer.
@@ -527,23 +522,25 @@ export function render(page, { siteURL, base, releases }) {
             ${icon("windows", 32)}<span>WINDOWS X64</span
             ><span class="outline-badge">Early access</span>
           </div>
-          <h2>Azuria Launcher <span>${e(latest.tag)}</span></h2>
+          <h2>
+            Azuria Launcher <span data-latest-version>${e(latest.tag)}</span>
+          </h2>
           <p>
             The standard installer for the current Windows development build.
           </p>
-          ${download("Download installer")}
+          ${download("View latest download")}
           <dl class="download-details">
             <div>
               <dt>Version</dt>
-              <dd>${e(latest.tag)}</dd>
+              <dd data-latest-version>${e(latest.tag)}</dd>
             </div>
             <div>
               <dt>Published</dt>
-              <dd>${e(date(latest.published))}</dd>
+              <dd data-latest-date>${e(date(latest.published))}</dd>
             </div>
             <div>
-              <dt>Download</dt>
-              <dd>${e(size)}</dd>
+              <dt>Channel</dt>
+              <dd>Development</dd>
             </div>
             <div>
               <dt>Platform</dt>
@@ -626,7 +623,7 @@ export function render(page, { siteURL, base, releases }) {
   if (page === "changelog")
     content = html`<section class="page-intro container">
         <div class="section-kicker">CHANGELOG</div>
-        <h1>A little better,<br />with each release.</h1>
+        <h1>Release notes.</h1>
         <p>
           Published changes, straight from the project’s release notes. Install
           updates from Settings in Azuria.
@@ -635,8 +632,8 @@ export function render(page, { siteURL, base, releases }) {
       <div class="container changelog-layout">
         <aside class="changelog-aside">
           <span class="section-kicker">LATEST RELEASE</span
-          ><strong>${e(latest.tag)}</strong
-          ><span>${e(date(latest.published))}</span
+          ><strong data-latest-version>${e(latest.tag)}</strong
+          ><span data-latest-date>${e(date(latest.published))}</span
           ><a class="text-link" href="${link("downloads/")}"
             >Get the installer ${icon("arrow", 15)}</a
           ><a class="quiet-link" href="${repository}/releases"
@@ -671,7 +668,7 @@ export function render(page, { siteURL, base, releases }) {
   if (page === "help")
     content = html`<section class="page-intro container">
         <div class="section-kicker">HELP & INFORMATION</div>
-        <h1>A few things<br />worth knowing.</h1>
+        <h1>Help & support.</h1>
         <p>Installation, updates and an honest look at what works today.</p>
       </section>
       <div class="container help-layout">
@@ -749,6 +746,10 @@ export function render(page, { siteURL, base, releases }) {
           <section id="privacy">
             <h2>Privacy & storage</h2>
             <p>
+              Read the <a href="${link("privacy/")}">privacy policy</a> for
+              website hosting, account data and support information.
+            </p>
+            <p>
               This website has no analytics, advertising scripts or website
               accounts. Fonts and screenshots are served with the site. GitHub
               hosts the site and installer downloads and processes requests
@@ -789,6 +790,289 @@ export function render(page, { siteURL, base, releases }) {
           </section>
         </div>
       </div>`;
+  if (page === "privacy")
+    content = html`<section class="page-intro container">
+        <div class="section-kicker">YOUR INFORMATION</div>
+        <h1>Privacy policy</h1>
+        <p>
+          Last updated: 16 October 2026. This policy covers this website and the
+          current Azuria development launcher.
+        </p>
+      </section>
+      <div class="container legal-layout">
+        <nav class="legal-toc" aria-label="Privacy sections">
+          <a href="#operator">The project</a
+          ><a href="#website-data">Website data</a
+          ><a href="#launcher-data">Launcher data</a
+          ><a href="#support-data">Support</a
+          ><a href="#your-choices">Your choices</a>
+        </nav>
+        <article class="legal-content">
+          <section id="operator">
+            <h2>Who runs Azuria</h2>
+            <p>
+              Azuria is an independent project maintained by
+              <a href="https://github.com/jamesb123450"
+                >jamesb123450 on GitHub</a
+              >. It is not operated by Microsoft or Mojang. The
+              <a href="${link("contact/")}">contact page</a> lists the available
+              ways to reach the project.
+            </p>
+          </section>
+          <section id="website-data">
+            <h2>When you visit this website</h2>
+            <p>
+              This website does not create accounts, set its own cookies, store
+              preferences in your browser or include analytics, advertising
+              trackers or embedded social feeds. Fonts and images are hosted
+              with the website.
+            </p>
+            <p>
+              GitHub Pages hosts the website and GitHub Releases hosts
+              downloads. GitHub receives technical request information, such as
+              your IP address and browser details, to provide and secure those
+              services. Its handling, retention and international processing of
+              that information are described in the
+              <a
+                href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+                >GitHub Privacy Statement</a
+              >.
+            </p>
+            <p>
+              When a page opens, your browser requests the latest published
+              release from GitHub’s public API. This sends ordinary connection
+              information to GitHub; it does not send launcher settings, account
+              details or files. If the request fails, the last built release
+              information remains visible and the latest-release link still
+              works.
+            </p>
+          </section>
+          <section id="launcher-data">
+            <h2>When you use the launcher</h2>
+            <p>
+              The launcher stores instance settings, preferences and account
+              profile information locally on your computer. Microsoft refresh
+              credentials are saved through Windows Credential Manager.
+              Authentication tokens are handled by the native launcher rather
+              than collected by this website.
+            </p>
+            <p>
+              Choosing Microsoft sign-in connects to Microsoft, Xbox and
+              Minecraft Services for authentication, entitlement checks and
+              profile information. Azuria does not ask you to enter your
+              Microsoft password on this website. Microsoft processes those
+              requests under its
+              <a href="https://privacy.microsoft.com/en-gb/privacystatement"
+                >Privacy Statement</a
+              >.
+            </p>
+            <p>
+              The current launcher checks GitHub for updates and contacts
+              version-metadata services when you use relevant version selectors.
+              Those providers receive normal network request information. The
+              current app does not include analytics collection or automatically
+              upload your logs to the project maintainer.
+            </p>
+          </section>
+          <section id="support-data">
+            <h2>Information you choose to share</h2>
+            <p>
+              If you create a GitHub issue, the maintainer can see your GitHub
+              username and anything you submit. Issues are public. Share only
+              the details needed to investigate the problem. Never post
+              passwords, tokens, private logs or sensitive personal information.
+            </p>
+            <p>
+              Support information is used to answer requests, investigate faults
+              and maintain the project. The project’s interest in providing
+              support is the reason for this processing. Public issues and their
+              history can remain available until removed through GitHub’s
+              controls; copies may exist outside the project’s control. The
+              contact page has no active message form and does not collect or
+              send form entries.
+            </p>
+          </section>
+          <section id="your-choices">
+            <h2>Your choices and rights</h2>
+            <p>
+              You can use the website without signing in. To remove saved
+              launcher account credentials, sign out in Settings. Local
+              preferences and instance files remain on your device until you
+              remove them; deleting an instance may retain files in local trash.
+              See the
+              <a href="${repository}/blob/main/docs/RECOVERY.md"
+                >storage and recovery guide</a
+              >
+              before removing files.
+            </p>
+            <p>
+              Depending on applicable law, you may have rights to access,
+              correct, delete or restrict the use of personal information, or to
+              object to processing. For information held by GitHub or Microsoft,
+              use that provider’s privacy request process. For information
+              shared directly with the Azuria maintainer, use the
+              <a href="${link("contact/")}">contact page</a> to request a
+              suitable route without publishing sensitive details. UK users can
+              also contact the
+              <a href="https://ico.org.uk/make-a-complaint/"
+                >Information Commissioner’s Office</a
+              >.
+            </p>
+            <p>
+              Changes to this policy will be published here with a revised date.
+              New collection or integrations will be described before they are
+              introduced.
+            </p>
+          </section>
+        </article>
+      </div>`;
+  if (page === "terms")
+    content = html`<section class="page-intro container">
+        <div class="section-kicker">USING AZURIA</div>
+        <h1>Terms of service</h1>
+        <p>
+          Last updated: 16 October 2026. These terms describe use of this
+          website and the published Azuria development builds.
+        </p>
+      </section>
+      <article class="container legal-content legal-single">
+        <section>
+          <h2>About the project</h2>
+          <p>
+            Azuria is an independent Minecraft Java launcher project maintained
+            by <a href="https://github.com/jamesb123450">jamesb123450</a>. It is
+            not an official Minecraft product and is not approved by or
+            associated with Mojang or Microsoft. Contact the project through the
+            <a href="${link("contact/")}">contact page</a>.
+          </p>
+        </section>
+        <section>
+          <h2>Development builds</h2>
+          <p>
+            Current builds are offered without charge for Windows x64. Features
+            and availability can change. Game installation and launching are not
+            currently available, and Minecraft Services access for Azuria is
+            awaiting review. The
+            <a href="${link("help/")}#status">current status</a> and
+            <a href="${link("changelog/")}">release notes</a> describe available
+            functionality.
+          </p>
+          <p>
+            Development software may contain errors or stop working with
+            third-party services. Keep backups of important files and review
+            release information before updating. Future features, platform
+            support and completion dates are not promised.
+          </p>
+        </section>
+        <section>
+          <h2>Your responsibilities</h2>
+          <p>
+            Use Azuria and this website lawfully. Do not attempt to compromise
+            the website, abuse third-party services, distribute malware or
+            access accounts without permission. You are responsible for
+            protecting your device, credentials and backups.
+          </p>
+          <p>
+            Azuria does not include a Minecraft licence, paid game content or
+            permission to bypass account checks. You must have the rights needed
+            for any game, mod, resource pack or other content you use.
+            Microsoft, Minecraft and other providers’ terms continue to apply to
+            their services and content.
+          </p>
+        </section>
+        <section>
+          <h2>Downloads and third-party services</h2>
+          <p>
+            Use this website’s links to the project’s GitHub Releases for
+            official Azuria builds. Signed in-app updates and Windows publisher
+            signing are different mechanisms; current development installers are
+            not Windows Authenticode signed. Third-party websites and services
+            are operated independently and have their own terms and privacy
+            policies.
+          </p>
+        </section>
+        <section>
+          <h2>Content and source code</h2>
+          <p>
+            Azuria branding, website content and source code remain subject to
+            their owners’ rights. A public source repository does not itself
+            grant a licence to reuse all project material. Follow any licence
+            supplied with a specific file or dependency. Minecraft and other
+            third-party names and assets belong to their respective owners.
+          </p>
+          <p>
+            The hero screenshot is credited below under its own Creative Commons
+            licence. That licence applies to the credited image and does not
+            imply endorsement of Azuria.
+          </p>
+        </section>
+        <section>
+          <h2>Availability and your rights</h2>
+          <p>
+            The project does not promise uninterrupted availability,
+            compatibility with every system or error-free operation. Nothing in
+            these terms excludes or limits rights or responsibilities that
+            cannot lawfully be excluded or limited, including applicable
+            consumer rights.
+          </p>
+          <p>
+            Changes to these terms will be published here with an updated date.
+            Questions can be raised through the
+            <a href="${link("contact/")}">contact page</a>. The
+            <a href="${link("privacy/")}">privacy policy</a> explains how
+            information is handled.
+          </p>
+        </section>
+      </article>`;
+  if (page === "contact")
+    content = html`<section class="page-intro container">
+        <div class="section-kicker">GET IN TOUCH</div>
+        <h1>Contact Azuria</h1>
+        <p>
+          Report a problem, suggest an improvement or ask about the project.
+        </p>
+      </section>
+      <div class="container contact-grid">
+        <article class="contact-card">
+          <span class="contact-icon">${icon("layers", 28)}</span>
+          <h2>Report a bug</h2>
+          <p>
+            Include your Azuria version, Windows version and the steps that
+            caused the problem. Check existing issues first.
+          </p>
+          <a class="button primary" href="${repository}/issues/new"
+            >Open a GitHub issue ${icon("external", 16)}</a
+          >
+        </article>
+        <article class="contact-card">
+          <span class="contact-icon">${icon("external", 28)}</span>
+          <h2>Project enquiries</h2>
+          <p>
+            Contact the maintainer through the public project on GitHub. There
+            is no promised response time.
+          </p>
+          <a class="button secondary" href="${repository}/issues"
+            >Visit the project ${icon("external", 16)}</a
+          >
+        </article>
+      </div>
+      <section class="container contact-note">
+        <h2>Before you share</h2>
+        <p>
+          GitHub issues are public. Do not include passwords, access tokens or
+          sensitive personal information. For a privacy or security concern, ask
+          the maintainer for a suitable private contact route without posting
+          the details publicly.
+        </p>
+        <p>
+          Direct website messaging is not available. This page does not collect
+          or send messages. Read the
+          <a href="${link("privacy/")}">privacy policy</a> for more information.
+        </p>
+        <a class="text-link" href="${link("help/")}"
+          >Read the help guide ${icon("arrow", 16)}</a
+        >
+      </section>`;
   if (page === "404")
     content = html`<section class="page-intro container not-found">
       <span class="section-kicker">404 · PAGE NOT FOUND</span>
@@ -817,7 +1101,7 @@ export function render(page, { siteURL, base, releases }) {
         <meta name="color-scheme" content="dark" />
         <meta
           http-equiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+          content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; object-src 'none'; base-uri 'none'; form-action 'none'"
         />
         <link rel="canonical" href="${e(canonical)}" />
         <meta property="og:type" content="website" />
@@ -827,6 +1111,7 @@ export function render(page, { siteURL, base, releases }) {
         <meta property="og:url" content="${e(canonical)}" />
         <meta name="twitter:card" content="summary_large_image" />
         ${page === "404" ? '<meta name="robots" content="noindex"/>' : ""}
+        ${page === "home" ? html`<link rel="preload" as="image" href="${asset("minecraft-landscape.webp")}" />` : ""}
         <link rel="icon" href="${asset("azuria.png")}" type="image/png" />
         <link
           rel="preload"
@@ -890,12 +1175,33 @@ export function render(page, { siteURL, base, releases }) {
                     width="30"
                     height="30"
                     alt=""
-                  /><span>Made for your<br />next adventure.</span>
+                  /><span>Windows x64<br />Minecraft Java</span>
                 </div>
               </aside>`
             : ""
         }
-        <main id="main" tabindex="-1">${content}</main>
+        <main id="main" tabindex="-1">
+          ${content}
+          <aside
+            class="latest-notice container"
+            aria-label="Latest Azuria release"
+            data-latest-notice
+            data-built-tag="${e(latest.tag)}"
+          >
+            <div>
+              <span class="section-kicker">LATEST RELEASE</span
+              ><strong data-latest-version>${e(latest.tag)}</strong
+              ><span data-latest-date>${e(date(latest.published))}</span>
+              <p data-release-status aria-live="polite">
+                Release information from the last successful build. GitHub
+                always has the current download.
+              </p>
+            </div>
+            <a class="button secondary" href="${repository}/releases/latest"
+              >View latest release ${icon("external", 16)}</a
+            >
+          </aside>
+        </main>
         ${footer}
       </body>
     </html>`;

@@ -26,9 +26,18 @@ await mkdir(dist, { recursive: true });
 await cp(new URL("assets/", root), new URL("assets/", dist), {
   recursive: true,
 });
-for (const filename of ["site.css", "site.js"])
+for (const filename of ["site.css", "site.js", "release-data.mjs"])
   await cp(new URL(`src/${filename}`, root), new URL(filename, dist));
-for (const page of ["home", "downloads", "changelog", "help", "404"]) {
+for (const page of [
+  "home",
+  "downloads",
+  "changelog",
+  "help",
+  "privacy",
+  "terms",
+  "contact",
+  "404",
+]) {
   const path =
     page === "home"
       ? "index.html"
@@ -49,6 +58,6 @@ await writeFile(
 );
 await writeFile(
   new URL("sitemap.xml", dist),
-  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "help/"].map((path) => `<url><loc>${url.href}${path}</loc></url>`).join("")}</urlset>`,
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "help/", "privacy/", "terms/", "contact/"].map((path) => `<url><loc>${url.href}${path}</loc></url>`).join("")}</urlset>`,
 );
-console.log(`Built 4 pages and a 404 page in ${fileURLToPath(dist)}`);
+console.log(`Built 7 pages and a 404 page in ${fileURLToPath(dist)}`);

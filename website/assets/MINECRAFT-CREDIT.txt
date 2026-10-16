@@ -1,0 +1,10 @@
+Minecraft Beta 1.8.1 Gameplay Screenshot
+Creator: Xbox México
+Source video: https://www.youtube.com/watch?v=T1Ua2SVUhYw&t=74s
+Source file: https://commons.wikimedia.org/wiki/File:Minecraft_Beta_1.8.1_Gameplay_Screenshot.png
+Original: https://upload.wikimedia.org/wikipedia/commons/5/53/Minecraft_Beta_1.8.1_Gameplay_Screenshot.png
+Licence: Creative Commons Attribution 3.0 Unported
+https://creativecommons.org/licenses/by/3.0/
+Changes: Converted from PNG to WebP for delivery; displayed with CSS cropping and a dark overlay.
+This is a real Minecraft gameplay screenshot, not a screenshot of Minecraft running in Azuria.
+No endorsement by Xbox, Microsoft or Mojang is implied.

@@ -4,6 +4,7 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render, releaseNotes, safeReleaseURL } from "../src/pages.mjs";
+import { parseRelease, releaseSummary } from "../src/release-data.mjs";
 import { affectsLauncher } from "../../.github/scripts/release-scope.mjs";
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const base = "/azuria-launcher/";
@@ -12,6 +13,9 @@ const files = [
   "downloads/index.html",
   "changelog/index.html",
   "help/index.html",
+  "privacy/index.html",
+  "terms/index.html",
+  "contact/index.html",
   "404.html",
 ];
 
@@ -59,11 +63,11 @@ test("all built pages have metadata, navigation and resolvable local links and f
   }
 });
 
-test("downloads use this repository’s published installer and disclose development limits", async () => {
+test("downloads resolve the latest release rather than a stale versioned installer", async () => {
   const html = await readFile(resolve(root, "downloads/index.html"), "utf8");
   assert.match(
     html,
-    /https:\/\/github.com\/jamesb123450\/azuria-launcher\/releases\/download\/v[\d.]+\/Azuria-Launcher_[\d.]+_x64-setup\.exe/,
+    /href="https:\/\/github.com\/jamesb123450\/azuria-launcher\/releases\/latest"/,
   );
   assert.match(html, /Game installation and launching aren’t available yet/);
   assert.match(html, /not Authenticode signed/);
@@ -127,6 +131,75 @@ test("site contains no remote scripts, account form, analytics or unsupported pl
     html,
     /<form|Google Analytics|Download for macOS|Download for Linux/,
   );
-  assert.match(html, /projects and statistics shown are fictional/);
+  assert.doesNotMatch(
+    html,
+    /discover\.png|placeholder|Lorem ipsum|Coming soon/i,
+  );
+  assert.match(html, /data-latest-notice/);
   assert.match(html, /data-preview-image=/);
+});
+
+test("release metadata accepts only published releases and assets from this repository", () => {
+  const release = {
+    tag_name: "v0.2.100",
+    html_url:
+      "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.100",
+    published_at: "2026-10-16T12:00:00Z",
+    body: "## Changes\n\n- Real release information",
+    assets: [
+      {
+        name: "Azuria-Launcher_0.2.100_x64-setup.exe",
+        browser_download_url: "https://evil.test/download.exe",
+      },
+    ],
+  };
+  assert.equal(parseRelease(release).tag, "v0.2.100");
+  assert.equal(parseRelease(release).installer, null);
+  const installer =
+    "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.100/Azuria-Launcher_0.2.100_x64-setup.exe";
+  assert.equal(
+    parseRelease({
+      ...release,
+      assets: [{ ...release.assets[0], browser_download_url: installer }],
+    }).installer,
+    installer,
+  );
+  assert.equal(
+    releaseSummary(parseRelease(release).notes),
+    "Real release information",
+  );
+  for (const invalid of [
+    { ...release, draft: true },
+    { ...release, prerelease: true },
+    { ...release, html_url: "https://evil.test" },
+    { ...release, published_at: "not a date" },
+    { ...release, tag_name: "<script>" },
+    null,
+  ])
+    assert.equal(parseRelease(invalid), null);
+});
+
+test("public policies, contact route and real screenshot credit are present", async () => {
+  const privacy = await readFile(resolve(root, "privacy/index.html"), "utf8");
+  const terms = await readFile(resolve(root, "terms/index.html"), "utf8");
+  const contact = await readFile(resolve(root, "contact/index.html"), "utf8");
+  assert.match(privacy, /GitHub’s public API/);
+  assert.match(privacy, /Windows Credential Manager/);
+  assert.match(terms.replace(/\s+/g, " "), /applicable consumer rights/);
+  assert.match(contact, /issues\/new/);
+  assert.doesNotMatch(contact, /<form|<input|<textarea/);
+  assert.match(
+    contact.replace(/\s+/g, " "),
+    /does not collect or send messages/,
+  );
+  const home = await readFile(resolve(root, "index.html"), "utf8");
+  assert.match(home, /minecraft-landscape\.webp/);
+  assert.match(home, /CC BY 3.0/);
+  assert.match(home.replace(/\s+/g, " "), /Not captured in Azuria/);
+  const css = await readFile(resolve(root, "site.css"), "utf8");
+  assert.match(css, /assets\/minecraft-landscape\.webp/);
+  for (const [, asset] of css.matchAll(
+    /url\(["']?(\.\/assets\/[^"')]+)["']?\)/g,
+  ))
+    assert.ok((await stat(resolve(root, asset))).isFile(), asset);
 });
