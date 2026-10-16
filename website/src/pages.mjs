@@ -179,13 +179,13 @@ export function render(page, { siteURL, base, releases }) {
       </div>
     </div>
     <p class="image-credit">
-      Minecraft landscape:
-      <a
-        href="https://commons.wikimedia.org/wiki/File:Minecraft_Beta_1.8.1_Gameplay_Screenshot.png"
-        >Xbox México, via Wikimedia Commons</a
+      Minecraft cherry grove:
+      <a href="https://modrinth.com/resourcepack/karbin-panoramas"
+        >Karbin_Drem · Distant Shaded Panoramas</a
       >
-      · <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.
-      Converted to WebP, cropped and darkened for the hero. Not captured in
+      ·
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a
+      >. Converted to WebP, cropped and darkened for the hero. Not captured in
       Azuria.
     </p>
     <p class="disclaimer">
@@ -1111,7 +1111,7 @@ export function render(page, { siteURL, base, releases }) {
         <meta property="og:url" content="${e(canonical)}" />
         <meta name="twitter:card" content="summary_large_image" />
         ${page === "404" ? '<meta name="robots" content="noindex"/>' : ""}
-        ${page === "home" ? html`<link rel="preload" as="image" href="${asset("minecraft-landscape.webp")}" />` : ""}
+        ${page === "home" ? html`<link rel="preload" as="image" href="${asset("minecraft-cherry-grove.webp")}" />` : ""}
         <link rel="icon" href="${asset("azuria.png")}" type="image/png" />
         <link
           rel="preload"

@@ -281,7 +281,8 @@ summary {
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: url("./assets/minecraft-landscape.webp") center / cover no-repeat;
+  background: url("./assets/minecraft-cherry-grove.webp") center / cover
+    no-repeat;
   opacity: 0.8;
 }
 .brand-hero::after {
@@ -1850,7 +1851,7 @@ details > p {
 }
 .home-page .brand-hero::before {
   opacity: 1;
-  background-position: center;
+  background-position: center 68%;
 }
 .home-page .brand-hero::after {
   background: linear-gradient(#12162218, #15172528 35%, #13162299 100%);
@@ -2273,7 +2274,9 @@ details > p {
   padding-top: 20px;
 }
 .home-page .brand-hero::after {
-  background: linear-gradient(#14172577, #15172588 40%, #121521cc);
+  background:
+    radial-gradient(ellipse at center, #11162988, #10142722 75%),
+    linear-gradient(180deg, #171b3022, #171b3011 55%, #121521bb);
 }
 .home-page .hero h1 {
   text-shadow: 0 3px 25px #0008;
