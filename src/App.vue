@@ -24,9 +24,11 @@ const route = useRoute();
 const page = computed(() =>
   route.path === "/settings"
     ? "Settings"
-    : route.path === "/roadmap"
+    : route.path === "/discover"
       ? "Discover"
-      : "Play",
+      : route.path === "/roadmap"
+        ? "Roadmap"
+        : "Play",
 );
 onMounted(() => {
   void store.init();
@@ -76,10 +78,10 @@ onMounted(() => {
           ></RouterLink
         >
         <RouterLink
-          to="/roadmap"
+          to="/discover"
           class="rail-link"
           aria-label="Discover"
-          title="Discover — coming soon"
+          title="Discover"
           ><Compass :size="22" /><span class="rail-tooltip"
             >Discover</span
           ></RouterLink

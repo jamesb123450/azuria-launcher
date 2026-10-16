@@ -19,12 +19,15 @@ Azuria is an early development project. **Game installation and launching are no
 - Browse Minecraft versions, include snapshots, or enter a version manually.
 - Copy instance settings into a new, empty instance.
 - Search, sort, group and favourite instances.
+- Preview a Discover catalogue for modpacks, mods, datapacks and resource packs, with local search, filtering, sorting and pagination.
 - Remove instances while retaining their files in local trash.
 - Recover interrupted removals automatically at startup.
 - Sign in through Microsoft in your browser, verify your Minecraft Java profile, and securely remember one account on Windows.
 - Reconnect, switch accounts or remove saved credentials from Settings.
 - Save appearance preferences locally.
 - Check for and install signed updates in updater-enabled Windows builds.
+
+Discover currently uses fictional example projects, creators and statistics. Provider access, downloads and installation are not connected; Install buttons are disabled.
 
 The version picker reads Mojang’s public catalogue, with manual entry available offline. Manual version IDs are syntax-checked. Loader choices and Stable/Latest/custom loader versions are saved preferences; compatibility checks and installation are not implemented yet.
 
