@@ -1,10 +1,12 @@
-Minecraft Beta 1.8.1 Gameplay Screenshot
-Creator: Xbox México
-Source video: https://www.youtube.com/watch?v=T1Ua2SVUhYw&t=74s
-Source file: https://commons.wikimedia.org/wiki/File:Minecraft_Beta_1.8.1_Gameplay_Screenshot.png
-Original: https://upload.wikimedia.org/wikipedia/commons/5/53/Minecraft_Beta_1.8.1_Gameplay_Screenshot.png
-Licence: Creative Commons Attribution 3.0 Unported
-https://creativecommons.org/licenses/by/3.0/
-Changes: Converted from PNG to WebP for delivery; displayed with CSS cropping and a dark overlay.
-This is a real Minecraft gameplay screenshot, not a screenshot of Minecraft running in Azuria.
-No endorsement by Xbox, Microsoft or Mojang is implied.
+Minecraft cherry-grove panorama — Overworld, day, clear weather (Minecraft 1.20)
+Creator: Karbin_Drem
+Project: Distant Shaded Panoramas
+Source: https://modrinth.com/resourcepack/karbin-panoramas
+Original image: https://cdn.modrinth.com/data/YHqclHE2/images/27760985aaf243bd3a48d1e4de9ab70eac8b63c7.png
+Licence: Creative Commons Attribution-ShareAlike 4.0 International
+https://creativecommons.org/licenses/by-sa/4.0/
+The image and its adaptation in minecraft-cherry-grove.webp remain under CC BY-SA 4.0.
+Changes: PNG converted to WebP; displayed with responsive CSS cropping and a contrast overlay.
+The source project identifies Complementary Unbound shaders, Euphoria Patches and Distant Horizons.
+This is a real Minecraft screenshot, not gameplay captured in Azuria.
+No endorsement of Azuria by the creator, shader projects, Mojang or Microsoft is implied.

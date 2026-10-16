@@ -193,11 +193,11 @@ test("public policies, contact route and real screenshot credit are present", as
     /does not collect or send messages/,
   );
   const home = await readFile(resolve(root, "index.html"), "utf8");
-  assert.match(home, /minecraft-landscape\.webp/);
-  assert.match(home, /CC BY 3.0/);
+  assert.match(home, /minecraft-cherry-grove\.webp/);
+  assert.match(home, /CC BY-SA 4.0/);
   assert.match(home.replace(/\s+/g, " "), /Not captured in Azuria/);
   const css = await readFile(resolve(root, "site.css"), "utf8");
-  assert.match(css, /assets\/minecraft-landscape\.webp/);
+  assert.match(css, /assets\/minecraft-cherry-grove\.webp/);
   for (const [, asset] of css.matchAll(
     /url\(["']?(\.\/assets\/[^"')]+)["']?\)/g,
   ))
