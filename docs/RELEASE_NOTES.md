@@ -1,16 +1,16 @@
 ## Changes
 
-- Moved Windows launcher data to `%APPDATA%\AzuriaLauncher`, with active instance folders inside `instances`.
-- Instance folders now use instance names instead of UUIDs. Windows-incompatible characters and reserved names are handled safely, and duplicate names receive numbered suffixes.
-- New instances create their folders immediately. Renaming an instance updates its folder with a recovery journal to protect against interruption.
-- Added a first-launch migration screen that copies and verifies existing settings, instances and trash while retaining the original location as a backup.
-- Migration requires **Confirm and open instances** before the launcher can be used. Escape, backdrop clicks and normal window-close requests cannot bypass acknowledgement. Confirmation opens the instances folder in File Explorer; if opening fails, the message remains available to retry.
-- Added **Open instances folder** to Settings → Storage & privacy.
+- Open an instance from its Library card or sidebar shortcut to reach its own page, with Content, Worlds and Logs sections in Azuria’s existing theme.
+- Added General, Installation and Overrides settings. Rename instances and their folders, customise icons, edit version preferences, duplicate settings or all local files, and remove instances with files retained in local trash.
+- Added game defaults in launcher Settings for memory, Java executable, JVM arguments, environment variables and window resolution/fullscreen. Instances inherit defaults unless a custom override is enabled. Existing memory preferences are preserved on upgrade.
+- Added local `.jar` mod and `.zip` pack imports, enable/disable controls and recoverable file removal. Existing world folders can be opened and game logs viewed with a bounded preview and common credential lines hidden.
+- Added Java detection through JAVA_HOME/PATH and an executable file picker on Windows. No Java process is started by these controls.
+- Added save feedback, validation, unsaved-change prompts, missing-instance recovery and empty states. Browser previews clearly distinguish desktop-only file actions.
 
 ## Update information
 
-Allow extra time and free disk space for the verified copy on the first launch after updating. Keep the original data until you have checked the migrated library. A failed migration is retryable without discarding the original data. A completed migration awaiting acknowledgement reappears after restarting; later launches proceed normally after confirmation.
+The database upgrades to schema 5. Keep a backup before reverting to older builds, which cannot open this schema. Files remain under `%APPDATA%\AzuriaLauncher\instances\<instance name>`.
 
-The instance database migrates to schema 4. Older builds cannot open the migrated database; retain the original-location backup if you need to revert. Account credentials remain in Windows Credential Manager.
+The storage migration acknowledgement remains required. **Open instances folder** is optional and separate from **Confirm and continue**.
 
-This update changes storage only. Minecraft installation and launching remain in development, and Minecraft Services application access is still pending review.
+Game preferences are saved for future use. Minecraft downloading, installation, repair and launching remain unavailable. Minecraft Services application access is still pending review.

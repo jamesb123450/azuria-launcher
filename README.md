@@ -4,13 +4,15 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 
 [Website](https://jamesb123450.github.io/azuria-launcher/) · [Download for Windows](https://github.com/jamesb123450/azuria-launcher/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-launcher/releases) · [Report an issue](https://github.com/jamesb123450/azuria-launcher/issues)
 
-> **Early development:** Azuria currently manages instance settings. Game downloads, Java setup and launching are not available yet. Minecraft Services access for Microsoft sign-in is pending review. Download a development build to explore the interface and follow progress.
+> **Early development:** Azuria currently manages instance settings. Game downloads, automatic Java installation and launching are not available yet. Minecraft Services access for Microsoft sign-in is pending review. Download a development build to explore the interface and follow progress.
 
 ## What is available
 
-- **Instance library:** create, edit, favourite, search, sort and group configurations. Select an instance to see its version and loader details, or switch between compact grid and list views.
+- **Instance library:** create, edit, favourite, search, sort and group configurations. Open an instance to manage its content, worlds, logs and settings, or switch between compact grid and list views.
 - **Custom setup:** save Vanilla, Fabric, Forge, NeoForge and Quilt configurations. Browse Minecraft and loader version lists, with manual Minecraft version entry available when needed. These are configuration choices; installation and compatibility checks are still planned.
-- **Instance identity:** upload an icon or customise its colour and shape. Copy settings into a separate, empty instance without copying game files.
+- **Instance settings:** General, Installation and Overrides pages for names, icons, version preferences and per-instance configuration. Duplicate settings into an empty instance, or include verified copies of all local files.
+- **Game defaults:** save memory, Java executable, JVM arguments, environment variables and window preferences in Settings. Instances inherit defaults unless a custom override is enabled. These preferences are saved for future launching.
+- **Local content:** import `.jar` mods and `.zip` packs, enable or disable them, retain removed files in local trash, open world folders and read existing game logs. Local actions are available in the installed desktop app.
 - **Account controls:** Microsoft browser sign-in, reconnect, switch and sign-out controls on Windows. Full Minecraft account verification remains dependent on Azuria receiving Minecraft Services access.
 - **Local storage and recovery:** SQLite-backed desktop settings, instance files retained in local trash after removal, and recovery of interrupted removals at startup.
 - **In-app updates:** published Windows builds can check for signed updates and install them from Settings.
@@ -32,11 +34,11 @@ Microsoft sign-in opens the default browser. Authentication runs through the nat
 
 Windows instance settings and files are stored in `%APPDATA%\AzuriaLauncher`, with active game folders under `instances/<instance name>/`. Internal instance IDs remain stable when display names and folders change. Invalid Windows filename characters are replaced, reserved names are adjusted and name collisions receive a numbered suffix. The current app has no analytics or log-upload service.
 
-On the first launch after this storage update, Azuria displays **Migrating data**, copies and verifies the existing library, and converts UUID folders to instance names. The original database, instance folders and trash remain in the previous local-data location as a backup. The app requires **Confirm and open instances** before continuing; this opens the new instances folder in File Explorer. Interrupted copies can be retried, and a completed migration awaiting confirmation is shown again after restart. Fresh installations do not require a migration acknowledgement. **Settings → Storage & privacy → Open instances folder** reopens the folder later.
+On the first launch after this storage update, Azuria displays **Migrating data**, copies and verifies the existing library, and converts UUID folders to instance names. The original database, instance folders and trash remain in the previous local-data location as a backup. The app requires **Confirm and continue** before continuing. **Open instances folder** is a separate, optional action. Interrupted copies can be retried, and a completed migration awaiting confirmation is shown again after restart. Fresh installations do not require a migration acknowledgement. **Settings → Storage & privacy → Open instances folder** reopens the folder later.
 
-The new storage schema is version 4. Older launcher builds cannot open it; use a matching backup if reverting to an older version. Microsoft credentials remain in Windows Credential Manager.
+The current storage schema is version 5. Older launcher builds cannot open it; use a matching backup if reverting to an older version. Microsoft credentials remain in Windows Credential Manager.
 
-Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. Copying an instance copies its settings only. Close Azuria before backing up its entire local application data directory, including the database, instance folders and trash. To recover files from a completed removal, create an instance with the original settings, close Azuria, and copy the retained files into the new instance’s named directory. Keep the original backup and trash files until the recovered data has been checked.
+Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. The instance settings page can duplicate settings only or include all local files. Close Azuria before backing up its entire local application data directory, including the database, instance folders and trash. To recover files from a completed removal, create an instance with the original settings, close Azuria, and copy the retained files into the new instance’s named directory. Keep the original backup and trash files until the recovered data has been checked.
 
 ## Development direction
 
