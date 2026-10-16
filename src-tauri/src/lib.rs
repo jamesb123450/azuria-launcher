@@ -9,8 +9,8 @@ fn auth_progress(app: tauri::AppHandle) -> Progress {
     })
 }
 #[tauri::command]
-async fn account_status(state: State<'_, Accounts>) -> AccountView {
-    state.status().await
+async fn account_status(state: State<'_, Accounts>) -> Result<AccountView, AuthError> {
+    Ok(state.status().await)
 }
 #[tauri::command]
 async fn account_restore(
@@ -53,8 +53,8 @@ async fn account_sign_in(
     state.sign_in(open, auth_progress(app)).await
 }
 #[tauri::command]
-async fn account_cancel(state: State<'_, Accounts>) -> AccountView {
-    state.cancel().await
+async fn account_cancel(state: State<'_, Accounts>) -> Result<AccountView, AuthError> {
+    Ok(state.cancel().await)
 }
 #[tauri::command]
 async fn account_sign_out(state: State<'_, Accounts>) -> Result<AccountView, AuthError> {
