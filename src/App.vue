@@ -13,6 +13,7 @@ import {
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import StartupUpdate from "./components/StartupUpdate.vue";
 import StorageMigration from "./components/StorageMigration.vue";
 import WindowControls from "./components/WindowControls.vue";
 import InstanceIcon from "./components/InstanceIcon.vue";
@@ -67,6 +68,7 @@ function storagePrepared() {
 <template>
   <StorageMigration v-if="!storageReady" @ready="storagePrepared" />
   <div v-else class="app-shell">
+    <StartupUpdate v-if="desktop" />
     <a class="skip-link" href="#main-content" @click.prevent="focusMain"
       >Skip to content</a
     >

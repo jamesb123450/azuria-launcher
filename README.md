@@ -10,12 +10,12 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 
 - **Instance library:** create, edit, favourite, search, sort and group configurations. Open an instance to manage its content, worlds, logs and settings, or switch between compact grid and list views.
 - **Custom setup:** save Vanilla, Fabric, Forge, NeoForge and Quilt configurations. Browse Minecraft and loader version lists, with manual Minecraft version entry available when needed. These are configuration choices; installation and compatibility checks are still planned.
-- **Instance settings:** General, Installation and Overrides pages for names, icons, version preferences and per-instance configuration. Duplicate settings into an empty instance, or include verified copies of all local files.
+- **Instance settings:** General, Installation and Overrides tabs in a settings popup for names, icons, version preferences and per-instance configuration. Duplicate settings into an empty instance, or include verified copies of all local files.
 - **Game defaults:** save memory, Java executable, JVM arguments, environment variables and window preferences in Settings. Instances inherit defaults unless a custom override is enabled. These preferences are saved for future launching.
 - **Local content:** import `.jar` mods and `.zip` packs, enable or disable them, retain removed files in local trash, open world folders and read existing game logs. Local actions are available in the installed desktop app.
 - **Account controls:** Microsoft browser sign-in, reconnect, switch and sign-out controls on Windows. Full Minecraft account verification remains dependent on Azuria receiving Minecraft Services access.
 - **Local storage and recovery:** SQLite-backed desktop settings, instance files retained in local trash after removal, and recovery of interrupted removals at startup.
-- **In-app updates:** published Windows builds can check for signed updates and install them from Settings.
+- **In-app updates:** published Windows builds automatically check and download signed updates at startup, with progress, release notes and a restart countdown.
 - **Discover preview:** browse the proposed modpack, mod, datapack and resource-pack interface, including search, sorting and a separate filter sidebar on the right.
 
 Discover uses fictional example projects, creators and statistics. Live Modrinth/CurseForge results, content installation, modpack upload and instance import are not connected. Unavailable actions are labelled or disabled.
@@ -24,7 +24,7 @@ Discover uses fictional example projects, creators and statistics. Live Modrinth
 
 Get the Windows installer from the [latest published release](https://github.com/jamesb123450/azuria-launcher/releases/latest). Windows is the initial supported platform; macOS and Linux builds are not currently distributed.
 
-Existing users can open **Settings → Launcher updates** and choose **Update & restart** when an update is available. The app also checks at startup; installing an update requires a user action.
+Azuria checks for updates on every startup and downloads available releases automatically. After signature verification, a visible 15-second countdown restarts Azuria to run the Windows installer. Choose **Later** to postpone the restart; **Settings → Launcher updates → Restart & install** finishes it when ready. Failed checks or downloads leave the current installation usable and provide a retry action.
 
 Update packages are verified with the public signing key bundled in Azuria. This is separate from Windows Authenticode signing: development installers may still display an unknown-publisher or SmartScreen prompt.
 

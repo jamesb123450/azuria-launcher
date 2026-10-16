@@ -20,9 +20,6 @@ import {
   Check,
   ArrowLeft,
   Plus,
-  Mountain,
-  Moon,
-  Box,
 } from "@lucide/vue";
 import type { Instance, Loader } from "../types";
 import { DEFAULT_INPUT, LOADERS, loaderName, validateInput } from "../types";
@@ -473,11 +470,10 @@ async function save() {
             </div>
             <div role="group" aria-label="Icon shape">
               <button
-                v-for="shape in [
-                  { id: 'cube', icon: Box, name: 'Cube' },
-                  { id: 'mountain', icon: Mountain, name: 'Mountain' },
-                  { id: 'moon', icon: Moon, name: 'Moon' },
-                ] as const"
+                v-for="shape in ICON_GLYPHS.map((id) => ({
+                  id,
+                  name: id.charAt(0).toUpperCase() + id.slice(1),
+                }))"
                 :key="shape.id"
                 type="button"
                 class="icon-shape"
@@ -488,7 +484,13 @@ async function save() {
                   generateIcon();
                 "
               >
-                <component :is="shape.icon" :size="18" />
+                <img
+                  :src="makeIcon(color, shape.id)"
+                  alt=""
+                  width="26"
+                  height="26"
+                  style="border-radius: 5px"
+                />
               </button>
             </div>
           </section>

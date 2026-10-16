@@ -17,8 +17,13 @@ async function prepare() {
   try {
     report.value = await api.prepareStorage();
     if (!report.value.required) emit("ready");
+    else {
+      await nextTick();
+      dialog.value?.showModal();
+    }
   } catch (cause) {
     error.value = String(cause instanceof Error ? cause.message : cause);
+    dialog.value?.showModal();
   } finally {
     busy.value = false;
     await nextTick();
@@ -49,9 +54,13 @@ async function openFolder() {
     openingFolder.value = false;
   }
 }
-onMounted(() => {
-  dialog.value?.showModal();
-  void prepare();
+onMounted(async () => {
+  try {
+    if (await api.migrationNeeded()) dialog.value?.showModal();
+  } catch {
+    /* prepare provides the retryable failure screen. */
+  }
+  await prepare();
 });
 </script>
 <template>

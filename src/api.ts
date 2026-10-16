@@ -31,6 +31,8 @@ function write(value: Preview) {
   localStorage.setItem(previewKey, JSON.stringify(value));
 }
 export const api = {
+  migrationNeeded: async (): Promise<boolean> =>
+    desktop ? invoke("storage_migration_needed") : false,
   prepareStorage: async (): Promise<MigrationStatus> =>
     desktop
       ? invoke("prepare_storage")
