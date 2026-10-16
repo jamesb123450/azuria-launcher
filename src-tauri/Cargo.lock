@@ -142,6 +142,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-updater",
  "tempfile",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
