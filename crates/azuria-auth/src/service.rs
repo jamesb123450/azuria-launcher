@@ -46,6 +46,29 @@ impl<P: Provider, V: SecretVault> AuthService<P, V> {
         let inner = self.inner.lock().await;
         self.view(&inner)
     }
+    /// Native-only launch handoff. Never register this method as an IPC command.
+    pub async fn launch_session(&self, progress: Progress) -> Result<SessionTokens, AuthError> {
+        {
+            let inner = self.inner.lock().await;
+            if let Some(session) = inner
+                .session
+                .as_ref()
+                .filter(|s| s.expires_at > crate::now() + 60)
+            {
+                return Ok(session.clone());
+            }
+        }
+        self.restore(progress).await?;
+        let inner = self.inner.lock().await;
+        inner.session.as_ref()
+            .filter(|session|session.expires_at>crate::now()+60)
+            .cloned()
+            .ok_or_else(||AuthError::new(
+                Stage::Minecraft,
+                "launch_session",
+                "Sign in with a Minecraft Java account before launching. Minecraft Services approval may still be required.",
+            ))
+    }
     async fn begin(&self) -> Result<(u64, watch::Receiver<bool>), AuthError> {
         if !self.vault.supported() {
             return Err(AuthError::new(

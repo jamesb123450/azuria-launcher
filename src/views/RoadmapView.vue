@@ -12,8 +12,8 @@ const stages = [
   {
     title: "Game installation & launching",
     description:
-      "Live account verification, Minecraft downloads, Java setup and a real Vanilla launch.",
-    status: "Next",
+      "Vanilla downloads, verified Java preparation and process monitoring. Authenticated play requires Minecraft Services access.",
+    status: "This build",
   },
   {
     title: "Fabric & modded instances",

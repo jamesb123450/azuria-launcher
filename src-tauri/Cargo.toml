@@ -20,6 +20,7 @@ serde_json = "1"
 reqwest = { version = "0.13", default-features = false }
 azuria-auth = { path = "../crates/azuria-auth" }
 azuria-core = { path = "../crates/azuria-core" }
+azuria-launch = { path = "../crates/azuria-launch" }
 
 [dev-dependencies]
 tempfile = "3"

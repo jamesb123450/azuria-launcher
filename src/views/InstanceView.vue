@@ -33,6 +33,7 @@ import {
   type OverrideFlags,
 } from "../lib/launch-options";
 import { loaderName } from "../types";
+import LaunchControl from "../components/LaunchControl.vue";
 import IconPicker from "../components/IconPicker.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
@@ -67,7 +68,15 @@ async function closeSettings() {
   if (route.query.settings) await router.replace({ query: {} });
 }
 const tab = ref<Section>("mods");
-const sectionView = ref<"content" | "worlds" | "logs">("content");
+const sectionView = ref<"content" | "worlds" | "logs">(
+  route.query.tab === "logs" ? "logs" : "content",
+);
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab === "logs") sectionView.value = "logs";
+  },
+);
 const search = ref("");
 const entries = ref<FileEntry[]>([]);
 const filesBusy = ref(false);
@@ -393,20 +402,11 @@ const prettySize = (size: number) =>
         >
           <FolderOpen :size="16" />Open folder</button
         ><button class="button secondary" @click="openSettings()">
-          <Settings :size="16" />Settings</button
-        ><button
-          class="button primary"
-          disabled
-          aria-describedby="launch-unavailable"
-        >
-          Launch unavailable
+          <Settings :size="16" />Settings
         </button>
+        <LaunchControl :instance="instance" />
       </div>
     </header>
-    <p id="launch-unavailable" class="instance-notice">
-      Minecraft installation and launching are still in development. You can
-      manage this instance’s files and saved settings.
-    </p>
     <dialog
       v-if="settings"
       ref="settingsDialog"
@@ -537,7 +537,7 @@ const prettySize = (size: number) =>
                 </div>
                 <div>
                   <dt>Status</dt>
-                  <dd>Configuration saved · installer not available</dd>
+                  <dd>Ready for Vanilla preparation</dd>
                 </div>
               </dl>
               <button
@@ -566,7 +566,7 @@ const prettySize = (size: number) =>
               <h2>Overrides</h2>
               <p class="muted">
                 Use launcher defaults, or enable a custom setting for this
-                instance. Changes take effect once launching is available.
+                instance. Saved settings apply on the next Vanilla launch.
               </p>
               <form @submit.prevent="saveOverrides">
                 <LaunchOptionsEditor

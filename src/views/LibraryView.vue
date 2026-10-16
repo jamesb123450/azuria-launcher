@@ -23,6 +23,7 @@ import {
   X,
   Folder,
 } from "@lucide/vue";
+import LaunchControl from "../components/LaunchControl.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import VersionPicker from "../components/VersionPicker.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
@@ -184,7 +185,7 @@ onBeforeUnmount(closeDelete);
             >
           </p>
           <p class="launch-availability" id="launch-availability">
-            Game downloads and launching are still in development.
+            Open an instance to manage its worlds, files and game logs.
           </p>
         </div>
         <div class="selected-actions">
@@ -195,13 +196,7 @@ onBeforeUnmount(closeDelete);
           >
             <SlidersHorizontal :size="16" /> Edit instance
           </button>
-          <button
-            class="button secondary"
-            disabled
-            aria-describedby="launch-availability"
-          >
-            Launch unavailable
-          </button>
+          <LaunchControl :instance="store.selected" />
         </div>
       </section>
       <section
@@ -610,8 +605,8 @@ onBeforeUnmount(closeDelete);
 
         <h3>What’s available</h3>
         <p class="muted">
-          Manage instance settings and connect your Microsoft account. Game
-          downloads and launching are still in development.
+          Manage instance settings and connect your Microsoft account. Game mod
+          loader installation is still in development.
         </p>
         <RouterLink class="text-link" to="/roadmap"
           >View roadmap <ArrowUpRight :size="14"

@@ -19,6 +19,8 @@ import WindowControls from "./components/WindowControls.vue";
 import InstanceIcon from "./components/InstanceIcon.vue";
 import { useUpdates } from "./stores/updates";
 import { useAccount } from "./stores/account";
+import { useGame } from "./stores/game";
+const game = useGame();
 const account = useAccount();
 function focusMain() {
   document.getElementById("main-content")?.focus();
@@ -61,6 +63,7 @@ const storageReady = ref(false);
 function storagePrepared() {
   storageReady.value = true;
   void store.init();
+  void game.init();
   void account.init();
   void updates.init();
 }
@@ -188,6 +191,12 @@ function storagePrepared() {
       >
         <RouterView />
       </main>
+      <div v-if="game.error" class="alert error" role="alert">
+        {{ game.error
+        }}<button @click="game.error = ''" aria-label="Dismiss game error">
+          ×
+        </button>
+      </div>
       <div v-if="store.error" class="alert error" role="alert">
         {{ store.error
         }}<button @click="store.error = ''" aria-label="Dismiss error">

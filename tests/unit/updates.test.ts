@@ -1,14 +1,20 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-const mocks = vi.hoisted(() => ({ check: vi.fn(), version: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  check: vi.fn(),
+  invoke: vi.fn(),
+  version: vi.fn(),
+}));
 vi.mock("../../src/api", () => ({ desktop: true }));
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: mocks.version }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: mocks.check }));
+vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 import { useUpdates } from "../../src/stores/updates";
 beforeEach(() => {
   setActivePinia(createPinia());
   vi.resetAllMocks();
   mocks.version.mockResolvedValue("0.2.3");
+  mocks.invoke.mockResolvedValue([]);
 });
 describe("automatic desktop updates", () => {
   it("checks once per startup, downloads automatically and verifies before restart", async () => {
@@ -84,4 +90,21 @@ describe("automatic desktop updates", () => {
     expect(s.status).toBe("error");
     expect(s.error).toContain("not be published");
   });
+});
+
+it("postpones installer execution while Minecraft is active", async () => {
+  const install = vi.fn();
+  mocks.check.mockResolvedValue({
+    version: "0.2.4",
+    download: vi.fn().mockResolvedValue(undefined),
+    install,
+  });
+  mocks.invoke.mockResolvedValue([{ stage: "running" }]);
+  const store = useUpdates();
+  await store.init();
+  await store.install();
+  expect(install).not.toHaveBeenCalled();
+  expect(store.status).toBe("ready");
+  expect(store.deferred).toBe(true);
+  expect(store.error).toContain("Close Minecraft");
 });

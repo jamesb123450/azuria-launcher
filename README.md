@@ -4,17 +4,18 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 
 [Website](https://jamesb123450.github.io/azuria-launcher/) · [Download for Windows](https://github.com/jamesb123450/azuria-launcher/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-launcher/releases) · [Report an issue](https://github.com/jamesb123450/azuria-launcher/issues)
 
-> **Early development:** Azuria currently manages instance settings. Game downloads, automatic Java installation and launching are not available yet. Minecraft Services access for Microsoft sign-in is pending review. Download a development build to explore the interface and follow progress.
+> **Early development:** Azuria currently manages instance settings. Vanilla launching is implemented for Windows x64, including verified game downloads and automatic Java preparation. Other mod loaders cannot launch yet. Minecraft Services access for Microsoft sign-in is pending review. Download a development build to explore the interface and follow progress.
 
 ## What is available
 
 - **Instance library:** create, edit, favourite, search, sort and group configurations. Open an instance to manage its content, worlds, logs and settings, or switch between compact grid and list views.
-- **Custom setup:** save Vanilla, Fabric, Forge, NeoForge and Quilt configurations. Browse Minecraft and loader version lists, with manual Minecraft version entry available when needed. These are configuration choices; installation and compatibility checks are still planned.
+- **Custom setup:** save Vanilla, Fabric, Forge, NeoForge and Quilt configurations. Browse Minecraft and loader version lists, with manual Minecraft version entry available when needed. Vanilla configurations can launch. Mod loader choices remain setup preferences; their installers and compatibility checks are still planned.
 - **Instance settings:** General, Installation and Overrides tabs in a settings popup for names, icons, version preferences and per-instance configuration. Duplicate settings into an empty instance, or include verified copies of all local files.
-- **Game defaults:** save memory, Java executable, JVM arguments, environment variables and window preferences in Settings. Instances inherit defaults unless a custom override is enabled. These preferences are saved for future launching.
+- **Game defaults:** save memory, Java executable, JVM arguments, environment variables and window preferences in Settings. Instances inherit defaults unless a custom override is enabled. These preferences apply to Vanilla launches.
 - **Local content:** import `.jar` mods and `.zip` packs, enable or disable them, retain removed files in local trash, open world folders and read existing game logs. Local actions are available in the installed desktop app.
 - **Account controls:** Microsoft browser sign-in, reconnect, switch and sign-out controls on Windows. Full Minecraft account verification remains dependent on Azuria receiving Minecraft Services access.
 - **Local storage and recovery:** SQLite-backed desktop settings, instance files retained in local trash after removal, and recovery of interrupted removals at startup.
+- **Vanilla launching:** Play prepares Mojang game files, libraries, native dependencies and assets, plus a matching Mojang Java runtime or a validated custom Java executable. Track preparation, cancellation, running state and exit/crash feedback from the Library or instance page.
 - **In-app updates:** published Windows builds automatically check and download signed updates at startup, with progress, release notes and a restart countdown.
 - **Discover preview:** browse the proposed modpack, mod, datapack and resource-pack interface, including search, sorting and a separate filter sidebar on the right.
 
@@ -40,9 +41,17 @@ The current storage schema is version 5. Older launcher builds cannot open it; u
 
 Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. The instance settings page can duplicate settings only or include all local files. Close Azuria before backing up its entire local application data directory, including the database, instance folders and trash. To recover files from a completed removal, create an instance with the original settings, close Azuria, and copy the retained files into the new instance’s named directory. Keep the original backup and trash files until the recovered data has been checked.
 
+## Launching Vanilla
+
+Create or select a **Vanilla** instance, sign in with an account that owns Minecraft Java Edition, then press **Play**. Azuria refreshes the native Minecraft session, prepares verified files and checks Java before starting the game. First launch needs an internet connection, free disk space and additional time for downloads. Completed files are checked and reused on later attempts; a working session and metadata services are still required. This is not an offline or ownership-bypass launch mode.
+
+Shared downloads and managed Java runtimes live in `%APPDATA%\AzuriaLauncher\game-cache`. Worlds, mods and configuration stay inside each named instance folder. JVM arguments are passed directly to Java without a shell. Tokens stay in native memory and never pass through frontend commands or launch-status events. Captured output in `logs/azuria-launch.log` is bounded and redacts the current access token and configured environment values; review game-created logs and crash reports before sharing them.
+
+Keep Azuria open while Minecraft runs. This initial implementation blocks normal launcher closure, instance rename/removal and updater installation during an active game or preparation. Close Minecraft through its game menu to save normally; preparation can be cancelled. Forced process termination cannot provide the same protection. Fabric, Forge, NeoForge and Quilt launching are not included. Versions that require unsupported metadata or platform rules report an error instead of guessing launch arguments.
+
 ## Development direction
 
-The next core work is Minecraft account verification, verified Minecraft and Java downloads, and a working Vanilla launch. Fabric installation and live Modrinth/CurseForge discovery follow that foundation. Modpack import/export and broader content management are also planned.
+The next core work is completing authenticated Windows launch testing once Minecraft Services access is approved, then Fabric installation and live Modrinth/CurseForge discovery. Modpack import/export and broader content management are also planned.
 
 Planned features are not promises of a release date.
 

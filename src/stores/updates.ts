@@ -1,5 +1,6 @@
 import { computed, ref, shallowRef } from "vue";
 import { defineStore } from "pinia";
+import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { desktop } from "../api";
@@ -88,6 +89,19 @@ export const useUpdates = defineStore("updates", () => {
     error.value = "";
     status.value = "installing";
     try {
+      const games = await invoke<Array<{ stage: string }>>("game_launches");
+      if (
+        games.some(
+          (game) =>
+            !["exited", "crashed", "error", "cancelled"].includes(game.stage),
+        )
+      ) {
+        status.value = "ready";
+        deferred.value = true;
+        error.value =
+          "Close Minecraft or cancel game preparation before installing an update.";
+        return;
+      }
       await update.value.install({ restartAfterInstall: true });
     } catch {
       status.value = "error";
