@@ -1,16 +1,11 @@
 ## Changes
 
-- Open an instance from its Library card or sidebar shortcut to reach its own page, with Content, Worlds and Logs sections in Azuria’s existing theme.
-- Added General, Installation and Overrides settings. Rename instances and their folders, customise icons, edit version preferences, duplicate settings or all local files, and remove instances with files retained in local trash.
-- Added game defaults in launcher Settings for memory, Java executable, JVM arguments, environment variables and window resolution/fullscreen. Instances inherit defaults unless a custom override is enabled. Existing memory preferences are preserved on upgrade.
-- Added local `.jar` mod and `.zip` pack imports, enable/disable controls and recoverable file removal. Existing world folders can be opened and game logs viewed with a bounded preview and common credential lines hidden.
-- Added Java detection through JAVA_HOME/PATH and an executable file picker on Windows. No Java process is started by these controls.
-- Added save feedback, validation, unsaved-change prompts, missing-instance recovery and empty states. Browser previews clearly distinguish desktop-only file actions.
+- Fixed the migration dialog appearing at every startup. Azuria now checks the saved migration state before showing it; completed and acknowledged migrations start normally without a migration-screen flash. Real migrations and retryable errors retain their acknowledgement flow.
+- Updates are checked and downloaded automatically on every startup. Signed packages must verify before installation. A visible 15-second restart countdown installs the update automatically; **Later** postpones the restart, with **Restart & install** available in Settings.
+- Replaced the manual update-check box with a redesigned update panel: version transition, real download progress and byte counts, signature stage, release notes, restart action and retry feedback. Failed downloads or verification never run the installer.
+- Moved instance General, Installation and Overrides settings into a scrollable popup with keyboard focus containment, Escape/close handling and unsaved-change protection. The instance overview remains its own page. Old settings links open the popup for compatibility.
+- Added an icon studio with nine symbols, twelve colours and four background finishes, live previews, image upload, reset and randomisation. Instance creation also offers the expanded symbols and palettes.
 
 ## Update information
 
-The database upgrades to schema 5. Keep a backup before reverting to older builds, which cannot open this schema. Files remain under `%APPDATA%\AzuriaLauncher\instances\<instance name>`.
-
-The storage migration acknowledgement remains required. **Open instances folder** is optional and separate from **Confirm and continue**.
-
-Game preferences are saved for future use. Minecraft downloading, installation, repair and launching remain unavailable. Minecraft Services application access is still pending review.
+Windows must close Azuria to run its installer. The restart countdown makes that transition visible and can be postponed. Minecraft installation and launching remain unavailable. Storage locations and the schema 5 database are unchanged.

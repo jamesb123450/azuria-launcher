@@ -533,3 +533,75 @@
     padding: 14px 12px;
   }
 }
+.instance-settings-modal {
+  width: min(1050px, calc(100vw - 64px));
+  max-width: none;
+  height: min(780px, calc(100dvh - 64px));
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  overflow: auto;
+}
+.settings-modal-heading {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 26px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.settings-modal-heading span {
+  font-size: 12px;
+}
+.settings-modal-heading h2 {
+  font-size: 20px;
+  margin: 6px 0 0;
+}
+.settings-modal-heading button {
+  font-size: 26px;
+}
+.instance-settings-modal .instance-settings-layout {
+  padding: 24px;
+  gap: 24px;
+  border: 0;
+  grid-template-columns: 155px minmax(0, 1fr);
+}
+.instance-settings-nav button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: none;
+  text-align: left;
+  font-size: 13px;
+}
+.instance-settings-nav button[aria-pressed="true"] {
+  background: var(--panel-soft);
+  color: var(--text);
+  box-shadow: inset 2px 0 var(--pink);
+}
+.instance-settings-modal > .instance-feedback {
+  margin: 12px 24px;
+}
+.instance-settings-modal .instance-settings-nav {
+  top: 110px;
+}
+@media (max-width: 950px) {
+  .instance-settings-modal .instance-settings-layout {
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px;
+  }
+  .icon-studio-preview {
+    flex-wrap: wrap;
+  }
+}

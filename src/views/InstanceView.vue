@@ -20,9 +20,6 @@ import {
   Copy,
   SlidersHorizontal,
   Check,
-  Mountain,
-  Moon,
-  Box,
 } from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
 import { desktop } from "../api";
@@ -36,26 +33,39 @@ import {
   type OverrideFlags,
 } from "../lib/launch-options";
 import { loaderName } from "../types";
+import IconPicker from "../components/IconPicker.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
 import LaunchOptionsEditor from "../components/LaunchOptionsEditor.vue";
-import VersionPicker from "../components/VersionPicker.vue";
-import {
-  ICON_COLORS,
-  makeIcon,
-  uploadIcon,
-  type IconGlyph,
-} from "../lib/instance-icons";
 import "./instance.css";
 const store = useLauncher();
 const route = useRoute();
 const router = useRouter();
 const id = computed(() => String(route.params.id));
 const instance = computed(() => store.instances.find((i) => i.id === id.value));
-const settings = computed(() => route.name === "instance-settings");
-const settingsSection = computed(() =>
-  String(route.params.section ?? "general"),
-);
+const settings = ref(false);
+const settingsSection = ref("general");
+const settingsDialog = ref<HTMLDialogElement>();
+const settingsClose = ref<HTMLButtonElement>();
+let settingsTrigger: HTMLElement | null = null;
+async function openSettings(section = "general") {
+  if (settings.value) return;
+  settingsTrigger = document.activeElement as HTMLElement;
+  settingsSection.value = section;
+  settings.value = true;
+  await loadPreferences();
+  await nextTick();
+  settingsDialog.value?.showModal();
+  settingsClose.value?.focus();
+}
+async function closeSettings() {
+  if (!leave()) return;
+  if (preferencesReady.value) discard();
+  settingsDialog.value?.close();
+  settings.value = false;
+  settingsTrigger?.focus();
+  if (route.query.settings) await router.replace({ query: {} });
+}
 const tab = ref<Section>("mods");
 const sectionView = ref<"content" | "worlds" | "logs">("content");
 const search = ref("");
@@ -75,9 +85,6 @@ const loadingPreferences = ref(false);
 const preferencesError = ref("");
 const snapshot = ref("");
 const editInstallation = ref(false);
-const iconInput = ref<HTMLInputElement>();
-const color = ref(ICON_COLORS[0]!);
-const glyph = ref<IconGlyph>("cube");
 const state = () =>
   JSON.stringify({
     general: general.value,
@@ -123,6 +130,8 @@ const section = computed<Section>(() =>
 watch(
   () => instance.value?.id,
   () => {
+    settingsDialog.value?.close();
+    settings.value = false;
     allowLeave = false;
     void loadPreferences();
     void refresh();
@@ -231,21 +240,6 @@ function discard() {
   error.value = "";
   notice.value = "";
 }
-async function icon(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  error.value = "";
-  try {
-    general.value.icon = await uploadIcon(file);
-  } catch (e) {
-    error.value = String(e);
-  } finally {
-    if (iconInput.value) iconInput.value.value = "";
-  }
-}
-function customIcon() {
-  general.value.icon = makeIcon(color.value, glyph.value);
-}
 const confirmDialog = ref<HTMLDialogElement>();
 const cancelButton = ref<HTMLButtonElement>();
 const operation = ref<"remove-instance" | "remove-file" | "duplicate">();
@@ -334,6 +328,14 @@ onBeforeUnmount(() => {
   preferenceRequest++;
   window.removeEventListener("beforeunload", beforeUnload);
 });
+watch(
+  () => [route.query.settings, instance.value?.id],
+  () => {
+    if (route.query.settings && instance.value)
+      void openSettings(String(route.query.settings));
+  },
+  { immediate: true },
+);
 const prettySize = (size: number) =>
   size < 1024
     ? `${size} B`
@@ -362,12 +364,8 @@ const prettySize = (size: number) =>
     </div>
   </section>
   <div v-else class="instance-workspace">
-    <RouterLink
-      class="instance-back text-link"
-      :to="settings ? `/instances/${id}` : '/'"
-      ><ArrowLeft :size="16" />{{
-        settings ? "Back to instance" : "Library"
-      }}</RouterLink
+    <RouterLink class="instance-back text-link" to="/"
+      ><ArrowLeft :size="16" />{{ "Library" }}</RouterLink
     >
     <header class="instance-page-header">
       <InstanceIcon
@@ -377,8 +375,7 @@ const prettySize = (size: number) =>
       />
       <div class="instance-page-identity">
         <h1>
-          {{ instance.name
-          }}<span v-if="settings" class="muted"> / Settings</span>
+          {{ instance.name }}
         </h1>
         <p>
           {{ loaderName(instance.loader) }} · Minecraft
@@ -395,11 +392,8 @@ const prettySize = (size: number) =>
           @click="instanceApi.open(id).catch((e) => (error = String(e)))"
         >
           <FolderOpen :size="16" />Open folder</button
-        ><RouterLink
-          v-if="!settings"
-          class="button secondary"
-          :to="`/instances/${id}/settings/general`"
-          ><Settings :size="16" />Settings</RouterLink
+        ><button class="button secondary" @click="openSettings()">
+          <Settings :size="16" />Settings</button
         ><button
           class="button primary"
           disabled
@@ -413,234 +407,204 @@ const prettySize = (size: number) =>
       Minecraft installation and launching are still in development. You can
       manage this instance’s files and saved settings.
     </p>
-    <div v-if="settings" class="instance-settings-layout">
-      <nav class="instance-settings-nav" aria-label="Instance settings">
-        <RouterLink
-          v-for="item in [
-            { id: 'general', label: 'General', icon: Settings },
-            { id: 'installation', label: 'Installation', icon: Boxes },
-            { id: 'overrides', label: 'Overrides', icon: SlidersHorizontal },
-          ]"
-          :key="item.id"
-          :to="`/instances/${id}/settings/${item.id}`"
-          ><component :is="item.icon" :size="17" />{{ item.label }}</RouterLink
-        ><RouterLink class="defaults-link" to="/settings#launch-defaults"
-          >Launcher defaults</RouterLink
+    <dialog
+      v-if="settings"
+      ref="settingsDialog"
+      class="instance-settings-modal"
+      aria-labelledby="instance-settings-title"
+      @cancel.prevent="closeSettings"
+    >
+      <header class="settings-modal-heading">
+        <div>
+          <span class="muted">{{ instance.name }}</span>
+          <h2 id="instance-settings-title">Instance settings</h2>
+        </div>
+        <button
+          ref="settingsClose"
+          class="icon-button"
+          aria-label="Close instance settings"
+          @click="closeSettings"
         >
-      </nav>
-      <div class="instance-settings-content">
-        <p v-if="preferencesError" class="inline-error" role="alert">
-          {{ preferencesError }}
-          <button class="button secondary" @click="loadPreferences">
-            Retry settings
-          </button>
-        </p>
-        <p v-else-if="loadingPreferences" class="muted" role="status">
-          Loading instance settings…
-        </p>
-        <template v-if="preferencesReady">
-          <section v-if="settingsSection === 'general'">
-            <h2>General</h2>
-            <form @submit.prevent="saveGeneral">
-              <fieldset :disabled="actionBusy">
-                <div class="general-identity-fields">
-                  <label class="instance-field"
-                    >Instance name<input
-                      v-model="general.name"
-                      maxlength="80"
-                      required
-                  /></label>
-                  <div class="instance-icon-editor">
-                    <span class="field-label">Icon</span
-                    ><InstanceIcon
+          ×
+        </button>
+      </header>
+      <div class="instance-settings-layout">
+        <nav class="instance-settings-nav" aria-label="Instance settings">
+          <button
+            type="button"
+            v-for="item in [
+              { id: 'general', label: 'General', icon: Settings },
+              { id: 'installation', label: 'Installation', icon: Boxes },
+              { id: 'overrides', label: 'Overrides', icon: SlidersHorizontal },
+            ]"
+            :key="item.id"
+            :aria-pressed="settingsSection === item.id"
+            @click="settingsSection = item.id"
+          >
+            <component :is="item.icon" :size="17" />{{ item.label }}</button
+          ><RouterLink class="defaults-link" to="/settings#launch-defaults"
+            >Launcher defaults</RouterLink
+          >
+        </nav>
+        <div class="instance-settings-content">
+          <p v-if="preferencesError" class="inline-error" role="alert">
+            {{ preferencesError }}
+            <button class="button secondary" @click="loadPreferences">
+              Retry settings
+            </button>
+          </p>
+          <p v-else-if="loadingPreferences" class="muted" role="status">
+            Loading instance settings…
+          </p>
+          <template v-if="preferencesReady">
+            <section v-if="settingsSection === 'general'">
+              <h2>General</h2>
+              <form @submit.prevent="saveGeneral">
+                <fieldset :disabled="actionBusy">
+                  <div class="general-identity-fields">
+                    <label class="instance-field"
+                      >Instance name<input
+                        v-model="general.name"
+                        maxlength="80"
+                        required
+                    /></label>
+                    <IconPicker
+                      v-model="general.icon"
                       :loader="instance.loader"
                       :seed="instance.id"
-                      :icon="general.icon"
-                    /><input
-                      ref="iconInput"
-                      class="visually-hidden"
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      aria-label="Upload instance icon"
-                      @change="icon"
                     />
-                    <div class="instance-inline-actions">
-                      <button
-                        type="button"
-                        class="button secondary"
-                        @click="iconInput?.click()"
-                      >
-                        Upload</button
-                      ><button
-                        type="button"
-                        class="button secondary"
-                        @click="general.icon = null"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                    <div class="icon-colors">
-                      <button
-                        v-for="swatch in ICON_COLORS"
-                        :key="swatch"
-                        type="button"
-                        :style="{ background: swatch }"
-                        :aria-label="'Icon colour ' + swatch"
-                        :aria-pressed="color === swatch"
-                        @click="
-                          color = swatch;
-                          customIcon();
-                        "
-                      />
-                    </div>
-                    <div class="instance-inline-actions">
-                      <button
-                        v-for="shape in [
-                          { id: 'cube', label: 'Cube', icon: Box },
-                          { id: 'mountain', label: 'Mountain', icon: Mountain },
-                          { id: 'moon', label: 'Moon', icon: Moon },
-                        ]"
-                        :key="shape.id"
-                        type="button"
-                        class="icon-button"
-                        :aria-label="shape.label + ' icon'"
-                        :aria-pressed="glyph === shape.id"
-                        @click="
-                          glyph = shape.id as IconGlyph;
-                          customIcon();
-                        "
-                      >
-                        <component :is="shape.icon" :size="18" />
-                      </button>
-                    </div>
                   </div>
-                </div>
+                  <p class="muted">
+                    Renaming also renames the instance folder. Duplicate names
+                    receive a numbered suffix.
+                  </p>
+                  <div class="instance-save-bar">
+                    <button class="button primary">Save details</button
+                    ><button
+                      type="button"
+                      class="button secondary"
+                      :disabled="!dirty"
+                      @click="discard"
+                    >
+                      Discard changes
+                    </button>
+                  </div>
+                </fieldset>
+              </form>
+              <section class="instance-setting-block">
+                <h3>Duplicate instance</h3>
                 <p class="muted">
-                  Renaming also renames the instance folder. Duplicate names
-                  receive a numbered suffix.
+                  Create a separate instance from these settings, or include all
+                  local files.
                 </p>
+                <button
+                  class="button secondary"
+                  :disabled="actionBusy || dirty"
+                  @click="ask('duplicate')"
+                >
+                  <Copy :size="16" />Duplicate instance
+                </button>
+              </section>
+              <section class="instance-setting-block danger-zone">
+                <h3>Remove instance</h3>
+                <p class="muted">
+                  Remove it from your library and retain its files in Azuria’s
+                  trash folder.
+                </p>
+                <button
+                  class="button danger-button"
+                  :disabled="actionBusy"
+                  @click="ask('remove-instance')"
+                >
+                  <Trash2 :size="16" />Remove instance
+                </button>
+              </section>
+            </section>
+            <section v-else-if="settingsSection === 'installation'">
+              <h2>Installation</h2>
+              <dl class="installation-info">
+                <div>
+                  <dt>Loader</dt>
+                  <dd>{{ loaderName(instance.loader) }}</dd>
+                </div>
+                <div>
+                  <dt>Minecraft version</dt>
+                  <dd>{{ instance.minecraftVersion }}</dd>
+                </div>
+                <div>
+                  <dt>Loader version preference</dt>
+                  <dd>{{ instance.loaderVersion ?? "Not set" }}</dd>
+                </div>
+                <div>
+                  <dt>Status</dt>
+                  <dd>Configuration saved · installer not available</dd>
+                </div>
+              </dl>
+              <button
+                class="button secondary"
+                :disabled="actionBusy || dirty"
+                @click="editInstallation = true"
+              >
+                Edit configuration
+              </button>
+              <p class="muted">
+                Changing the game or loader version can make existing mods
+                incompatible. Existing worlds and content are retained.
+              </p>
+              <section class="instance-setting-block">
+                <h3>Repair instance</h3>
+                <p class="muted">
+                  Repair will verify Minecraft dependencies when installation is
+                  available. It will preserve worlds and user content.
+                </p>
+                <button class="button secondary" disabled>
+                  Repair unavailable
+                </button>
+              </section>
+            </section>
+            <section v-else-if="settingsSection === 'overrides'">
+              <h2>Overrides</h2>
+              <p class="muted">
+                Use launcher defaults, or enable a custom setting for this
+                instance. Changes take effect once launching is available.
+              </p>
+              <form @submit.prevent="saveOverrides">
+                <LaunchOptionsEditor
+                  v-model="options"
+                  v-model:enabled="flags"
+                  inheritance
+                  :defaults="defaults"
+                  :disabled="actionBusy"
+                />
                 <div class="instance-save-bar">
-                  <button class="button primary">Save details</button
+                  <button class="button primary" :disabled="actionBusy">
+                    Save overrides</button
                   ><button
                     type="button"
                     class="button secondary"
-                    :disabled="!dirty"
+                    :disabled="actionBusy || !dirty"
                     @click="discard"
                   >
                     Discard changes
                   </button>
                 </div>
-              </fieldset>
-            </form>
-            <section class="instance-setting-block">
-              <h3>Duplicate instance</h3>
-              <p class="muted">
-                Create a separate instance from these settings, or include all
-                local files.
-              </p>
-              <button
-                class="button secondary"
-                :disabled="actionBusy || dirty"
-                @click="ask('duplicate')"
+              </form>
+            </section>
+            <section v-else>
+              <h2>Settings section not found</h2>
+              <RouterLink :to="`/instances/${id}/settings/general`"
+                >Open General</RouterLink
               >
-                <Copy :size="16" />Duplicate instance
-              </button>
             </section>
-            <section class="instance-setting-block danger-zone">
-              <h3>Remove instance</h3>
-              <p class="muted">
-                Remove it from your library and retain its files in Azuria’s
-                trash folder.
-              </p>
-              <button
-                class="button danger-button"
-                :disabled="actionBusy"
-                @click="ask('remove-instance')"
-              >
-                <Trash2 :size="16" />Remove instance
-              </button>
-            </section>
-          </section>
-          <section v-else-if="settingsSection === 'installation'">
-            <h2>Installation</h2>
-            <dl class="installation-info">
-              <div>
-                <dt>Loader</dt>
-                <dd>{{ loaderName(instance.loader) }}</dd>
-              </div>
-              <div>
-                <dt>Minecraft version</dt>
-                <dd>{{ instance.minecraftVersion }}</dd>
-              </div>
-              <div>
-                <dt>Loader version preference</dt>
-                <dd>{{ instance.loaderVersion ?? "Not set" }}</dd>
-              </div>
-              <div>
-                <dt>Status</dt>
-                <dd>Configuration saved · installer not available</dd>
-              </div>
-            </dl>
-            <button
-              class="button secondary"
-              :disabled="actionBusy || dirty"
-              @click="editInstallation = true"
-            >
-              Edit configuration
-            </button>
-            <p class="muted">
-              Changing the game or loader version can make existing mods
-              incompatible. Existing worlds and content are retained.
-            </p>
-            <section class="instance-setting-block">
-              <h3>Repair instance</h3>
-              <p class="muted">
-                Repair will verify Minecraft dependencies when installation is
-                available. It will preserve worlds and user content.
-              </p>
-              <button class="button secondary" disabled>
-                Repair unavailable
-              </button>
-            </section>
-          </section>
-          <section v-else-if="settingsSection === 'overrides'">
-            <h2>Overrides</h2>
-            <p class="muted">
-              Use launcher defaults, or enable a custom setting for this
-              instance. Changes take effect once launching is available.
-            </p>
-            <form @submit.prevent="saveOverrides">
-              <LaunchOptionsEditor
-                v-model="options"
-                v-model:enabled="flags"
-                inheritance
-                :defaults="defaults"
-                :disabled="actionBusy"
-              />
-              <div class="instance-save-bar">
-                <button class="button primary" :disabled="actionBusy">
-                  Save overrides</button
-                ><button
-                  type="button"
-                  class="button secondary"
-                  :disabled="actionBusy || !dirty"
-                  @click="discard"
-                >
-                  Discard changes
-                </button>
-              </div>
-            </form>
-          </section>
-          <section v-else>
-            <h2>Settings section not found</h2>
-            <RouterLink :to="`/instances/${id}/settings/general`"
-              >Open General</RouterLink
-            >
-          </section>
-        </template>
+          </template>
+        </div>
       </div>
-    </div>
-    <template v-else>
+      <p v-if="error" class="inline-error instance-feedback" role="alert">
+        {{ error }}
+      </p>
+      <p v-if="notice" class="instance-feedback" role="status">{{ notice }}</p>
+    </dialog>
+    <template v-if="true">
       <nav class="instance-tabs" aria-label="Instance sections">
         <button
           v-for="view in [
@@ -846,10 +810,14 @@ const prettySize = (size: number) =>
         }}</pre>
       </section>
     </template>
-    <p v-if="error" class="inline-error instance-feedback" role="alert">
+    <p
+      v-if="error && !settings"
+      class="inline-error instance-feedback"
+      role="alert"
+    >
       {{ error }}
     </p>
-    <p v-if="notice" class="instance-feedback" role="status">
+    <p v-if="notice && !settings" class="instance-feedback" role="status">
       <Check :size="16" />{{ notice }}
     </p>
   </div>

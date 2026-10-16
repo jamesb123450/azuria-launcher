@@ -48,10 +48,7 @@ test("instance navigation, general settings, defaults and overrides persist", as
   await expect(
     page.getByRole("heading", { name: "No game logs yet" }),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "Settings", exact: true })
-    .last()
-    .click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
     .getByLabel("Instance name", { exact: true })
     .fill("Aurora renamed");
@@ -59,11 +56,14 @@ test("instance navigation, general settings, defaults and overrides persist", as
   await expect(page.getByRole("status")).toContainText(
     "Instance details saved",
   );
-  await page.getByRole("link", { name: "Overrides", exact: true }).click();
+  await page.getByRole("button", { name: "Overrides", exact: true }).click();
   await page.getByLabel("Memory allocation in MB").fill("8192");
   await page.getByRole("button", { name: "Save overrides" }).click();
   await expect(page.getByRole("status")).toContainText("Overrides saved");
+  await page.getByRole("button", { name: "Close instance settings" }).click();
   await page.reload();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Overrides", exact: true }).click();
   await expect(page.getByLabel("Memory allocation in MB")).toHaveValue("8192");
   await page
     .getByRole("switch", { name: "Custom memory allocation", exact: true })
@@ -85,7 +85,7 @@ test("instance navigation, general settings, defaults and overrides persist", as
     page.getByText("Using launcher default: 6144 MB", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Aurora renamed / Settings" }),
+    page.getByRole("heading", { name: "Instance settings" }),
   ).toBeVisible();
 });
 test("settings guard unsaved changes and duplicate into a separate instance", async ({
@@ -95,7 +95,7 @@ test("settings guard unsaved changes and duplicate into a separate instance", as
   await page.getByLabel("Instance name", { exact: true }).fill("Unsaved");
   page.once("dialog", (d) => d.dismiss());
   await page
-    .getByRole("link", { name: "Back to instance", exact: true })
+    .getByRole("button", { name: "Close instance settings", exact: true })
     .click();
   await expect(page.getByLabel("Instance name", { exact: true })).toHaveValue(
     "Unsaved",
@@ -149,4 +149,54 @@ test("minimum window settings fit and missing instances have an exit", async ({
   await expect(
     page.getByRole("link", { name: "Back to Library" }),
   ).toBeVisible();
+});
+
+test("icon studio offers distinct symbols and finishes and saves the chosen icon", async ({
+  page,
+}) => {
+  await page.goto(`/#/instances/${id}`);
+  const trigger = page.getByRole("button", { name: "Settings", exact: true });
+  await trigger.click();
+  const dialog = page.getByRole("dialog", {
+    name: "Instance settings",
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  const symbols = dialog.getByRole("group", { name: "Icon symbol" });
+  await expect(symbols.getByRole("button")).toHaveCount(9);
+  const previews = new Set<string>();
+  for (const button of await symbols.getByRole("button").all()) {
+    await button.click();
+    previews.add(
+      (await dialog.locator(".icon-studio-preview img").getAttribute("src")) ??
+        "",
+    );
+  }
+  expect(previews.size).toBe(9);
+  const backgrounds = dialog.getByRole("group", { name: "Icon background" });
+  const finishes = new Set<string>();
+  for (const button of await backgrounds.getByRole("button").all()) {
+    await button.click();
+    finishes.add(
+      (await dialog.locator(".icon-studio-preview img").getAttribute("src")) ??
+        "",
+    );
+  }
+  expect(finishes.size).toBe(4);
+  await page.screenshot({
+    path: test.info().outputPath("instance-icon-studio.png"),
+  });
+  const selected = await dialog
+    .locator(".icon-studio-preview img")
+    .getAttribute("src");
+  await dialog.getByRole("button", { name: "Save details" }).click();
+  await dialog.getByRole("button", { name: "Close instance settings" }).click();
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await expect(dialog.locator(".icon-studio-preview img")).toHaveAttribute(
+    "src",
+    selected!,
+  );
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
 });

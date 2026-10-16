@@ -15,8 +15,11 @@ export const router = createRouter({
     { path: "/instances/:id", name: "instance", component: InstanceView },
     {
       path: "/instances/:id/settings/:section?",
-      name: "instance-settings",
-      component: InstanceView,
+      redirect: (to) => ({
+        name: "instance",
+        params: { id: to.params.id },
+        query: { settings: String(to.params.section ?? "general") },
+      }),
     },
     { path: "/discover", component: DiscoverView },
     { path: "/roadmap", component: RoadmapView },

@@ -81,6 +81,15 @@ fn with_store<T>(
     action(storage.store.as_mut().expect("storage opened above"))
 }
 #[tauri::command]
+fn storage_migration_needed(state: State<'_, AppState>) -> Result<bool, String> {
+    let storage = state
+        .lock()
+        .map_err(|_| "Storage is unavailable.".to_string())?;
+    Ok(azuria_core::migration::status(&storage.root)?.required
+        || (!storage.root.join("azuria.sqlite3").exists()
+            && storage.legacy.join("azuria.sqlite3").exists()))
+}
+#[tauri::command]
 async fn prepare_storage(
     app: tauri::AppHandle,
 ) -> Result<azuria_core::migration::MigrationStatus, String> {
@@ -299,6 +308,7 @@ pub fn run() {
             instances::import_instance_content,
             instances::browse_java,
             instances::detect_java,
+            storage_migration_needed,
             prepare_storage,
             confirm_storage_migration,
             open_instances_folder,

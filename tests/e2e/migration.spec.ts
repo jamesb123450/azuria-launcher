@@ -17,6 +17,8 @@ async function mockStorage(page: Page, failPrepare = false) {
         __TAURI_INTERNALS__: {
           invoke: async (cmd: string) => {
             commands.push(cmd);
+            if (cmd === "storage_migration_needed")
+              return !sessionStorage.getItem("acknowledged");
             if (cmd === "prepare_storage") {
               if (failPrepare && !sessionStorage.getItem("prepareRetried")) {
                 sessionStorage.setItem("prepareRetried", "true");
@@ -87,7 +89,7 @@ test("migration requires confirmation while opening the folder is optional", asy
       () =>
         (window as unknown as { storageCommands: string[] }).storageCommands,
     ),
-  ).toEqual(["prepare_storage"]);
+  ).toEqual(["storage_migration_needed", "prepare_storage"]);
   await page.evaluate(() =>
     (
       window as unknown as { completeMigration: () => void }
@@ -166,4 +168,43 @@ test("migration failure stays gated and supports retry", async ({ page }) => {
     }),
   ).toBeEnabled();
   await expect(page.locator(".app-shell")).toHaveCount(0);
+});
+
+test("acknowledged launches never open the migration modal even during slow storage startup", async ({
+  page,
+}) => {
+  await mockStorage(page);
+  await page.addInitScript(() => {
+    sessionStorage.setItem("acknowledged", "true");
+    const internals = (
+      window as unknown as {
+        __TAURI_INTERNALS__: { invoke: (cmd: string) => Promise<unknown> };
+      }
+    ).__TAURI_INTERNALS__;
+    const original = internals.invoke;
+    internals.invoke = async (cmd) => {
+      if (cmd === "prepare_storage")
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      return original(cmd);
+    };
+    const opened: string[] = [];
+    Object.assign(window, { migrationModals: opened });
+    const nativeShow = HTMLDialogElement.prototype.showModal;
+    HTMLDialogElement.prototype.showModal = function () {
+      if (this.classList.contains("storage-migration")) opened.push("opened");
+      return nativeShow.call(this);
+    };
+  });
+  for (let start = 0; start < 3; start++) {
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "Library", exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { migrationModals: string[] }).migrationModals,
+      ),
+    ).toEqual([]);
+  }
 });
