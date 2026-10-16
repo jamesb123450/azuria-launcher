@@ -1,14 +1,13 @@
 ## Changes
 
-- Polished the interface while retaining Azuria’s layout, pink-and-blue theme and right-hand Discover filters.
-- Standardised Library sorting and grouping with themed, keyboard-accessible dropdowns.
-- Improved supporting-text readability, control sizing and card consistency, with calmer hover effects and notification shadows.
-- Replaced promotional wording with clearer descriptions and simplified the empty-library screen.
-- Added a keyboard Skip to content link and clearer account progress and update errors.
-- Made settings actions wrap when space is limited. Success notices now clear after five seconds or navigation; errors remain visible until dismissed.
+- Refined typography with bundled Sora headings and more readable supporting text across the launcher.
+- Improved Library dropdown sizing, settings hierarchy and appearance-selection states while preserving Azuria’s dark/light themes and pink-and-blue colours.
+- Removed decorative heading labels and hover movement for a calmer interface.
+- Renamed Jump in to Recent instances and improved heading semantics and metadata wrapping.
+- Corrected the Development page title and simplified roadmap descriptions and Settings links.
 
 ## Update information
 
-Install through Settings → Update & restart.
+Install through Settings → Update & restart when the release is published.
 
-This update does not change saved instances, accounts or the database schema. Discover remains a fictional catalogue preview with installation disabled. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.
+Saved instances, accounts and the database schema are unchanged. Discover remains a fictional catalogue preview with installation disabled. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.
