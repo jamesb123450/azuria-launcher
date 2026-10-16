@@ -1,137 +1,103 @@
 # Azuria Launcher
 
-A Windows-first Minecraft Java launcher in development, built with Vue, TypeScript, Tauri and Rust.
+A Windows-first launcher for Minecraft: Java Edition, built around a local instance library and a charcoal, pink and blue interface. Azuria supports dark, light and system appearance, with separate configurations for different Minecraft versions and mod loaders.
 
-Azuria brings Minecraft instance settings into a local library, with a compact interface, pink and blue accents, and dark, light and system themes.
+[Website](https://jamesb123450.github.io/azuria-launcher/) · [Download for Windows](https://github.com/jamesb123450/azuria-launcher/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-launcher/releases) · [Report an issue](https://github.com/jamesb123450/azuria-launcher/issues)
 
-![Azuria Launcher library in dark mode](docs/previews/play-dark.webp)
+> **Early development:** Azuria currently manages instance settings. Game downloads, Java setup and launching are not available yet. Minecraft Services access for Microsoft sign-in is pending review. Download a development build to explore the interface and follow progress.
 
-_Interface preview with example instances. New installations start with an empty library._
+## What is available
 
-## Project status
+- **Instance library:** create, edit, favourite, search, sort and group configurations. Select an instance to see its version and loader details, or switch between compact grid and list views.
+- **Custom setup:** save Vanilla, Fabric, Forge, NeoForge and Quilt configurations. Browse Minecraft and loader version lists, with manual Minecraft version entry available when needed. These are configuration choices; installation and compatibility checks are still planned.
+- **Instance identity:** upload an icon or customise its colour and shape. Copy settings into a separate, empty instance without copying game files.
+- **Account controls:** Microsoft browser sign-in, reconnect, switch and sign-out controls on Windows. Full Minecraft account verification remains dependent on Azuria receiving Minecraft Services access.
+- **Local storage and recovery:** SQLite-backed desktop settings, instance files retained in local trash after removal, and recovery of interrupted removals at startup.
+- **In-app updates:** published Windows builds can check for signed updates and install them from Settings.
+- **Discover preview:** browse the proposed modpack, mod, datapack and resource-pack interface, including search, sorting and a separate filter sidebar on the right.
 
-Azuria is an early development project. **Game installation and launching are not available yet.** Microsoft sign-in is implemented for Windows; live validation of Azuria’s Minecraft Services access is still required. The current build establishes the desktop interface, local storage and update system. Modpack search, upload and import options are shown as unavailable.
+Discover uses fictional example projects, creators and statistics. Live Modrinth/CurseForge results, content installation, modpack upload and instance import are not connected. Unavailable actions are labelled or disabled.
 
-### Available now
+## Download and update
 
-- Create and edit instance settings for Vanilla, Fabric, NeoForge, Forge and Quilt.
-- Choose icons with upload, randomize and colour/shape customization.
-- Browse Minecraft versions, include snapshots, or enter a version manually.
-- Copy instance settings into a new, empty instance.
-- Search, sort, group and favourite instances.
-- Preview a Discover catalogue for modpacks, mods, datapacks and resource packs, with local search, filtering, sorting and pagination.
-- Remove instances while retaining their files in local trash.
-- Recover interrupted removals automatically at startup.
-- Sign in through Microsoft in your browser, verify your Minecraft Java profile, and securely remember one account on Windows.
-- Reconnect, switch accounts or remove saved credentials from Settings.
-- Save appearance preferences locally.
-- Check for and install signed updates in updater-enabled Windows builds.
+Get the Windows installer from the [latest published release](https://github.com/jamesb123450/azuria-launcher/releases/latest). Windows is the initial supported platform; macOS and Linux builds are not currently distributed.
 
-Discover currently uses fictional example projects, creators and statistics. Provider access, downloads and installation are not connected; Install buttons are disabled.
+Existing users can open **Settings → Launcher updates** and choose **Update & restart** when an update is available. The app also checks at startup; installing an update requires a user action.
 
-The version picker reads Mojang’s public catalogue, with manual entry available offline. Manual version IDs are syntax-checked. Loader choices and Stable/Latest/custom loader versions are saved preferences; compatibility checks and installation are not implemented yet.
+Update packages are verified with the public signing key bundled in Azuria. This is separate from Windows Authenticode signing: development installers may still display an unknown-publisher or SmartScreen prompt.
 
-### Planned
+## Accounts and local data
 
-Verified Minecraft and Java downloads, game launching, Fabric installation, and Modrinth and CurseForge integration. See the [development plan](docs/PLAN.md) for the broader direction.
+Microsoft sign-in opens the default browser. Authentication runs through the native Windows backend; saved refresh credentials use Windows Credential Manager. Account tokens are not exposed to the web interface or stored in the instance database. Signing out removes Azuria’s saved account without signing the browser out of Microsoft.
 
-## Development
+Instance settings and files stay in the application's local data directory. The current app has no analytics or log-upload service.
 
-### Requirements
+Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. See [storage and recovery](docs/RECOVERY.md) for backup and manual recovery instructions. Copying an instance copies its settings only.
 
-- Windows with WebView2.
-- Node.js 24.
-- Current stable Rust (1.89 or newer).
-- Visual Studio Build Tools with **Desktop development with C++**.
+## Development direction
 
-See the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for native build requirements.
+The next core work is Minecraft account verification, verified Minecraft and Java downloads, and a working Vanilla launch. Fabric installation and live Modrinth/CurseForge discovery follow that foundation. Modpack import/export and broader content management are also planned.
 
-### Run the desktop app
+See the [development plan](docs/PLAN.md) and [integration notes](docs/INTEGRATIONS.md). Planned features are not promises of a release date.
+
+## Build from source
+
+The desktop app uses **Vue 3, TypeScript and Pinia** for the interface, **Tauri 2 and Rust** for native integration, and **SQLite** for local storage.
+
+For Windows development, install Node.js 24, stable Rust, WebView2 and Visual Studio Build Tools with **Desktop development with C++**. See the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for native setup.
 
 ```powershell
+git clone https://github.com/jamesb123450/azuria-launcher.git
+cd azuria-launcher
 npm ci
 npm run desktop:dev
 ```
 
-### Run the browser preview
+To run the interface in a browser:
 
 ```powershell
-npm ci
 npm run dev
 ```
 
-Open [localhost:1420](http://localhost:1420). The preview stores its own data in the browser and does not share the desktop library or support desktop updates or Microsoft sign-in.
+Open [localhost:1420](http://localhost:1420). The browser preview has its own local data and does not share the desktop library. Microsoft sign-in and desktop updates are unavailable there.
 
-### Build a Windows installer
+To build a Windows installer:
 
 ```powershell
 npm run desktop:build
 ```
 
-The NSIS installer is written to `src-tauri/target/release/bundle/nsis/`. Local builds are development installers and are not Windows Authenticode signed.
+Installer output: `src-tauri/target/release/bundle/nsis/`.
 
-## Architecture
-
-| Layer               | Technology                | Responsibility                                                |
-| ------------------- | ------------------------- | ------------------------------------------------------------- |
-| Interface           | Vue, TypeScript and Pinia | Instance library, settings and update controls                |
-| Desktop integration | Tauri                     | Native commands, window controls and updater                  |
-| Storage             | Rust and SQLite           | Validated instance settings, migrations and deletion recovery |
-
-Desktop data stays in the application's local data directory. Instance directories use generated UUIDs rather than user-entered names. There is no analytics or log-upload service in the current build.
-
-## Microsoft account
-
-Open **Settings → Minecraft account** to sign in. Azuria opens your default browser and checks Xbox authentication, Java Edition entitlement and your Minecraft profile before displaying a verified account. Refresh credentials stay in Windows Credential Manager; tokens never enter the web interface, local storage or the instance database.
-
-Signing out removes Azuria’s saved account but does not sign your browser out of Microsoft. A saved account that cannot reconnect stays clearly unverified and can be retried or removed. Browser previews and non-Windows builds do not support account sign-in.
-
-Maintainers: see [Microsoft registration and live testing](docs/INTEGRATIONS.md#microsoft--minecraft).
-
-## Storage and recovery
-
-Removing an instance moves its files to a local trash directory. It does not permanently erase worlds or mods. Copying settings does not copy those files.
-
-A deletion journal records each removal. If the app closes before removal completes, the next startup restores the instance. Completed removals retain their settings and trash location in the database. Conflicting folders are left untouched and reported with recovery instructions.
-
-There is no restore interface yet. See [storage recovery](docs/RECOVERY.md) before attempting manual restoration. Back up the entire application data directory with Azuria closed, including the database, instance folders and trash.
-
-## Updates
-
-Updater-enabled Windows builds check for updates at startup. Installation starts only after selecting **Update & restart**. Downloads are verified against the public signing key bundled with the app.
-
-Update signatures and Windows Authenticode signing are separate: development installers can support verified updates while still appearing unsigned to Windows.
-
-GitHub Actions can publish signed development releases when explicitly enabled by the maintainer. See [update configuration](docs/UPDATES.md) for setup and release details.
-
-## Checks
+### Checks and releases
 
 ```powershell
 npm run build
 npm test
 npx playwright install chromium
 npm run test:e2e
-cargo test --locked --manifest-path crates/azuria-auth/Cargo.toml
-cargo clippy --locked --manifest-path crates/azuria-auth/Cargo.toml --all-targets -- -D warnings
-cargo test --locked --manifest-path crates/azuria-core/Cargo.toml
-cargo clippy --locked --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings
-cargo test --locked --manifest-path src-tauri/Cargo.toml
-cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+npm run format:check
 ```
 
-GitHub Actions runs frontend checks and native Windows checks. Browser tests exercise the preview; real installation and update behaviour also require Windows smoke testing.
+GitHub Actions also runs Rust tests, formatting, Clippy and Windows build checks. Browser tests exercise the interface; native installation, authentication and updates need Windows testing.
 
-## Website
+With automatic releases enabled, launcher changes merged into `main` run the checks, build a signed update and publish it after successful validation. Release descriptions come from [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md); app changes should update that file in the same PR. Website-only and README-only changes do not publish a launcher release. See [update and release configuration](docs/UPDATES.md).
 
-The public website source is in `website/`, with its own dependency-free static build and CI checks. Hosting is not configured yet. See [website development and hosting](docs/WEBSITE.md) for preview commands and the proposed GitHub Pages deployment.
+## Website and documentation
 
-## Further reading
+The [public website](https://jamesb123450.github.io/azuria-launcher/) is hosted on GitHub Pages. Its source lives in [`website/`](website/) in this repository, with a separate static build and deployment workflow. Download links and release information use published GitHub releases.
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [Design and asset provenance](docs/DESIGN.md)
-- [External integrations](docs/INTEGRATIONS.md)
-- [Development plan](docs/PLAN.md)
+- [Website development](docs/WEBSITE.md)
+- [Storage recovery](docs/RECOVERY.md)
+- [Design and asset credits](docs/DESIGN.md)
+- [Privacy policy](https://jamesb123450.github.io/azuria-launcher/privacy/)
+- [Terms of service](https://jamesb123450.github.io/azuria-launcher/terms/)
 
-## Licence
+## Feedback and licence
 
-A project licence has not been selected. Dependency and asset licences remain applicable; see the linked provenance and integration documents.
+Report bugs and suggest improvements through [GitHub Issues](https://github.com/jamesb123450/azuria-launcher/issues). Include the app version, Windows version and steps to reproduce a problem. Keep account credentials, tokens and personal data out of public reports.
+
+The source is publicly viewable, but a project licence has not been selected. Dependency and asset licences continue to apply; see the linked credits.
+
+Azuria is an independent project and is not affiliated with or endorsed by Mojang or Microsoft.
