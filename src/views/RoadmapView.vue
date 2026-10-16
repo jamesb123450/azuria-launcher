@@ -5,13 +5,14 @@ import { Check, ArrowUpRight, Compass } from "@lucide/vue";
 const stages = [
   {
     title: "Launcher & instance library",
-    description: "Desktop shell, themes and a persistent instance library.",
+    description:
+      "Desktop shell, themes, instance library and Microsoft account controls.",
     status: "This build",
   },
   {
     title: "From library to launch",
     description:
-      "Microsoft sign-in, Minecraft downloads, Java setup and a real Vanilla launch.",
+      "Live account verification, Minecraft downloads, Java setup and a real Vanilla launch.",
     status: "Next",
   },
   {

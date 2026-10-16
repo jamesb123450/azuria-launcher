@@ -641,3 +641,23 @@ test("loader catalogue errors are retryable and editing preserves existing memor
   expect(stored.memoryMb).toBe(32768);
   expect(stored.loaderVersion).toBe("0.16.10");
 });
+
+test("account navigation explains Windows-only sign-in in browser preview", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "Minecraft account", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Minecraft account", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Microsoft sign-in is available in the Windows desktop app.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Sign in with Microsoft" }),
+  ).toHaveCount(0);
+});

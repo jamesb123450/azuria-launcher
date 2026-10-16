@@ -10,7 +10,7 @@ _Interface preview with example instances. New installations start with an empty
 
 ## Project status
 
-Azuria is an early development project. **Minecraft sign-in, game installation and launching are not available yet.** The current build establishes the desktop interface, local storage and update system. Modpack search, upload and import options are shown as unavailable.
+Azuria is an early development project. **Game installation and launching are not available yet.** Microsoft sign-in is implemented for Windows; live validation of Azuria’s Minecraft Services access is still required. The current build establishes the desktop interface, local storage and update system. Modpack search, upload and import options are shown as unavailable.
 
 ### Available now
 
@@ -21,6 +21,8 @@ Azuria is an early development project. **Minecraft sign-in, game installation a
 - Search, sort, group and favourite instances.
 - Remove instances while retaining their files in local trash.
 - Recover interrupted removals automatically at startup.
+- Sign in through Microsoft in your browser, verify your Minecraft Java profile, and securely remember one account on Windows.
+- Reconnect, switch accounts or remove saved credentials from Settings.
 - Save appearance preferences locally.
 - Check for and install signed updates in updater-enabled Windows builds.
 
@@ -28,7 +30,7 @@ The version picker reads Mojang’s public catalogue, with manual entry availabl
 
 ### Planned
 
-Microsoft authentication, verified Minecraft and Java downloads, game launching, Fabric installation, and Modrinth and CurseForge integration. See the [development plan](docs/PLAN.md) for the broader direction.
+Verified Minecraft and Java downloads, game launching, Fabric installation, and Modrinth and CurseForge integration. See the [development plan](docs/PLAN.md) for the broader direction.
 
 ## Development
 
@@ -55,7 +57,7 @@ npm ci
 npm run dev
 ```
 
-Open [localhost:1420](http://localhost:1420). The preview stores its own data in the browser and does not share the desktop library or support desktop updates.
+Open [localhost:1420](http://localhost:1420). The preview stores its own data in the browser and does not share the desktop library or support desktop updates or Microsoft sign-in.
 
 ### Build a Windows installer
 
@@ -74,6 +76,14 @@ The NSIS installer is written to `src-tauri/target/release/bundle/nsis/`. Local 
 | Storage             | Rust and SQLite           | Validated instance settings, migrations and deletion recovery |
 
 Desktop data stays in the application's local data directory. Instance directories use generated UUIDs rather than user-entered names. There is no analytics or log-upload service in the current build.
+
+## Microsoft account
+
+Open **Settings → Minecraft account** to sign in. Azuria opens your default browser and checks Xbox authentication, Java Edition entitlement and your Minecraft profile before displaying a verified account. Refresh credentials stay in Windows Credential Manager; tokens never enter the web interface, local storage or the instance database.
+
+Signing out removes Azuria’s saved account but does not sign your browser out of Microsoft. A saved account that cannot reconnect stays clearly unverified and can be retried or removed. Browser previews and non-Windows builds do not support account sign-in.
+
+Maintainers: see [Microsoft registration and live testing](docs/INTEGRATIONS.md#microsoft--minecraft).
 
 ## Storage and recovery
 
@@ -98,6 +108,8 @@ npm run build
 npm test
 npx playwright install chromium
 npm run test:e2e
+cargo test --locked --manifest-path crates/azuria-auth/Cargo.toml
+cargo clippy --locked --manifest-path crates/azuria-auth/Cargo.toml --all-targets -- -D warnings
 cargo test --locked --manifest-path crates/azuria-core/Cargo.toml
 cargo clippy --locked --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings
 cargo test --locked --manifest-path src-tauri/Cargo.toml

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Monitor, Moon, Sun, Palette, ShieldCheck } from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
+import AccountPanel from "../components/AccountPanel.vue";
 import UpdatePanel from "../components/UpdatePanel.vue";
 import type { Theme } from "../types";
 const store = useLauncher();
@@ -38,6 +39,7 @@ const themes: {
       <p class="muted">Configure your launcher.</p>
     </div>
   </section>
+  <AccountPanel />
   <UpdatePanel />
   <section class="settings-panel">
     <div class="settings-title">
@@ -89,9 +91,9 @@ const themes: {
       </div>
     </div>
     <p class="muted">
-      Account sign-in, Java runtime selection, game downloads and provider
-      configuration will appear as those integrations are implemented. This
-      build does not collect analytics or upload logs.
+      Java runtime selection, game downloads and provider configuration will
+      appear as those integrations are implemented. This build does not collect
+      analytics or upload logs.
     </p>
     <RouterLink class="text-link" to="/roadmap"
       >View the development roadmap →</RouterLink
