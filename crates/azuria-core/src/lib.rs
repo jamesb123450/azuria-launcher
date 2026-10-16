@@ -1,3 +1,5 @@
+mod folders;
+pub mod migration;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -155,6 +157,7 @@ fn row_instance(row: &rusqlite::Row<'_>) -> rusqlite::Result<Instance> {
 impl Store {
     pub fn open(root: PathBuf) -> Result<Self, String> {
         fs::create_dir_all(&root).map_err(error)?;
+        folders::plain_directory(&root)?;
         let storage_lock = OpenOptions::new()
             .read(true)
             .write(true)
@@ -167,6 +170,8 @@ impl Store {
         })?;
         fs::create_dir_all(root.join("instances")).map_err(error)?;
         fs::create_dir_all(root.join("trash")).map_err(error)?;
+        folders::plain_directory(&root.join("instances"))?;
+        folders::plain_directory(&root.join("trash"))?;
         let conn = Connection::open(root.join("azuria.sqlite3")).map_err(error)?;
         conn.busy_timeout(std::time::Duration::from_secs(5))
             .map_err(error)?;
@@ -175,7 +180,7 @@ impl Store {
         let version: i64 = conn
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .map_err(error)?;
-        if version > 3 {
+        if version > 4 {
             return Err(
                 "This database was created by a newer Azuria version. Upgrade the launcher.".into(),
             );
@@ -214,11 +219,17 @@ impl Store {
               DROP TABLE instances_v2;
               PRAGMA user_version=3; COMMIT;").map_err(error)?;
         }
+        conn.execute_batch("BEGIN IMMEDIATE;
+          CREATE TABLE IF NOT EXISTS instance_folders (id TEXT PRIMARY KEY REFERENCES instances(id) ON DELETE CASCADE, folder TEXT NOT NULL UNIQUE COLLATE NOCASE);
+          INSERT OR IGNORE INTO instance_folders SELECT id,id FROM instances;
+          CREATE TABLE IF NOT EXISTS folder_moves (id TEXT PRIMARY KEY, source TEXT NOT NULL, target TEXT NOT NULL);
+          PRAGMA user_version=4; COMMIT;").map_err(error)?;
         let mut store = Self {
             conn,
             root,
             _lock: storage_lock,
         };
+        store.recover_folder_moves()?;
         store.recover_deletions()?;
         Ok(store)
     }
@@ -240,10 +251,18 @@ impl Store {
             .duration_since(UNIX_EPOCH)
             .map_err(error)?
             .as_millis() as i64;
-        let path = self.root.join("instances").join(&id);
-        // IDs, never user-provided names, determine disk paths.
+        let folder = self.available_folder(input.name.trim(), None)?;
+        let path = self.root.join("instances").join(&folder);
         fs::create_dir(&path).map_err(error)?;
-        let result = self.conn.execute("INSERT INTO instances (id,name,minecraft_version,loader,memory_mb,created_at,icon,loader_version) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)", params![id,input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,created_at,input.icon,input.loader_version]);
+        let result = (|| -> Result<(), rusqlite::Error> {
+            let tx = self.conn.transaction()?;
+            tx.execute("INSERT INTO instances (id,name,minecraft_version,loader,memory_mb,created_at,icon,loader_version) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)", params![id,input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,created_at,input.icon,input.loader_version])?;
+            tx.execute(
+                "INSERT INTO instance_folders (id,folder) VALUES (?1,?2)",
+                params![id, folder],
+            )?;
+            tx.commit()
+        })();
         if let Err(e) = result {
             let _ = fs::remove_dir(&path);
             return Err(error(e));
@@ -254,7 +273,31 @@ impl Store {
         self.recover_deletions()?;
         input.validate()?;
         self.get(id)?;
-        self.conn.execute("UPDATE instances SET name=?1,minecraft_version=?2,loader=?3,memory_mb=?4,icon=?6,loader_version=?7 WHERE id=?5", params![input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,id,input.icon,input.loader_version]).map_err(error)?;
+        self.recover_folder_moves()?;
+        let old = self.folder(id)?;
+        let next = if self.get(id)?.name == input.name.trim() {
+            old.clone()
+        } else {
+            self.available_folder(input.name.trim(), Some(&old))?
+        };
+        self.begin_folder_move(id, &old, &next)?;
+        let result = (|| -> Result<(), String> {
+            let tx = self.conn.transaction().map_err(error)?;
+            tx.execute("UPDATE instances SET name=?1,minecraft_version=?2,loader=?3,memory_mb=?4,icon=?6,loader_version=?7 WHERE id=?5", params![input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,id,input.icon,input.loader_version]).map_err(error)?;
+            tx.execute(
+                "UPDATE instance_folders SET folder=?1 WHERE id=?2",
+                params![next, id],
+            )
+            .map_err(error)?;
+            tx.execute("DELETE FROM folder_moves WHERE id=?1", [id])
+                .map_err(error)?;
+            tx.commit().map_err(error)
+        })();
+        if let Err(cause) = result {
+            self.recover_folder_moves()
+                .map_err(|e| format!("{cause}. Folder recovery: {e}"))?;
+            return Err(cause);
+        }
         self.get(id)
     }
     pub fn favorite(&mut self, id: &str) -> Result<Instance, String> {
@@ -269,12 +312,7 @@ impl Store {
     fn begin_delete(&self, id: &str) -> Result<String, String> {
         let item = self.get(id)?;
         let trash_name = format!("{}-{}", id, Uuid::new_v4());
-        let had_files = self
-            .root
-            .join("instances")
-            .join(id)
-            .try_exists()
-            .map_err(error)?;
+        let had_files = self.instance_dir(id)?.try_exists().map_err(error)?;
         let metadata = serde_json::to_string(&item).map_err(error)?;
         self.conn.execute(
             "INSERT INTO deletions (id,trash_name,instance_json,had_files) VALUES (?1,?2,?3,?4)",
@@ -284,6 +322,8 @@ impl Store {
     }
 
     fn recover_deletions(&mut self) -> Result<(), String> {
+        self.recover_folder_moves()?;
+        folders::plain_directory(&self.root.join("trash"))?;
         let pending = {
             let mut stmt = self
                 .conn
@@ -306,12 +346,12 @@ impl Store {
                 .strip_prefix(&format!("{id}-"))
                 .ok_or("Invalid deletion recovery path. Files have not been changed.")?;
             valid_id(suffix)?;
-            let source = self.root.join("instances").join(&id);
+            let source = self.instance_dir(&id)?;
             let target = self.root.join("trash").join(&trash_name);
             let recover = || -> Result<(), String> {
                 match (
-                    source.try_exists().map_err(error)?,
-                    target.try_exists().map_err(error)?,
+                    folders::plain_directory(&source)?,
+                    folders::plain_directory(&target)?,
                 ) {
                     (false, true) => fs::rename(&target, &source).map_err(error)?,
                     (true, true) => {
@@ -339,7 +379,7 @@ impl Store {
         // Retry recovery before starting any further removal.
         self.recover_deletions()?;
         let trash_name = self.begin_delete(id)?;
-        let source = self.root.join("instances").join(id);
+        let source = self.instance_dir(id)?;
         let target = self.root.join("trash").join(&trash_name);
         let result = (|| -> Result<(), String> {
             if source.try_exists().map_err(error)? {
@@ -409,7 +449,7 @@ mod tests {
         let mut store = Store::open(root.clone()).unwrap();
         let item = store.create(input()).unwrap();
         fs::write(
-            root.join("instances").join(&item.id).join("save.txt"),
+            root.join("instances").join("My world").join("save.txt"),
             "keep me",
         )
         .unwrap();
@@ -453,7 +493,7 @@ mod tests {
             let root = dir.path().to_path_buf();
             let mut store = Store::open(root.clone()).unwrap();
             let item = store.create(input()).unwrap();
-            let source = root.join("instances").join(&item.id);
+            let source = root.join("instances").join("My world");
             fs::write(source.join("world.txt"), "world").unwrap();
             let trash_name = store.begin_delete(&item.id).unwrap();
             if moved {
@@ -485,7 +525,7 @@ mod tests {
         let mut store = Store::open(root.clone()).unwrap();
         let item = store.create(input()).unwrap();
         fs::write(
-            root.join("instances").join(&item.id).join("save.txt"),
+            root.join("instances").join("My world").join("save.txt"),
             "safe",
         )
         .unwrap();
@@ -493,7 +533,7 @@ mod tests {
         assert!(store.delete(&item.id).unwrap_err().contains("restored"));
         assert!(store.get(&item.id).is_ok());
         assert_eq!(
-            fs::read_to_string(root.join("instances").join(&item.id).join("save.txt")).unwrap(),
+            fs::read_to_string(root.join("instances").join("My world").join("save.txt")).unwrap(),
             "safe"
         );
         assert_eq!(fs::read_dir(root.join("trash")).unwrap().count(), 0);
@@ -518,11 +558,11 @@ mod tests {
             "retained"
         );
         // Operator resolves conflict by removing the empty original directory.
-        fs::remove_dir(root.join("instances").join(&item.id)).unwrap();
+        fs::remove_dir(root.join("instances").join("My world")).unwrap();
         let store = Store::open(root.clone()).unwrap();
         assert!(store.get(&item.id).is_ok());
         assert_eq!(
-            fs::read_to_string(root.join("instances").join(&item.id).join("save.txt")).unwrap(),
+            fs::read_to_string(root.join("instances").join("My world").join("save.txt")).unwrap(),
             "retained"
         );
     }
@@ -538,7 +578,7 @@ mod tests {
         fs::write(&original_trash, "not a directory").unwrap();
         assert!(store.delete(&item.id).is_err());
         assert!(store.get(&item.id).is_ok());
-        assert!(root.join("instances").join(&item.id).is_dir());
+        assert!(root.join("instances").join("My world").is_dir());
         fs::remove_file(&original_trash).unwrap();
         fs::create_dir(&original_trash).unwrap();
         store.delete(&item.id).unwrap();
@@ -588,12 +628,17 @@ mod tests {
         let item = store.create(input()).unwrap();
         store
             .conn
-            .execute_batch("DROP TABLE deletions;
+            .execute_batch("DROP TABLE folder_moves; DROP TABLE instance_folders; DROP TABLE deletions;
                 ALTER TABLE instances RENAME TO current_instances;
                 CREATE TABLE instances (id TEXT PRIMARY KEY, name TEXT NOT NULL, minecraft_version TEXT NOT NULL, loader TEXT NOT NULL CHECK(loader IN ('vanilla','fabric')), memory_mb INTEGER NOT NULL, favorite INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
                 INSERT INTO instances SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM current_instances;
                 DROP TABLE current_instances; PRAGMA user_version=1;")
             .unwrap();
+        fs::rename(
+            dir.path().join("instances/My world"),
+            dir.path().join("instances").join(&item.id),
+        )
+        .unwrap();
         drop(store);
         let store = Store::open(dir.path().into()).unwrap();
         assert_eq!(store.get(&item.id).unwrap().name, item.name);
@@ -602,7 +647,7 @@ mod tests {
                 .conn
                 .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
                 .unwrap(),
-            3
+            4
         );
     }
 
@@ -613,16 +658,17 @@ mod tests {
         let mut store = Store::open(root.clone()).unwrap();
         let item = store.create(input()).unwrap();
         let trash_name = store.begin_delete(&item.id).unwrap();
-        let source = root.join("instances").join(&item.id);
+        let source = root.join("instances").join("My world");
         fs::write(source.join("world.txt"), "retained").unwrap();
         fs::rename(&source, root.join("trash").join(&trash_name)).unwrap();
-        store.conn.execute_batch("ALTER TABLE instances RENAME TO current_instances;
+        store.conn.execute_batch("DROP TABLE folder_moves; DROP TABLE instance_folders; ALTER TABLE instances RENAME TO current_instances;
             CREATE TABLE instances (id TEXT PRIMARY KEY, name TEXT NOT NULL, minecraft_version TEXT NOT NULL,
                 loader TEXT NOT NULL CHECK(loader IN ('vanilla','fabric')), memory_mb INTEGER NOT NULL,
                 favorite INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
             INSERT INTO instances SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM current_instances;
             DROP TABLE current_instances; PRAGMA user_version=2;").unwrap();
         drop(store);
+        let source = root.join("instances").join(&item.id);
         let store = Store::open(root).unwrap();
         let saved = store.get(&item.id).unwrap();
         assert_eq!(saved.name, item.name);

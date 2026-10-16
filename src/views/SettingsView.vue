@@ -1,10 +1,28 @@
 <script setup lang="ts">
-import { Monitor, Moon, Sun, Palette, ShieldCheck } from "@lucide/vue";
+import {
+  Monitor,
+  Moon,
+  Sun,
+  Palette,
+  ShieldCheck,
+  FolderOpen,
+} from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
 import AccountPanel from "../components/AccountPanel.vue";
 import UpdatePanel from "../components/UpdatePanel.vue";
 import type { Theme } from "../types";
+import { ref } from "vue";
+import { api, desktop } from "../api";
 const store = useLauncher();
+const folderError = ref("");
+async function openInstances() {
+  folderError.value = "";
+  try {
+    await api.openInstancesFolder();
+  } catch (cause) {
+    folderError.value = String(cause instanceof Error ? cause.message : cause);
+  }
+}
 const themes: {
   value: Theme;
   label: string;
@@ -89,6 +107,18 @@ const themes: {
         </p>
       </div>
     </div>
+    <template v-if="desktop">
+      <p class="muted">
+        Windows data is stored in <code>%APPDATA%\AzuriaLauncher</code>. Each
+        instance has a name-based folder inside <code>instances</code>.
+      </p>
+      <button class="button secondary" @click="openInstances">
+        <FolderOpen :size="17" /> Open instances folder
+      </button>
+      <p v-if="folderError" class="inline-error" role="alert">
+        {{ folderError }}
+      </p>
+    </template>
     <p class="muted">
       Java runtime selection, game downloads and provider configuration will
       appear as those integrations are implemented. This build does not collect

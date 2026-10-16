@@ -2,6 +2,12 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import type { Instance, InstanceInput, Settings } from "./types";
 import { validateInput } from "./types";
 export const desktop = isTauri();
+export interface MigrationStatus {
+  required: boolean;
+  instancesPath: string;
+  migratedInstances: number;
+  backupPath?: string | null;
+}
 // Browser preview is isolated from the real desktop database and never launches Minecraft.
 const previewKey = "azuria-preview-v1";
 interface Preview {
@@ -25,6 +31,16 @@ function write(value: Preview) {
   localStorage.setItem(previewKey, JSON.stringify(value));
 }
 export const api = {
+  prepareStorage: async (): Promise<MigrationStatus> =>
+    desktop
+      ? invoke("prepare_storage")
+      : { required: false, instancesPath: "", migratedInstances: 0 },
+  confirmMigration: async (): Promise<void> => {
+    if (desktop) await invoke("confirm_storage_migration");
+  },
+  openInstancesFolder: async (): Promise<void> => {
+    if (desktop) await invoke("open_instances_folder");
+  },
   openProject: async (): Promise<void> => {
     if (desktop) return invoke("open_project_page");
     window.open(

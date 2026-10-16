@@ -30,9 +30,13 @@ Update packages are verified with the public signing key bundled in Azuria. This
 
 Microsoft sign-in opens the default browser. Authentication runs through the native Windows backend; saved refresh credentials use Windows Credential Manager. Account tokens are not exposed to the web interface or stored in the instance database. Signing out removes Azuria’s saved account without signing the browser out of Microsoft.
 
-Instance settings and files stay in the application's local data directory. The current app has no analytics or log-upload service.
+Windows instance settings and files are stored in `%APPDATA%\AzuriaLauncher`, with active game folders under `instances/<instance name>/`. Internal instance IDs remain stable when display names and folders change. Invalid Windows filename characters are replaced, reserved names are adjusted and name collisions receive a numbered suffix. The current app has no analytics or log-upload service.
 
-Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. Copying an instance copies its settings only. Close Azuria before backing up its entire local application data directory, including the database, instance folders and trash. To recover files from a completed removal, create an instance with the original settings, close Azuria, and copy the retained files into the new instance’s UUID directory. Keep the original backup and trash files until the recovered data has been checked.
+On the first launch after this storage update, Azuria displays **Migrating data**, copies and verifies the existing library, and converts UUID folders to instance names. The original database, instance folders and trash remain in the previous local-data location as a backup. The app requires **Confirm and open instances** before continuing; this opens the new instances folder in File Explorer. Interrupted copies can be retried, and a completed migration awaiting confirmation is shown again after restart. Fresh installations do not require a migration acknowledgement. **Settings → Storage & privacy → Open instances folder** reopens the folder later.
+
+The new storage schema is version 4. Older launcher builds cannot open it; use a matching backup if reverting to an older version. Microsoft credentials remain in Windows Credential Manager.
+
+Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. Copying an instance copies its settings only. Close Azuria before backing up its entire local application data directory, including the database, instance folders and trash. To recover files from a completed removal, create an instance with the original settings, close Azuria, and copy the retained files into the new instance’s named directory. Keep the original backup and trash files until the recovered data has been checked.
 
 ## Development direction
 

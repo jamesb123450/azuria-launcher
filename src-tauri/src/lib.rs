@@ -60,6 +60,9 @@ async fn account_sign_out(state: State<'_, Accounts>) -> Result<AccountView, Aut
 struct Storage {
     root: std::path::PathBuf,
     store: Option<Store>,
+    legacy: std::path::PathBuf,
+    checked: bool,
+    acknowledgement_required: bool,
 }
 type AppState = Mutex<Storage>;
 // Opening/recovery failures remain retryable IPC errors instead of aborting
@@ -71,10 +74,72 @@ fn with_store<T>(
     let mut storage = state
         .lock()
         .map_err(|_| "Launcher storage is unavailable. Restart Azuria.".to_string())?;
-    if storage.store.is_none() {
-        storage.store = Some(Store::open(storage.root.clone())?);
+    if !storage.checked || storage.acknowledgement_required {
+        return Err("Confirm the storage migration before using the library.".into());
     }
     action(storage.store.as_mut().expect("storage opened above"))
+}
+#[tauri::command]
+async fn prepare_storage(
+    app: tauri::AppHandle,
+) -> Result<azuria_core::migration::MigrationStatus, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let mut storage = state
+            .lock()
+            .map_err(|_| "Storage is unavailable. Restart Azuria.".to_string())?;
+        if storage.checked {
+            return azuria_core::migration::status(&storage.root);
+        }
+        let (store, report) = azuria_core::migration::prepare(&storage.legacy, &storage.root)?;
+        storage.store = Some(store);
+        storage.acknowledgement_required = report.required;
+        storage.checked = true;
+        Ok(report)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+// No arbitrary filesystem paths can be opened by the web interface.
+fn open_instances(root: &std::path::Path) -> Result<(), String> {
+    let path = root.join("instances");
+    if !path.is_dir() {
+        return Err("The instances folder is unavailable. Retry the migration.".into());
+    }
+    #[cfg(target_os = "windows")]
+    let program = "explorer.exe";
+    #[cfg(target_os = "macos")]
+    let program = "open";
+    #[cfg(target_os = "linux")]
+    let program = "xdg-open";
+    std::process::Command::new(program)
+        .arg(path)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Could not open the instances folder: {e}"))
+}
+#[tauri::command]
+fn confirm_storage_migration(state: State<'_, AppState>) -> Result<(), String> {
+    let mut storage = state
+        .lock()
+        .map_err(|_| "Storage is unavailable.".to_string())?;
+    if !storage.checked || storage.store.is_none() {
+        return Err("Wait for migration to finish first.".into());
+    }
+    // Acknowledgement does not open File Explorer.
+    azuria_core::migration::acknowledge(&storage.root)?;
+    storage.acknowledgement_required = false;
+    Ok(())
+}
+#[tauri::command]
+fn open_instances_folder(state: State<'_, AppState>) -> Result<(), String> {
+    let storage = state
+        .lock()
+        .map_err(|_| "Storage is unavailable.".to_string())?;
+    if !storage.checked || storage.store.is_none() {
+        return Err("Wait for migration to finish first.".into());
+    }
+    open_instances(&storage.root)
 }
 #[tauri::command]
 fn list_instances(state: State<'_, AppState>) -> Result<Vec<Instance>, String> {
@@ -186,15 +251,43 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
-            let root = app.path().app_local_data_dir()?;
-            app.manage(Mutex::new(Storage { root, store: None }));
+            let legacy = app.path().app_local_data_dir()?;
+            #[cfg(windows)]
+            let root = std::path::PathBuf::from(std::env::var_os("APPDATA").ok_or_else(|| {
+                std::io::Error::other("Windows AppData location is unavailable.")
+            })?)
+            .join("AzuriaLauncher");
+            #[cfg(not(windows))]
+            let root = app.path().data_dir()?.join("AzuriaLauncher");
+            app.manage(Mutex::new(Storage {
+                root,
+                legacy,
+                store: None,
+                checked: false,
+                acknowledgement_required: true,
+            }));
             app.manage(Accounts::new(
                 WebProvider::new().map_err(|error| std::io::Error::other(error.message))?,
                 NativeVault,
             ));
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let state = window.state::<AppState>();
+                let blocked = state
+                    .try_lock()
+                    .map(|s| !s.checked || s.acknowledgement_required)
+                    .unwrap_or(true);
+                if blocked {
+                    api.prevent_close();
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
+            prepare_storage,
+            confirm_storage_migration,
+            open_instances_folder,
             account_status,
             account_restore,
             account_sign_in,
