@@ -72,8 +72,13 @@ test("persistent library lifecycle and honest launch state", async ({
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Aurora", exact: true }),
-  ).toHaveCount(2);
+    page
+      .locator(".instance-card")
+      .getByRole("heading", { name: "Aurora", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Select recent Aurora", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Play", exact: false }).click();
   await expect(
     page.getByText("Launching is not available yet", { exact: true }),
