@@ -36,11 +36,14 @@ async function mockStorage(page: Page, failPrepare = false) {
               }
               return report;
             }
-            if (cmd === "confirm_storage_migration") {
+            if (cmd === "open_instances_folder") {
               if (!sessionStorage.getItem("folderRetried")) {
                 sessionStorage.setItem("folderRetried", "true");
                 throw "Could not open the instances folder.";
               }
+              return;
+            }
+            if (cmd === "confirm_storage_migration") {
               sessionStorage.setItem("acknowledged", "true");
               return;
             }
@@ -64,7 +67,7 @@ async function mockStorage(page: Page, failPrepare = false) {
   );
 }
 
-test("migration cannot be dismissed before explicit confirmation and folder opening", async ({
+test("migration requires confirmation while opening the folder is optional", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 900, height: 650 });
@@ -91,7 +94,7 @@ test("migration cannot be dismissed before explicit confirmation and folder open
     ).completeMigration(),
   );
   const confirm = dialog.getByRole("button", {
-    name: "Confirm and open instances",
+    name: "Confirm and continue",
     exact: true,
   });
   await expect(confirm).toBeFocused();
@@ -100,7 +103,9 @@ test("migration cannot be dismissed before explicit confirmation and folder open
   await page.screenshot({ path: "test-results/migration-complete-900.png" });
   await page.keyboard.press("Escape");
   await expect(dialog).toBeVisible();
-  await confirm.click();
+  await dialog
+    .getByRole("button", { name: "Open instances folder", exact: true })
+    .click();
   await expect(dialog.getByRole("alert")).toContainText(
     "Could not open the instances folder.",
   );
@@ -108,9 +113,15 @@ test("migration cannot be dismissed before explicit confirmation and folder open
   await page.reload();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page
-    .getByRole("button", { name: "Confirm and open instances", exact: true })
+    .getByRole("button", { name: "Confirm and continue", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { storageCommands: string[] }).storageCommands,
+    ),
+  ).not.toContain("open_instances_folder");
   await expect(
     page.getByRole("heading", { name: "Library", exact: true }),
   ).toBeVisible();
@@ -130,7 +141,7 @@ test("migration failure stays gated and supports retry", async ({ page }) => {
   );
   await expect(
     dialog.getByRole("button", {
-      name: "Confirm and open instances",
+      name: "Confirm and continue",
       exact: true,
     }),
   ).toHaveCount(0);
@@ -150,7 +161,7 @@ test("migration failure stays gated and supports retry", async ({ page }) => {
   );
   await expect(
     dialog.getByRole("button", {
-      name: "Confirm and open instances",
+      name: "Confirm and continue",
       exact: true,
     }),
   ).toBeEnabled();

@@ -9,6 +9,7 @@ const retryButton = ref<HTMLButtonElement>();
 const report = ref<MigrationStatus>();
 const busy = ref(true);
 const confirming = ref(false);
+const openingFolder = ref(false);
 const error = ref("");
 async function prepare() {
   busy.value = true;
@@ -35,6 +36,17 @@ async function confirm() {
     error.value = String(cause instanceof Error ? cause.message : cause);
   } finally {
     confirming.value = false;
+  }
+}
+async function openFolder() {
+  openingFolder.value = true;
+  error.value = "";
+  try {
+    await api.openInstancesFolder();
+  } catch (cause) {
+    error.value = String(cause instanceof Error ? cause.message : cause);
+  } finally {
+    openingFolder.value = false;
   }
 }
 onMounted(() => {
@@ -72,7 +84,7 @@ onMounted(() => {
           busy
             ? "Preparing your library in the new AzuriaLauncher folder. Your original data is retained while the copy is verified."
             : report
-              ? "Your library is ready in AppData. Confirm below to open the instances folder and continue to Azuria."
+              ? "Your library is ready in AppData. You can open the instances folder, or confirm below to continue to Azuria."
               : "Azuria could not complete the storage migration. Your original data has been retained. Resolve the issue below and retry."
         }}
       </p>
@@ -111,11 +123,19 @@ onMounted(() => {
         v-if="report"
         ref="confirmButton"
         class="button primary"
-        :disabled="confirming"
+        :disabled="confirming || openingFolder"
         @click="confirm"
       >
+        {{ confirming ? "Confirming…" : "Confirm and continue" }}
+      </button>
+      <button
+        v-if="report"
+        class="button secondary"
+        :disabled="confirming || openingFolder"
+        @click="openFolder"
+      >
         <FolderOpen :size="17" />{{
-          confirming ? "Opening instances…" : "Confirm and open instances"
+          openingFolder ? "Opening…" : "Open instances folder"
         }}
       </button>
       <p class="muted">
@@ -186,6 +206,12 @@ code {
 }
 .migration-actions {
   margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.migration-actions p {
+  width: 100%;
 }
 .migration-actions p {
   font-size: 13px;

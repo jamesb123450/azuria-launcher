@@ -126,8 +126,7 @@ fn confirm_storage_migration(state: State<'_, AppState>) -> Result<(), String> {
     if !storage.checked || storage.store.is_none() {
         return Err("Wait for migration to finish first.".into());
     }
-    // Keep acknowledgement pending if opening Explorer or saving acknowledgement fails.
-    open_instances(&storage.root)?;
+    // Acknowledgement does not open File Explorer.
     azuria_core::migration::acknowledge(&storage.root)?;
     storage.acknowledgement_required = false;
     Ok(())
@@ -137,8 +136,8 @@ fn open_instances_folder(state: State<'_, AppState>) -> Result<(), String> {
     let storage = state
         .lock()
         .map_err(|_| "Storage is unavailable.".to_string())?;
-    if !storage.checked || storage.acknowledgement_required {
-        return Err("Confirm the migration first.".into());
+    if !storage.checked || storage.store.is_none() {
+        return Err("Wait for migration to finish first.".into());
     }
     open_instances(&storage.root)
 }
