@@ -77,11 +77,18 @@ test("persistent library lifecycle and honest launch state", async ({
       .getByRole("heading", { name: "Aurora", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Select recent Aurora", exact: true }),
+    page
+      .locator(".selected-instance")
+      .getByRole("heading", { name: "Aurora", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Play", exact: false }).click();
+  await expect(page.locator(".jump-row")).toHaveCount(0);
   await expect(
-    page.getByText("Launching is not available yet", { exact: true }),
+    page.getByRole("button", { name: "Launch unavailable", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByText("Game downloads and launching are still in development.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Favourite Aurora", exact: true })
@@ -94,6 +101,12 @@ test("persistent library lifecycle and honest launch state", async ({
   await page.getByLabel("Instance name", { exact: true }).fill("Aurora edited");
   await page.getByRole("button", { name: "Save changes" }).click();
   await page
+    .getByRole("button", {
+      name: "More actions for Aurora edited",
+      exact: true,
+    })
+    .click();
+  await page
     .getByRole("button", { name: "Copy settings for Aurora edited" })
     .click();
   await page
@@ -104,6 +117,12 @@ test("persistent library lifecycle and honest launch state", async ({
   await page.getByRole("textbox", { name: "Search instances" }).fill("missing");
   await expect(page.getByText("No matching instances.")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
+  await page
+    .getByRole("button", {
+      name: "More actions for Aurora edited",
+      exact: true,
+    })
+    .click();
   await page
     .getByRole("button", { name: "Delete Aurora edited", exact: true })
     .click();
@@ -178,18 +197,20 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
     .getByRole("button", { name: "Select Survival", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Select recent Survival", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+    page
+      .locator(".selected-instance")
+      .getByRole("heading", { name: "Survival", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "List view", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "List view", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.setViewportSize({ width: 900, height: 650 });
   await page
-    .getByRole("button", { name: "Play Survival", exact: true })
+    .getByRole("button", { name: "Launch unavailable", exact: true })
     .scrollIntoViewIfNeeded();
   await expect(
-    page.getByRole("button", { name: "Play Survival", exact: true }),
+    page.getByRole("button", { name: "Launch unavailable", exact: true }),
   ).toBeInViewport();
   await page.getByRole("button", { name: "Grid view", exact: true }).click();
   await page.locator(".instance-card").first().scrollIntoViewIfNeeded();
@@ -238,6 +259,9 @@ test("library grouping and collapsed sections remain usable", async ({
   await page
     .getByRole("button", { name: "Favourite Alpha", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Filters & sorting", exact: true })
+    .click();
   await chooseVersion(page, "Group by favourites", "Group instances");
   const favourites = page.locator(".instance-group").filter({
     has: page.getByRole("heading", { name: "Favourites", exact: true }),
@@ -247,9 +271,6 @@ test("library grouping and collapsed sections remain usable", async ({
   await expect(favourites.locator(".instance-card")).toHaveCount(0);
   await favourites.getByRole("button", { expanded: false }).first().click();
   await expect(favourites.locator(".instance-card")).toHaveCount(1);
-  await page
-    .getByRole("button", { name: "Recent instances", exact: true })
-    .click();
   await expect(page.locator(".jump-row")).toHaveCount(0);
   await chooseVersion(page, "No grouping", "Group instances");
   await expect(page.locator(".instance-card")).toHaveCount(2);
