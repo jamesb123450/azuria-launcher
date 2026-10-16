@@ -16,7 +16,8 @@ permissions:
   contents: read
 concurrency:
   group: azuria-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Preserve active main-branch builds; newer feature commits may supersede old checks.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   release-scope:
     if: github.event_name == 'push'
