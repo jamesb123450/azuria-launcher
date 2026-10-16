@@ -22,6 +22,7 @@ import {
   Folder,
 } from "@lucide/vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
+import VersionPicker from "../components/VersionPicker.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
 import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
@@ -141,8 +142,12 @@ onBeforeUnmount(closeDelete);
 </script>
 <template>
   <div class="play-page">
-    <div class="play-main">
-      <section class="jump-section" aria-labelledby="jump-heading">
+    <div class="play-main" :aria-busy="store.loading || store.busy">
+      <section
+        v-if="store.instances.length"
+        class="jump-section"
+        aria-labelledby="jump-heading"
+      >
         <button
           id="jump-heading"
           class="section-toggle"
@@ -196,23 +201,14 @@ onBeforeUnmount(closeDelete);
               <SlidersHorizontal :size="16" />
             </button>
           </article>
-          <div v-if="!recent.length" class="jump-empty">
-            <Layers3 :size="28" />
-            <div>
-              <h2>Your next adventure starts here</h2>
-              <p class="muted">
-                Create a Vanilla or Fabric instance to get started.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
       <div v-if="launchInfo" class="launch-message" role="status">
         <div>
-          <strong>Game launch is coming next</strong>
+          <strong>Launching is not available yet</strong>
           <p>
-            Launching is not implemented in this build. Verified game downloads
-            and Java setup are the next milestone.
+            You can save and organise instance settings. Game downloads, Java
+            setup and launching are still in development.
           </p>
         </div>
         <button
@@ -224,9 +220,12 @@ onBeforeUnmount(closeDelete);
         </button>
       </div>
       <section class="library-section" aria-labelledby="instances-heading">
-        <h2 id="instances-heading">
+        <component
+          :is="store.instances.length ? 'h2' : 'h1'"
+          id="instances-heading"
+        >
           Library <span class="count">{{ store.instances.length }}</span>
-        </h2>
+        </component>
         <div class="library-action-row">
           <label class="search-box"
             ><Search :size="17" /><input
@@ -249,25 +248,27 @@ onBeforeUnmount(closeDelete);
           </button>
         </div>
         <div class="library-toolbar">
-          <label class="toolbar-select"
-            ><SlidersHorizontal :size="15" /><select
+          <div class="library-select-control">
+            <SlidersHorizontal :size="15" /><VersionPicker
               v-model="sort"
-              aria-label="Sort instances"
-            >
-              <option value="newest">Newest first</option>
-              <option value="name">Name A–Z</option>
-            </select></label
-          >
-          <label class="toolbar-select"
-            ><Folder :size="15" /><select
+              label="Sort instances"
+              :options="[
+                { value: 'newest', label: 'Newest first' },
+                { value: 'name', label: 'Name A–Z' },
+              ]"
+            />
+          </div>
+          <div class="library-select-control library-group-control">
+            <Folder :size="15" /><VersionPicker
               v-model="grouping"
-              aria-label="Group instances"
-            >
-              <option value="loader">Group by loader</option>
-              <option value="favorites">Group by favourites</option>
-              <option value="none">No grouping</option>
-            </select></label
-          >
+              label="Group instances"
+              :options="[
+                { value: 'loader', label: 'Group by loader' },
+                { value: 'favorites', label: 'Group by favourites' },
+                { value: 'none', label: 'No grouping' },
+              ]"
+            />
+          </div>
           <div class="filter-tabs" role="group" aria-label="Filter instances">
             <button
               v-for="tab in [
@@ -320,15 +321,15 @@ onBeforeUnmount(closeDelete);
             <h3>
               {{
                 store.instances.length
-                  ? "No matching adventures."
-                  : "Your library starts here"
+                  ? "No matching instances."
+                  : "Your library is empty"
               }}
             </h3>
             <p class="muted">
               {{
                 store.instances.length
                   ? "Try another search or filter."
-                  : "Keep different versions, mods and worlds in their own space."
+                  : "Create separate instances for different versions and mod loaders."
               }}
             </p>
           </div>
@@ -504,11 +505,10 @@ onBeforeUnmount(closeDelete);
       <section class="development-panel">
         <h2>Development</h2>
         <div class="development-art"><Layers3 :size="38" /></div>
-        <h3>Your launcher. Your way.</h3>
+        <h3>What’s available</h3>
         <p class="muted">
-          Vanilla and Fabric instances, organised in one place. Microsoft
-          sign-in is available in Settings. Game installation is the next
-          milestone.
+          Manage instance settings and connect your Microsoft account. Game
+          downloads and launching are still in development.
         </p>
         <RouterLink class="text-link" to="/roadmap"
           >View roadmap <ArrowUpRight :size="14"

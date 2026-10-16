@@ -137,9 +137,9 @@ watch([kind, query, category, source, loader, version, sort, perPage], () => {
   <div class="discover-page">
     <section class="discover-heading">
       <div>
-        <span class="eyebrow">MAKE IT YOURS</span>
+        <span class="eyebrow">CATALOGUE</span>
         <h1>Discover</h1>
-        <p class="muted">A little inspiration for your next world.</p>
+        <p class="muted">Browse modpacks, mods and packs for your instances.</p>
       </div>
       <span class="discovery-preview-badge"
         ><FlaskConical :size="14" /> Catalogue preview</span
@@ -316,7 +316,7 @@ watch([kind, query, category, source, loader, version, sort, perPage], () => {
           <SlidersHorizontal :size="15" />
           <div>
             <h2>Filters</h2>
-            <p>Narrow down your next find.</p>
+            <p>Filter the catalogue.</p>
           </div>
         </div>
         <fieldset>
@@ -385,7 +385,7 @@ watch([kind, query, category, source, loader, version, sort, perPage], () => {
           <RotateCcw :size="13" />Reset filters
         </button>
         <p class="discover-sidebar-note">
-          Your next favourite belongs here.<br />Live catalogues are on the way.
+          Example catalogue only.<br />Live provider search is not connected.
         </p>
       </aside>
     </div>

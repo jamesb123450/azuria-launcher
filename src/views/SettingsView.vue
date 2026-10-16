@@ -21,13 +21,13 @@ const themes: {
     value: "dark",
     label: "Dark",
     icon: Moon,
-    description: "Dark surfaces, quiet contrast",
+    description: "Use the dark theme",
   },
   {
     value: "light",
     label: "Light",
     icon: Sun,
-    description: "Light surfaces, clear contrast",
+    description: "Use the light theme",
   },
 ];
 </script>
@@ -46,7 +46,7 @@ const themes: {
       <Palette :size="22" />
       <div>
         <h2>Appearance</h2>
-        <p class="muted">Pink and blue, in whichever light you prefer.</p>
+        <p class="muted">Choose a theme, or follow your system setting.</p>
       </div>
     </div>
     <div v-if="store.settingsError">

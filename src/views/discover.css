@@ -10,8 +10,8 @@
   margin-bottom: 26px;
 }
 .discover-heading h1 {
-  font-size: 32px;
-  letter-spacing: -1.2px;
+  font-size: 28px;
+  letter-spacing: -0.8px;
   margin: 8px 0;
 }
 .discover-heading p {
@@ -325,7 +325,7 @@
 }
 .discover-project-body > p {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   margin: 0 0 10px;
   display: -webkit-box;
@@ -346,7 +346,7 @@
   border-radius: 5px;
   color: var(--muted);
   border: 1px solid var(--border-strong);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.2;
 }
 .discover-tags .discover-source-tag {
@@ -478,7 +478,7 @@
   }
   .discover-project-stats {
     gap: 7px;
-    font-size: 9px;
+    font-size: 10px;
   }
   .discover-toolbar {
     gap: 9px;
