@@ -63,6 +63,7 @@ export const api = {
       favorite: false,
       createdAt: Date.now(),
     };
+    localStorage.setItem(`azuria-instance-options-${instance.id}`, "{}");
     value.instances.push(instance);
     write(value);
     return instance;

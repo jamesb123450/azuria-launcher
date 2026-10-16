@@ -194,8 +194,12 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
   }
   await page.reload();
   await page
-    .getByRole("button", { name: "Select Survival", exact: true })
+    .getByRole("button", { name: "Open Survival", exact: true })
     .click();
+  await expect(
+    page.getByRole("heading", { name: "Survival", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Library", exact: true }).last().click();
   await expect(
     page
       .locator(".selected-instance")

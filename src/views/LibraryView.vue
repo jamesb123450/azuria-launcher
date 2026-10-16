@@ -30,6 +30,8 @@ import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
 import type { Instance } from "../types";
 import { LOADERS, loaderName } from "../types";
+import { useRouter } from "vue-router";
+const router = useRouter();
 const store = useLauncher();
 const updates = useUpdates();
 const search = ref("");
@@ -438,9 +440,11 @@ onBeforeUnmount(closeDelete);
             >
               <button
                 class="instance-select"
-                :aria-label="'Select ' + item.name"
-                :aria-pressed="store.selected?.id === item.id"
-                @click="store.selectedId = item.id"
+                :aria-label="'Open ' + item.name"
+                @click="
+                  store.selectedId = item.id;
+                  router.push(`/instances/${item.id}`);
+                "
               >
                 <span class="tile-art"
                   ><InstanceIcon

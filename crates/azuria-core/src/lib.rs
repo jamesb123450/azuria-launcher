@@ -1,5 +1,7 @@
 mod folders;
+pub mod instance_files;
 pub mod migration;
+pub mod preferences;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -180,7 +182,7 @@ impl Store {
         let version: i64 = conn
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .map_err(error)?;
-        if version > 4 {
+        if version > 5 {
             return Err(
                 "This database was created by a newer Azuria version. Upgrade the launcher.".into(),
             );
@@ -219,11 +221,17 @@ impl Store {
               DROP TABLE instances_v2;
               PRAGMA user_version=3; COMMIT;").map_err(error)?;
         }
-        conn.execute_batch("BEGIN IMMEDIATE;
+        if version < 4 {
+            conn.execute_batch("BEGIN IMMEDIATE;
           CREATE TABLE IF NOT EXISTS instance_folders (id TEXT PRIMARY KEY REFERENCES instances(id) ON DELETE CASCADE, folder TEXT NOT NULL UNIQUE COLLATE NOCASE);
           INSERT OR IGNORE INTO instance_folders SELECT id,id FROM instances;
           CREATE TABLE IF NOT EXISTS folder_moves (id TEXT PRIMARY KEY, source TEXT NOT NULL, target TEXT NOT NULL);
           PRAGMA user_version=4; COMMIT;").map_err(error)?;
+        }
+        if version < 5 {
+            conn.execute_batch("BEGIN IMMEDIATE; CREATE TABLE IF NOT EXISTS instance_preferences (id TEXT PRIMARY KEY REFERENCES instances(id) ON DELETE CASCADE, options TEXT NOT NULL);
+          PRAGMA user_version=5; COMMIT;").map_err(error)?;
+        }
         let mut store = Self {
             conn,
             root,
@@ -260,6 +268,10 @@ impl Store {
             tx.execute(
                 "INSERT INTO instance_folders (id,folder) VALUES (?1,?2)",
                 params![id, folder],
+            )?;
+            tx.execute(
+                "INSERT INTO instance_preferences (id,options) VALUES (?1,'{}')",
+                [&id],
             )?;
             tx.commit()
         })();
@@ -313,7 +325,10 @@ impl Store {
         let item = self.get(id)?;
         let trash_name = format!("{}-{}", id, Uuid::new_v4());
         let had_files = self.instance_dir(id)?.try_exists().map_err(error)?;
-        let metadata = serde_json::to_string(&item).map_err(error)?;
+        let mut metadata = serde_json::to_value(&item).map_err(error)?;
+        metadata["launchOverrides"] =
+            serde_json::to_value(self.launch_overrides(id)?).map_err(error)?;
+        let metadata = serde_json::to_string(&metadata).map_err(error)?;
         self.conn.execute(
             "INSERT INTO deletions (id,trash_name,instance_json,had_files) VALUES (?1,?2,?3,?4)",
             params![id, trash_name, metadata, had_files],
@@ -591,6 +606,15 @@ mod tests {
         let root = dir.path().to_path_buf();
         let mut store = Store::open(root.clone()).unwrap();
         let item = store.create(input()).unwrap();
+        store
+            .save_launch_overrides(
+                &item.id,
+                preferences::LaunchOverrides {
+                    memory_mb: Some(8192),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
         store.delete(&item.id).unwrap();
         drop(store);
         let store = Store::open(root).unwrap();
@@ -603,6 +627,8 @@ mod tests {
                 |r| r.get(0),
             )
             .unwrap();
+        let json: serde_json::Value = serde_json::from_str(&metadata).unwrap();
+        assert_eq!(json["launchOverrides"]["memoryMb"], 8192);
         assert_eq!(
             serde_json::from_str::<Instance>(&metadata).unwrap().name,
             item.name
@@ -628,7 +654,7 @@ mod tests {
         let item = store.create(input()).unwrap();
         store
             .conn
-            .execute_batch("DROP TABLE folder_moves; DROP TABLE instance_folders; DROP TABLE deletions;
+            .execute_batch("DROP TABLE instance_preferences; DROP TABLE folder_moves; DROP TABLE instance_folders; DROP TABLE deletions;
                 ALTER TABLE instances RENAME TO current_instances;
                 CREATE TABLE instances (id TEXT PRIMARY KEY, name TEXT NOT NULL, minecraft_version TEXT NOT NULL, loader TEXT NOT NULL CHECK(loader IN ('vanilla','fabric')), memory_mb INTEGER NOT NULL, favorite INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
                 INSERT INTO instances SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at FROM current_instances;
@@ -647,7 +673,7 @@ mod tests {
                 .conn
                 .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
                 .unwrap(),
-            4
+            5
         );
     }
 
@@ -661,7 +687,7 @@ mod tests {
         let source = root.join("instances").join("My world");
         fs::write(source.join("world.txt"), "retained").unwrap();
         fs::rename(&source, root.join("trash").join(&trash_name)).unwrap();
-        store.conn.execute_batch("DROP TABLE folder_moves; DROP TABLE instance_folders; ALTER TABLE instances RENAME TO current_instances;
+        store.conn.execute_batch("DROP TABLE instance_preferences; DROP TABLE folder_moves; DROP TABLE instance_folders; ALTER TABLE instances RENAME TO current_instances;
             CREATE TABLE instances (id TEXT PRIMARY KEY, name TEXT NOT NULL, minecraft_version TEXT NOT NULL,
                 loader TEXT NOT NULL CHECK(loader IN ('vanilla','fabric')), memory_mb INTEGER NOT NULL,
                 favorite INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);

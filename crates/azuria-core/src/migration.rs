@@ -28,7 +28,7 @@ fn lock(path: &Path) -> Result<File, String> {
         .map_err(|_| "Close other Azuria windows and retry the migration.".to_string())?;
     Ok(file)
 }
-fn verified_copy(source: &Path, target: &Path) -> Result<(), String> {
+pub(crate) fn verified_copy(source: &Path, target: &Path) -> Result<(), String> {
     let metadata = fs::symlink_metadata(source).map_err(error)?;
     #[cfg(windows)]
     {

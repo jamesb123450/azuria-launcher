@@ -32,7 +32,11 @@ const page = computed(() =>
       ? "Discover"
       : route.path === "/roadmap"
         ? "Development"
-        : "Library",
+        : route.name === "instance-settings"
+          ? "Instance settings"
+          : route.name === "instance"
+            ? "Instance"
+            : "Library",
 );
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
@@ -99,6 +103,9 @@ function storagePrepared() {
         <RouterLink
           to="/"
           class="rail-link"
+          :class="{
+            'router-link-exact-active': route.path.startsWith('/instances/'),
+          }"
           aria-label="Library"
           title="Library"
           ><Play :size="22" /><span class="rail-tooltip"
@@ -120,13 +127,13 @@ function storagePrepared() {
         <RouterLink
           v-for="item in store.instances.slice(0, 5)"
           :key="item.id"
-          to="/"
+          :to="`/instances/${item.id}`"
           :class="[
             'quick-instance',
             item.loader,
             { active: store.selected?.id === item.id },
           ]"
-          :aria-label="'Select ' + item.name"
+          :aria-label="'Open ' + item.name"
           :title="item.name"
           :aria-current="store.selected?.id === item.id ? 'true' : undefined"
           @click="store.selectedId = item.id"

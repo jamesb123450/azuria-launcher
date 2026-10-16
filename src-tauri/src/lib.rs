@@ -1,4 +1,5 @@
 mod browser;
+mod instances;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
 use std::sync::Mutex;
@@ -285,6 +286,19 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            instances::get_launch_defaults,
+            instances::save_launch_defaults,
+            instances::get_instance_overrides,
+            instances::save_instance_overrides,
+            instances::instance_entries,
+            instances::toggle_instance_content,
+            instances::remove_instance_content,
+            instances::instance_log,
+            instances::open_instance_directory,
+            instances::duplicate_instance,
+            instances::import_instance_content,
+            instances::browse_java,
+            instances::detect_java,
             prepare_storage,
             confirm_storage_migration,
             open_instances_folder,

@@ -13,6 +13,8 @@ import UpdatePanel from "../components/UpdatePanel.vue";
 import type { Theme } from "../types";
 import { ref } from "vue";
 import { api, desktop } from "../api";
+import LaunchDefaultsPanel from "../components/LaunchDefaultsPanel.vue";
+import "./instance.css";
 const store = useLauncher();
 const folderError = ref("");
 async function openInstances() {
@@ -53,7 +55,7 @@ const themes: {
   <section class="page-heading">
     <div>
       <h1>Settings</h1>
-      <p class="muted">Account, appearance and updates.</p>
+      <p class="muted">Account, appearance, game defaults and updates.</p>
     </div>
   </section>
   <AccountPanel />
@@ -97,6 +99,7 @@ const themes: {
       </button>
     </div>
   </section>
+  <LaunchDefaultsPanel />
   <section class="settings-panel">
     <div class="settings-title">
       <ShieldCheck :size="22" />
@@ -120,9 +123,9 @@ const themes: {
       </p>
     </template>
     <p class="muted">
-      Java runtime selection, game downloads and provider configuration will
-      appear as those integrations are implemented. This build does not collect
-      analytics or upload logs.
+      Game downloads and provider configuration will appear as those
+      integrations are implemented. This build does not collect analytics or
+      upload logs.
     </p>
     <RouterLink class="text-link" to="/roadmap"
       >View development status</RouterLink
