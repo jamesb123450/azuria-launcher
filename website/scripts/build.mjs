@@ -26,7 +26,12 @@ await mkdir(dist, { recursive: true });
 await cp(new URL("assets/", root), new URL("assets/", dist), {
   recursive: true,
 });
-for (const filename of ["site.css", "site.js", "release-data.mjs"])
+for (const filename of [
+  "site.css",
+  "site.js",
+  "release-data.mjs",
+  "panorama.js",
+])
   await cp(new URL(`src/${filename}`, root), new URL(filename, dist));
 for (const page of [
   "home",
