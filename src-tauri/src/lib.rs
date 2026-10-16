@@ -1,3 +1,4 @@
+mod browser;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
 use std::sync::Mutex;
@@ -28,17 +29,13 @@ async fn account_sign_in(
         // URL originates exclusively in the native PKCE flow, never from IPC.
         #[cfg(windows)]
         {
-            std::process::Command::new("explorer.exe")
-                .arg(url)
-                .spawn()
-                .map(|_| ())
-                .map_err(|_| {
-                    AuthError::new(
-                        Stage::Browser,
-                        "browser",
-                        "Could not open your browser. Check your default browser and retry.",
-                    )
-                })
+            browser::open_sign_in(url).map_err(|_| {
+                AuthError::new(
+                    Stage::Browser,
+                    "browser",
+                    "Could not open your browser. Check your default browser and retry.",
+                )
+            })
         }
         #[cfg(not(windows))]
         {
