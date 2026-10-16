@@ -39,6 +39,19 @@ for (const button of document.querySelectorAll("[data-preview-image]")) {
   });
 }
 
+function updateDownloadLinks(installer) {
+  for (const anchor of document.querySelectorAll("[data-download-link]")) {
+    anchor.href =
+      installer ||
+      "https://github.com/jamesb123450/azuria-launcher/releases/latest";
+    const label = anchor.querySelector("[data-download-label]");
+    if (label)
+      label.textContent = installer
+        ? "Download for Windows"
+        : anchor.dataset.fallbackLabel;
+  }
+}
+
 // Static content stays usable offline; successful API data refreshes the latest release only.
 async function refreshLatestRelease() {
   const status = document.querySelector("[data-release-status]");
@@ -53,10 +66,7 @@ async function refreshLatestRelease() {
     if (!response.ok) throw new Error("Release lookup unavailable");
     const latest = parseRelease(await response.json());
     if (!latest) throw new Error("Unexpected release metadata");
-    if (latest.installer) {
-      for (const anchor of document.querySelectorAll("[data-download-link]"))
-        anchor.href = latest.installer;
-    }
+    updateDownloadLinks(latest.installer);
     const date = new Intl.DateTimeFormat("en-GB", {
       day: "numeric",
       month: "long",
@@ -72,7 +82,7 @@ async function refreshLatestRelease() {
     const card = document.querySelector("[data-latest-card]");
     if (card) {
       card.querySelector(".update-cover > span").textContent = latest.tag;
-      card.querySelector("h3").textContent = `Azuria ${latest.version}`;
+      card.querySelector("h3").textContent = "What’s new";
       card.querySelector(".update-body p").textContent = releaseSummary(
         latest.notes,
       );
@@ -112,6 +122,7 @@ async function refreshLatestRelease() {
       status.textContent =
         "Checked against the latest published GitHub release.";
   } catch {
+    updateDownloadLinks(null);
     if (status)
       status.textContent =
         "Live release check unavailable. Use View latest release for the current download and notes.";
@@ -136,3 +147,28 @@ document.addEventListener("visibilitychange", () => {
     refreshLatestRelease();
   }
 });
+
+// Track the current homepage section without adding decorative scroll effects.
+const sectionLinks = [
+  ...document.querySelectorAll('.explore-sidebar a[href^="#"]'),
+];
+if (sectionLinks.length && "IntersectionObserver" in window) {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      for (const link of sectionLinks) {
+        if (link.hash === `#${visible.target.id}`)
+          link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+      }
+    },
+    { rootMargin: "-15% 0px -45% 0px", threshold: [0, 0.25, 0.5] },
+  );
+  for (const link of sectionLinks) {
+    const section = document.querySelector(link.hash);
+    if (section) observer.observe(section);
+  }
+}
