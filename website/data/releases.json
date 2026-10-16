@@ -1,0 +1,56 @@
+[
+  {
+    "tag": "v0.2.64",
+    "version": "0.2.64",
+    "url": "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.64",
+    "published": "2026-10-16T09:49:50Z",
+    "notes": "## Changes\r\n\r\n- Polished the interface while retaining Azuria’s layout, pink-and-blue theme and right-hand Discover filters.\r\n- Standardised Library sorting and grouping with themed, keyboard-accessible dropdowns.\r\n- Improved supporting-text readability, control sizing and card consistency, with calmer hover effects and notification shadows.\r\n- Replaced promotional wording with clearer descriptions and simplified the empty-library screen.\r\n- Added a keyboard Skip to content link and clearer account progress and update errors.\r\n- Made settings actions wrap when space is limited. Success notices now clear after five seconds or navigation; errors remain visible until dismissed.\r\n\r\n## Update information\r\n\r\nInstall through Settings → Update & restart.\r\n\r\nThis update does not change saved instances, accounts or the database schema. Discover remains a fictional catalogue preview with installation disabled. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.\r\n",
+    "installer": "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.64/Azuria-Launcher_0.2.64_x64-setup.exe",
+    "size": 4508266
+  },
+  {
+    "tag": "v0.2.59",
+    "version": "0.2.59",
+    "url": "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.59",
+    "published": "2026-10-16T09:29:43Z",
+    "notes": "## Changes\r\n\r\n- Moved Discover filters into a separate right-hand sidebar, with catalogue results on the left.\r\n- Added a pink accent, clearer filter grouping and independently scrollable controls while preserving Azuria’s blue selection states.\r\n- Adjusted the layout for dark and light themes and the minimum desktop window size.\r\n- Preserved local search, filters, sorting and pagination across all four content categories.\r\n\r\n## Update information\r\n\r\nInstall through Settings → Update & restart, then open Discover from the sidebar.\r\n\r\nThe catalogue still uses clearly labelled fictional example projects, creators and statistics. Live provider searches, downloads and installation are not connected; Install buttons remain disabled.\r\n\r\nThis update does not change saved instances or accounts. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.\r\n",
+    "installer": "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.59/Azuria-Launcher_0.2.59_x64-setup.exe",
+    "size": 4509554
+  },
+  {
+    "tag": "v0.2.54",
+    "version": "0.2.54",
+    "url": "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.54",
+    "published": "2026-10-16T09:16:48Z",
+    "notes": "## Changes\r\n\r\n- Added a Discover catalogue preview for modpacks, mods, datapacks and resource packs.\r\n- Added working local search, source/category/loader/version filters, sorting, result limits and pagination.\r\n- Added compact project rows, original gradient icons and themed dropdowns using Azuria’s pink-and-blue styling.\r\n- Supported dark and light themes, including the minimum desktop window size.\r\n- Kept the development roadmap available through the help button.\r\n\r\n## Update information\r\n\r\nInstall through Settings → Update & restart, then open Discover from the sidebar.\r\n\r\nThe catalogue currently contains clearly labelled fictional example projects, creators and statistics. Live provider searches, downloads and installation are not connected; Install buttons are disabled.\r\n\r\nThis update does not change the instance database or saved accounts. Microsoft/Minecraft application-access review remains pending; game installation and launching remain in development.\r\n",
+    "installer": "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.54/Azuria-Launcher_0.2.54_x64-setup.exe",
+    "size": 4508351
+  },
+  {
+    "tag": "v0.2.49",
+    "version": "0.2.49",
+    "url": "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.49",
+    "published": "2026-10-16T08:47:13Z",
+    "notes": "## Changes\r\n\r\n- Fixed Sign in with Microsoft opening Documents or File Explorer instead of the default browser on Windows.\r\n- Opened the complete Microsoft authorization URL through Windows’ registered browser handler, preserving its PKCE and callback parameters.\r\n- Added browser-opening error checks so failed launches show a retryable error in Azuria.\r\n\r\n## Update information\r\n\r\nInstall through Settings → Update & restart, then retry Settings → Minecraft account → Sign in with Microsoft. Cancel any previous pending sign-in first.\r\n\r\nThis update does not change saved instances, the database schema or stored account credentials. Your default browser should open the Microsoft sign-in page.\r\n\r\nThis is a development release. Live Microsoft/Xbox/Minecraft sign-in still requires verification with Azuria’s Entra registration. Game installation and Minecraft launching remain in development.\r\n",
+    "installer": "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.49/Azuria-Launcher_0.2.49_x64-setup.exe",
+    "size": 4499060
+  },
+  {
+    "tag": "v0.2.44",
+    "version": "0.2.44",
+    "url": "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.44",
+    "published": "2026-10-16T08:31:48Z",
+    "notes": "## Changes\r\n\r\n- Added Microsoft sign-in through your default browser with secure PKCE authentication.\r\n- Added Minecraft account controls in Settings: sign in, reconnect, switch account, cancel and sign out.\r\n- Added Xbox authentication, Java Edition entitlement checks and Minecraft profile verification.\r\n- Saved refresh credentials securely in Windows Credential Manager, with automatic reconnection at startup.\r\n- Added clear progress and errors for expired sessions, account restrictions, connection failures and Minecraft Services access issues.\r\n- Preserved the previous account when switching fails or is cancelled, and retained rotated refresh credentials when later verification fails.\r\n- Linked the sidebar and library account controls to account settings while preserving Azuria’s existing theme.\r\n\r\n## Update information\r\n\r\nInstall through Settings → Update & restart, then open Settings → Minecraft account to sign in. This update does not change the instance database schema.\r\n\r\nSign-in requires the Windows desktop app and a personal Microsoft account with Minecraft Java Edition access. Signing out removes Azuria’s saved account; your browser may remain signed in to Microsoft.\r\n\r\nThis is a development release. Live Minecraft Services access for Azuria’s client ID still requires verification. The Entra registration must support personal Microsoft accounts and a desktop http://localhost redirect. Game installation and Minecraft launching remain in development.\r\n",
+    "installer": "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.44/Azuria-Launcher_0.2.44_x64-setup.exe",
+    "size": 4496181
+  },
+  {
+    "tag": "v0.2.38",
+    "version": "0.2.38",
+    "url": "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.38",
+    "published": "2026-10-15T20:32:14Z",
+    "notes": "## Changes\r\n\r\n- Updated the Windows application icon with the supplied pink Azuria artwork.\r\n- Updated the launcher header mark and browser-preview favicon to match.\r\n- Preserved the artwork’s transparency and proportions across the generated icon sizes.\r\n\r\n## Update information\r\n\r\nInstall through Settings → Update & restart. Windows may briefly retain the previous icon in its shortcut or taskbar cache; reopening the launcher or recreating a pinned shortcut can refresh it.\r\n\r\nThis is a development release. Microsoft sign-in, game installation and Minecraft launching are not implemented yet.\r\n",
+    "installer": "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.38/Azuria-Launcher_0.2.38_x64-setup.exe",
+    "size": 4391963
+  }
+]

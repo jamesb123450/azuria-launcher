@@ -2,7 +2,17 @@ name: Foundation checks
 on:
   push:
     branches: [main, "feat/**"]
+    paths-ignore:
+      - "website/**"
+      - ".github/workflows/website.yml"
+      - ".github/scripts/release-scope.mjs"
+      - "docs/WEBSITE.md"
   pull_request:
+    paths-ignore:
+      - "website/**"
+      - ".github/workflows/website.yml"
+      - ".github/scripts/release-scope.mjs"
+      - "docs/WEBSITE.md"
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,6 +20,20 @@ concurrency:
   group: azuria-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  release-scope:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.scope.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: scope
+        run: node .github/scripts/release-scope.mjs
+        env:
+          AZURIA_BEFORE: ${{ github.event.before }}
+          AZURIA_COMMIT: ${{ github.sha }}
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -62,11 +86,12 @@ jobs:
 
   release:
     # Explicit opt-in: never publish code or binaries from a pull request.
-    if: github.event_name == 'push' && vars.AZURIA_AUTO_RELEASE == 'true' && github.ref_name == vars.AZURIA_RELEASE_BRANCH
-    needs: [frontend, windows]
+    if: github.event_name == 'push' && needs.release-scope.outputs.publish == 'true' && vars.AZURIA_AUTO_RELEASE == 'true' && github.ref_name == vars.AZURIA_RELEASE_BRANCH
+    needs: [frontend, windows, release-scope]
     runs-on: windows-latest
     permissions:
       contents: write
+      actions: write
     env:
       AZURIA_RELEASE_REPOSITORY: ${{ github.repository }}
       AZURIA_RELEASE_COMMIT: ${{ github.sha }}
@@ -108,3 +133,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Could not upload all update assets" }
           gh release edit $tag --repo $env:AZURIA_RELEASE_REPOSITORY --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw "Could not publish release" }
+      - name: Refresh website build after publishing
+        continue-on-error: true
+        run: gh workflow run website.yml --ref main --repo ${{ github.repository }}
