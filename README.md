@@ -32,13 +32,13 @@ Microsoft sign-in opens the default browser. Authentication runs through the nat
 
 Instance settings and files stay in the application's local data directory. The current app has no analytics or log-upload service.
 
-Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. See [storage and recovery](docs/RECOVERY.md) for backup and manual recovery instructions. Copying an instance copies its settings only.
+Removing an instance moves its desktop files into Azuria’s local trash. There is no in-app restore screen yet. Copying an instance copies its settings only. Close Azuria before backing up its entire local application data directory, including the database, instance folders and trash. To recover files from a completed removal, create an instance with the original settings, close Azuria, and copy the retained files into the new instance’s UUID directory. Keep the original backup and trash files until the recovered data has been checked.
 
 ## Development direction
 
 The next core work is Minecraft account verification, verified Minecraft and Java downloads, and a working Vanilla launch. Fabric installation and live Modrinth/CurseForge discovery follow that foundation. Modpack import/export and broader content management are also planned.
 
-See the [development plan](docs/PLAN.md) and [integration notes](docs/INTEGRATIONS.md). Planned features are not promises of a release date.
+Planned features are not promises of a release date.
 
 ## Build from source
 
@@ -81,16 +81,12 @@ npm run format:check
 
 GitHub Actions also runs Rust tests, formatting, Clippy and Windows build checks. Browser tests exercise the interface; native installation, authentication and updates need Windows testing.
 
-With automatic releases enabled, launcher changes merged into `main` run the checks, build a signed update and publish it after successful validation. Release descriptions come from [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md); app changes should update that file in the same PR. Website-only and README-only changes do not publish a launcher release. See [update and release configuration](docs/UPDATES.md).
+With automatic releases enabled, launcher changes merged into `main` run the checks, build a signed update and publish it after successful validation. Release descriptions come from [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md); app changes should update that file in the same PR. Website-only and README-only changes do not publish a launcher release.
 
 ## Website and documentation
 
 The [public website](https://jamesb123450.github.io/azuria-launcher/) is hosted on GitHub Pages. Its source lives in [`website/`](website/) in this repository, with a separate static build and deployment workflow. Download links and release information use published GitHub releases.
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Website development](docs/WEBSITE.md)
-- [Storage recovery](docs/RECOVERY.md)
-- [Design and asset credits](docs/DESIGN.md)
 - [Privacy policy](https://jamesb123450.github.io/azuria-launcher/privacy/)
 - [Terms of service](https://jamesb123450.github.io/azuria-launcher/terms/)
 
@@ -98,6 +94,6 @@ The [public website](https://jamesb123450.github.io/azuria-launcher/) is hosted 
 
 Report bugs and suggest improvements through [GitHub Issues](https://github.com/jamesb123450/azuria-launcher/issues). Include the app version, Windows version and steps to reproduce a problem. Keep account credentials, tokens and personal data out of public reports.
 
-The source is publicly viewable, but a project licence has not been selected. Dependency and asset licences continue to apply; see the linked credits.
+The source is publicly viewable, but a project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](docs/FONT-LICENSE.txt).
 
 Azuria is an independent project and is not affiliated with or endorsed by Mojang or Microsoft.

@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 // Unknown paths conservatively count as launcher changes.
 export function affectsLauncher(paths) {
   const websitePath =
-    /^(website\/|docs\/WEBSITE\.md$|\.github\/workflows\/website\.yml$|\.github\/workflows\/checks\.yml$|\.github\/scripts\/release-scope\.mjs$|README\.md$|\.gitignore$)/;
+    /^(website\/|docs\/(?!RELEASE_NOTES\.md$)|\.github\/workflows\/website\.yml$|\.github\/workflows\/checks\.yml$|\.github\/scripts\/release-scope\.mjs$|README\.md$|\.gitignore$)/;
   return paths.some((path) => !websitePath.test(path));
 }
 if (

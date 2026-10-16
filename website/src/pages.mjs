@@ -657,11 +657,11 @@ export function render(page, { siteURL, base, releases }) {
             <p>
               Removing an instance keeps its files in local trash. Copying
               settings does not copy worlds or mods. There is not yet a restore
-              interface; read the recovery guide before attempting manual
+              interface; read the recovery instructions before attempting manual
               recovery.
             </p>
-            <a class="text-link" href="${repository}/blob/main/docs/RECOVERY.md"
-              >Storage & recovery guide ${icon("external", 14)}</a
+            <a class="text-link" href="${repository}#accounts-and-local-data"
+              >Storage & recovery instructions ${icon("external", 14)}</a
             >
           </section>
           <section id="support">
@@ -792,8 +792,8 @@ export function render(page, { siteURL, base, releases }) {
               preferences and instance files remain on your device until you
               remove them; deleting an instance may retain files in local trash.
               See the
-              <a href="${repository}/blob/main/docs/RECOVERY.md"
-                >storage and recovery guide</a
+              <a href="${repository}#accounts-and-local-data"
+                >storage and recovery instructions</a
               >
               before removing files.
             </p>

@@ -111,6 +111,8 @@ test("website-only changes never request a new launcher release", () => {
       "website/data/releases.json",
       ".github/workflows/website.yml",
       "docs/WEBSITE.md",
+      "docs/ARCHITECTURE.md",
+      "docs/previews/play-dark.webp",
       "README.md",
       ".gitignore",
       ".github/workflows/checks.yml",
