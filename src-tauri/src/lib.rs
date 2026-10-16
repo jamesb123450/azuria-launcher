@@ -1,6 +1,65 @@
+use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::{Emitter, Manager, State};
+type Accounts = AuthService<WebProvider, NativeVault>;
+fn auth_progress(app: tauri::AppHandle) -> Progress {
+    std::sync::Arc::new(move |stage| {
+        let _ = app.emit("auth-progress", stage);
+    })
+}
+#[tauri::command]
+async fn account_status(state: State<'_, Accounts>) -> AccountView {
+    state.status().await
+}
+#[tauri::command]
+async fn account_restore(
+    state: State<'_, Accounts>,
+    app: tauri::AppHandle,
+) -> Result<AccountView, AuthError> {
+    state.restore(auth_progress(app)).await
+}
+#[tauri::command]
+async fn account_sign_in(
+    state: State<'_, Accounts>,
+    app: tauri::AppHandle,
+) -> Result<AccountView, AuthError> {
+    let open = std::sync::Arc::new(|url: &str| {
+        // URL originates exclusively in the native PKCE flow, never from IPC.
+        #[cfg(windows)]
+        {
+            std::process::Command::new("explorer.exe")
+                .arg(url)
+                .spawn()
+                .map(|_| ())
+                .map_err(|_| {
+                    AuthError::new(
+                        Stage::Browser,
+                        "browser",
+                        "Could not open your browser. Check your default browser and retry.",
+                    )
+                })
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = url;
+            Err(AuthError::new(
+                Stage::Browser,
+                "platform",
+                "Sign-in requires the Windows desktop app.",
+            ))
+        }
+    });
+    state.sign_in(open, auth_progress(app)).await
+}
+#[tauri::command]
+async fn account_cancel(state: State<'_, Accounts>) -> AccountView {
+    state.cancel().await
+}
+#[tauri::command]
+async fn account_sign_out(state: State<'_, Accounts>) -> Result<AccountView, AuthError> {
+    state.sign_out().await
+}
 struct Storage {
     root: std::path::PathBuf,
     store: Option<Store>,
@@ -132,9 +191,18 @@ pub fn run() {
         .setup(|app| {
             let root = app.path().app_local_data_dir()?;
             app.manage(Mutex::new(Storage { root, store: None }));
+            app.manage(Accounts::new(
+                WebProvider::new().map_err(|error| std::io::Error::other(error.message))?,
+                NativeVault,
+            ));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            account_status,
+            account_restore,
+            account_sign_in,
+            account_cancel,
+            account_sign_out,
             list_instances,
             create_instance,
             update_instance,

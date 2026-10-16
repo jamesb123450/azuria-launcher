@@ -16,6 +16,8 @@ import { desktop } from "./api";
 import WindowControls from "./components/WindowControls.vue";
 import InstanceIcon from "./components/InstanceIcon.vue";
 import { useUpdates } from "./stores/updates";
+import { useAccount } from "./stores/account";
+const account = useAccount();
 const updates = useUpdates();
 const store = useLauncher();
 const route = useRoute();
@@ -28,6 +30,7 @@ const page = computed(() =>
 );
 onMounted(() => {
   void store.init();
+  void account.init();
   void updates.init();
 });
 </script>
@@ -127,9 +130,14 @@ onMounted(() => {
             aria-label="Update available"
           /><span class="rail-tooltip">Settings</span></RouterLink
         >
-        <div class="rail-avatar" title="Microsoft sign-in coming next">
+        <RouterLink
+          to="/settings#account"
+          class="rail-avatar"
+          :title="account.label"
+          aria-label="Minecraft account"
+        >
           <UserRound :size="18" />
-        </div>
+        </RouterLink>
       </div>
     </aside>
     <div class="main-shell">

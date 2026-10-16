@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAccount } from "../stores/account";
+const account = useAccount();
 import { computed, nextTick, onBeforeUnmount, ref } from "vue";
 import {
   Plus,
@@ -209,8 +211,8 @@ onBeforeUnmount(closeDelete);
         <div>
           <strong>Game launch is coming next</strong>
           <p>
-            Launching is not implemented in this build. Microsoft sign-in,
-            verified game downloads and Java setup are the next milestone.
+            Launching is not implemented in this build. Verified game downloads
+            and Java setup are the next milestone.
           </p>
         </div>
         <button
@@ -454,7 +456,12 @@ onBeforeUnmount(closeDelete);
       <section class="setup-panel">
         <div class="context-heading">
           <h2>Getting started</h2>
-          <span>{{ store.instances.length ? "1" : "0" }} / 2</span>
+          <span
+            >{{
+              Number(!!store.instances.length) + Number(account.view.verified)
+            }}
+            / 2</span
+          >
         </div>
         <button
           class="setup-item"
@@ -470,21 +477,26 @@ onBeforeUnmount(closeDelete);
               ? "Instance created"
               : "Create your first instance"
           }}</span></button
-        ><RouterLink to="/roadmap" class="setup-item"
+        ><RouterLink to="/settings#account" class="setup-item"
           ><span class="check-ring"><UserRound :size="14" /></span
           ><span
-            >Sign in to Minecraft<span class="setup-subtitle"
-              >Coming next</span
-            ></span
+            >Sign in to Minecraft<span class="setup-subtitle">{{
+              account.view.verified ? "Connected" : "Microsoft account"
+            }}</span></span
           ></RouterLink
         >
       </section>
       <section class="account-panel">
         <h2>Playing as</h2>
-        <RouterLink class="account-identity" to="/roadmap"
+        <RouterLink class="account-identity" to="/settings#account"
           ><span class="account-portrait"><UserRound :size="22" /></span>
           <div>
-            <strong>Not signed in</strong><span>Minecraft account</span>
+            <strong>{{ account.label }}</strong
+            ><span>{{
+              account.view.verified
+                ? "Minecraft Java verified"
+                : "Minecraft account"
+            }}</span>
           </div>
           <ChevronDown :size="16"
         /></RouterLink>
@@ -495,7 +507,8 @@ onBeforeUnmount(closeDelete);
         <h3>Your launcher. Your way.</h3>
         <p class="muted">
           Vanilla and Fabric instances, organised in one place. Microsoft
-          sign-in and game installation are the next milestone.
+          sign-in is available in Settings. Game installation is the next
+          milestone.
         </p>
         <RouterLink class="text-link" to="/roadmap"
           >View roadmap <ArrowUpRight :size="14"

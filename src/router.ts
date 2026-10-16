@@ -4,6 +4,9 @@ import SettingsView from "./views/SettingsView.vue";
 import RoadmapView from "./views/RoadmapView.vue";
 export const router = createRouter({
   history: createWebHashHistory(),
+  scrollBehavior(to) {
+    return to.hash ? { el: to.hash, behavior: "smooth" } : { top: 0 };
+  },
   routes: [
     { path: "/", component: LibraryView },
     { path: "/settings", component: SettingsView },

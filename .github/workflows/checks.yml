@@ -45,6 +45,9 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+      - run: cargo fmt --manifest-path crates/azuria-auth/Cargo.toml -- --check
+      - run: cargo test --locked --manifest-path crates/azuria-auth/Cargo.toml
+      - run: cargo clippy --locked --manifest-path crates/azuria-auth/Cargo.toml --all-targets -- -D warnings
       - run: cargo fmt --manifest-path crates/azuria-core/Cargo.toml -- --check
       - run: cargo test --locked --manifest-path crates/azuria-core/Cargo.toml
       - run: cargo clippy --locked --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings

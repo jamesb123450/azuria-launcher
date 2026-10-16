@@ -1,0 +1,97 @@
+import { computed, ref } from "vue";
+import { defineStore } from "pinia";
+import {
+  accountApi,
+  accountError,
+  emptyAccount,
+  type AuthStage,
+} from "../auth";
+export const useAccount = defineStore("account", () => {
+  const view = ref(emptyAccount());
+  const busy = ref(false);
+  const cancelling = ref(false);
+  const stage = ref<AuthStage | null>(null);
+  const error = ref("");
+  const ready = ref(false);
+  let generation = 0;
+  const label = computed(() => view.value.account?.username ?? "Not signed in");
+  async function operate(action: "restore" | "signIn" | "signOut") {
+    if (busy.value || !view.value.supported) return;
+    const current = ++generation;
+    busy.value = true;
+    stage.value =
+      action === "signIn"
+        ? "browser"
+        : action === "restore"
+          ? "microsoft"
+          : "storage";
+    error.value = "";
+    let stop: (() => void) | undefined;
+    try {
+      stop = await accountApi.progress((value) => {
+        if (current === generation) stage.value = value;
+      });
+      if (current !== generation) return;
+      const result = await accountApi[action]();
+      if (current === generation) view.value = result;
+    } catch (cause) {
+      if (current !== generation) return;
+      error.value = accountError(cause);
+      try {
+        const status = await accountApi.status();
+        if (current === generation) view.value = status;
+      } catch {
+        /* Retain the last known account; never invent success. */
+      }
+    } finally {
+      stop?.();
+      if (current === generation) {
+        busy.value = false;
+        stage.value = null;
+      }
+    }
+  }
+  async function init() {
+    if (ready.value || busy.value) return;
+    busy.value = true;
+    try {
+      view.value = await accountApi.status();
+    } catch (cause) {
+      error.value = accountError(cause);
+    } finally {
+      busy.value = false;
+      ready.value = true;
+    }
+    if (view.value.supported) await operate("restore");
+  }
+  async function cancel() {
+    if (!busy.value || cancelling.value) return;
+    cancelling.value = true;
+    // Ignore completion from the cancelled operation, including delayed IPC replies.
+    ++generation;
+    try {
+      view.value = await accountApi.cancel();
+      error.value = "Sign-in was cancelled.";
+    } catch (cause) {
+      error.value = accountError(cause);
+    } finally {
+      busy.value = false;
+      cancelling.value = false;
+      stage.value = null;
+    }
+  }
+  return {
+    view,
+    busy,
+    cancelling,
+    stage,
+    error,
+    ready,
+    label,
+    init,
+    cancel,
+    signIn: () => operate("signIn"),
+    restore: () => operate("restore"),
+    signOut: () => operate("signOut"),
+  };
+});
