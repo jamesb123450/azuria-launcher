@@ -38,7 +38,12 @@ const steps: Record<AuthStage, string> = {
         Sign in with the Microsoft account you use for Minecraft Java Edition.
         Your browser handles your Microsoft password.
       </p>
-      <p v-if="account.busy && account.stage" role="status" aria-live="polite">
+      <p
+        v-if="account.busy && account.stage"
+        class="account-progress"
+        role="status"
+        aria-live="polite"
+      >
         {{ steps[account.stage] }}
       </p>
       <p v-if="account.error" role="alert" class="inline-error">

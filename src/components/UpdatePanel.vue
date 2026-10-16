@@ -36,7 +36,9 @@ const updates = useUpdates();
           Check for the latest version of Azuria.
         </p>
       </div>
-      <p v-if="updates.error" role="alert" class="muted">{{ updates.error }}</p>
+      <p v-if="updates.error" role="alert" class="inline-error">
+        {{ updates.error }}
+      </p>
       <progress
         v-if="updates.status === 'downloading'"
         :value="updates.progress"

@@ -76,7 +76,7 @@ test("persistent library lifecycle and honest launch state", async ({
   ).toHaveCount(2);
   await page.getByRole("button", { name: "Play", exact: false }).click();
   await expect(
-    page.getByText("Launching is not implemented in this build."),
+    page.getByText("Launching is not available yet", { exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Favourite Aurora", exact: true })
@@ -97,7 +97,7 @@ test("persistent library lifecycle and honest launch state", async ({
     .click();
   await expect(page.locator(".instance-card")).toHaveCount(2);
   await page.getByRole("textbox", { name: "Search instances" }).fill("missing");
-  await expect(page.getByText("No matching adventures.")).toBeVisible();
+  await expect(page.getByText("No matching instances.")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
   await page
     .getByRole("button", { name: "Delete Aurora edited", exact: true })
@@ -233,9 +233,7 @@ test("library grouping and collapsed sections remain usable", async ({
   await page
     .getByRole("button", { name: "Favourite Alpha", exact: true })
     .click();
-  await page
-    .getByRole("combobox", { name: "Group instances" })
-    .selectOption("favorites");
+  await chooseVersion(page, "Group by favourites", "Group instances");
   const favourites = page.locator(".instance-group").filter({
     has: page.getByRole("heading", { name: "Favourites", exact: true }),
   });
@@ -246,9 +244,7 @@ test("library grouping and collapsed sections remain usable", async ({
   await expect(favourites.locator(".instance-card")).toHaveCount(1);
   await page.getByRole("button", { name: "Jump in", exact: true }).click();
   await expect(page.locator(".jump-row")).toHaveCount(0);
-  await page
-    .getByRole("combobox", { name: "Group instances" })
-    .selectOption("none");
+  await chooseVersion(page, "No grouping", "Group instances");
   await expect(page.locator(".instance-card")).toHaveCount(2);
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Light", exact: false }).click();

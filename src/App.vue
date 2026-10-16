@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onBeforeUnmount, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import {
   Play,
@@ -18,6 +18,9 @@ import InstanceIcon from "./components/InstanceIcon.vue";
 import { useUpdates } from "./stores/updates";
 import { useAccount } from "./stores/account";
 const account = useAccount();
+function focusMain() {
+  document.getElementById("main-content")?.focus();
+}
 const updates = useUpdates();
 const store = useLauncher();
 const route = useRoute();
@@ -30,6 +33,24 @@ const page = computed(() =>
         ? "Roadmap"
         : "Play",
 );
+let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+watch(
+  () => store.notice,
+  (value) => {
+    clearTimeout(noticeTimer);
+    if (value)
+      noticeTimer = setTimeout(() => {
+        store.notice = "";
+      }, 5000);
+  },
+);
+watch(
+  () => route.fullPath,
+  () => {
+    store.notice = "";
+  },
+);
+onBeforeUnmount(() => clearTimeout(noticeTimer));
 onMounted(() => {
   void store.init();
   void account.init();
@@ -38,6 +59,9 @@ onMounted(() => {
 </script>
 <template>
   <div class="app-shell">
+    <a class="skip-link" href="#main-content" @click.prevent="focusMain"
+      >Skip to content</a
+    >
     <header class="topbar" data-tauri-drag-region>
       <div class="topbar-brand" data-tauri-drag-region>
         <RouterLink to="/" class="header-home" aria-label="Azuria home"
@@ -62,7 +86,7 @@ onMounted(() => {
         <span v-if="!desktop" class="preview-label">Browser preview</span
         ><span class="build-pill"
           >Early access <span>{{ updates.version }}</span></span
-        ><span class="activity-chip"><span /> Launch setup pending</span>
+        >
       </div>
       <WindowControls />
     </header>
@@ -143,7 +167,11 @@ onMounted(() => {
       </div>
     </aside>
     <div class="main-shell">
-      <main id="main-content" :class="{ 'is-library': route.path === '/' }">
+      <main
+        id="main-content"
+        tabindex="-1"
+        :class="{ 'is-library': route.path === '/' }"
+      >
         <RouterView />
       </main>
       <div v-if="store.error" class="alert error" role="alert">
