@@ -252,13 +252,12 @@ fn active(stage: &str) -> bool {
 }
 #[tauri::command]
 pub fn content_job(app: tauri::AppHandle) -> Result<Option<Status>, String> {
-    Ok(app
-        .state::<ContentState>()
+    let state = app.state::<ContentState>();
+    let job = state
         .job
         .lock()
-        .map_err(|_| "Content status is unavailable.")?
-        .as_ref()
-        .map(|j| j.status.clone()))
+        .map_err(|_| "Content status is unavailable.")?;
+    Ok(job.as_ref().map(|j| j.status.clone()))
 }
 #[tauri::command]
 pub fn content_cancel(app: tauri::AppHandle) -> Result<(), String> {

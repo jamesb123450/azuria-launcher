@@ -18,14 +18,14 @@ const stages = [
   {
     title: "More loaders & modded content",
     description:
-      "Quilt, Forge and NeoForge installation, compatible mods, resource packs and shaders.",
+      "Quilt, Forge and NeoForge launching and broader shader support.",
     status: "Planned",
   },
   {
     title: "Modpack discovery",
     description:
-      "Modrinth and CurseForge discovery, dependencies and content updates.",
-    status: "Planned",
+      "Live Modrinth and CurseForge discovery, required dependencies and verified installs. Content updates are planned.",
+    status: "This build",
   },
   {
     title: "Import, export & recovery",
@@ -47,9 +47,10 @@ const stages = [
     <div>
       <h2>Modrinth & CurseForge</h2>
       <p class="muted">
-        Modrinth and CurseForge browsing will arrive after the game installation
-        core. CurseForge access and Minecraft authentication require Azuria’s
-        own approved credentials.
+        Discover searches live provider catalogues and installs compatible
+        content after review. Modrinth needs no key; CurseForge requires
+        approved API access configured in Settings → Content providers. Modpacks
+        currently support new Vanilla or Fabric instances.
       </p>
     </div>
   </div>
