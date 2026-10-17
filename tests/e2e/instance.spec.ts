@@ -46,7 +46,7 @@ test("instance navigation, general settings, defaults and overrides persist", as
   ).toBeVisible();
   await page.getByRole("button", { name: "Logs", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "No game logs yet" }),
+    page.getByRole("heading", { name: "Logs are available in the desktop app" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
