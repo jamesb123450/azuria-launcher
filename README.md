@@ -15,7 +15,7 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 - **Local content:** import `.jar` mods and `.zip` packs, enable or disable them, retain removed files in local trash, open world folders and read existing game logs. Local actions are available in the installed desktop app.
 - **Account controls:** Microsoft browser sign-in, reconnect, switch and sign-out controls on Windows. Full Minecraft account verification remains dependent on Azuria receiving Minecraft Services access.
 - **Local storage and recovery:** SQLite-backed desktop settings, instance files retained in local trash after removal, and recovery of interrupted removals at startup.
-- **Skins and capes:** Preview and upload Classic/Slim PNG skins, reset your skin, and equip owned capes. Your account displays your skin head.
+- **Skins and capes:** Rotate your character preview, save a local skin library, edit names and Classic/Slim models, replace textures, and choose owned capes. Apply an appearance explicitly to your account, or reset to Minecraft’s default. Your account displays your skin head.
 - **Screenshots and logs:** Browse instance screenshots, preview/export PNGs, move unwanted images to Azuria’s trash, and follow live log output with pause controls.
 - **Vanilla launching:** Play prepares Mojang game files, libraries, native dependencies and assets, plus a matching Mojang Java runtime or a validated custom Java executable. Use Play/Stop and track running state and exit/crash feedback from the Library or instance page.
 - **In-app updates:** published Windows builds automatically check and download signed updates at startup, with progress, release notes and a restart countdown.

@@ -14,6 +14,15 @@ async function setup(page: Page, denied = false) {
       pixels.fillStyle = "#e5a3c6";
       pixels.fillRect(0, 0, 64, 64);
       const skin = texture.toDataURL();
+      let savedSkins = [
+        {
+          id: "saved-one",
+          name: "My skin",
+          image: skin,
+          variant: "classic",
+          capeId: null as string | null,
+        },
+      ];
       texture.height = 32;
       const capePixels = texture.getContext("2d")!;
       capePixels.fillStyle = "#e789b8";
@@ -46,6 +55,12 @@ async function setup(page: Page, denied = false) {
         isTauri: true,
         gameCalls: calls,
         emitGame: emit,
+        emitSkinDrop: (image: string) =>
+          callbacks[handlers["skin-file-dropped"]!]?.({
+            event: "skin-file-dropped",
+            id: 2,
+            payload: { image },
+          }),
         __TAURI_INTERNALS__: {
           transformCallback: (callback: (e: unknown) => void) => {
             callbacks[++sequence] = callback;
@@ -98,6 +113,22 @@ async function setup(page: Page, denied = false) {
                 window: { fullscreen: false, width: 1280, height: 720 },
               };
             if (cmd === "get_instance_overrides") return {};
+            if (cmd === "skin_library_list") return savedSkins;
+            if (cmd === "skin_pick_texture") return skin;
+            if (cmd === "skin_library_save") {
+              const input = args?.input as (typeof savedSkins)[number];
+              const item = { ...input, id: input.id ?? "saved-two" };
+              savedSkins = [
+                ...savedSkins.filter((s) => s.id !== item.id),
+                item,
+              ];
+              return savedSkins;
+            }
+            if (cmd === "skin_library_remove") {
+              savedSkins = savedSkins.filter((s) => s.id !== args?.id);
+              return savedSkins;
+            }
+            if (cmd === "wardrobe_apply") return;
             if (cmd === "wardrobe_profile")
               return {
                 skin,
@@ -253,7 +284,7 @@ test("wardrobe applies an owned cape and supports hiding it", async ({
   await setup(page);
   await page.goto("/#/wardrobe");
   await expect(
-    page.getByRole("heading", { name: "Skins & capes" }),
+    page.getByRole("heading", { name: "Skin selector" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Test cape" }).click();
   await expect
@@ -364,4 +395,142 @@ test("owned capes show cropped wearable faces instead of the atlas", async ({
     page.getByRole("button", { name: /Test cape/ }).locator("img"),
   ).toHaveCount(0);
   await page.screenshot({ path: test.info().outputPath("cape-preview.png") });
+});
+
+test("saved skin cards expose edit actions and changes save locally before account apply", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/#/wardrobe");
+  const card = page.locator(".saved-skin-card").first();
+  await card.hover();
+  await page.getByRole("button", { name: "Edit My skin", exact: true }).click();
+  const editor = page.getByRole("dialog", {
+    name: "Editing skin",
+    exact: true,
+  });
+  await expect(editor).toBeVisible();
+  await editor.getByLabel("Skin name", { exact: true }).fill("Blue penguin");
+  await editor.getByLabel("Slim", { exact: true }).check();
+  await editor.getByRole("button", { name: /Test cape/ }).click();
+  await editor.getByRole("button", { name: "Save skin", exact: true }).click();
+  await expect(editor).not.toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Preview Blue penguin", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+        "wardrobe_apply",
+      ),
+    ),
+  ).toBe(false);
+  await page
+    .getByRole("button", { name: "Preview Blue penguin", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Use skin", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+          "wardrobe_apply",
+        ),
+      ),
+    )
+    .toBe(true);
+});
+test("adding, cancelling and removing a saved skin keep account changes explicit", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/#/wardrobe");
+  await page.getByRole("button", { name: /Add skin/ }).click();
+  let editor = page.getByRole("dialog", { name: "Add skin", exact: true });
+  await editor.getByRole("button", { name: "Choose texture" }).click();
+  await editor.getByLabel("Skin name", { exact: true }).fill("New outfit");
+  await editor.getByRole("button", { name: "Save skin", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Preview New outfit", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Preview New outfit", exact: true })
+    .hover();
+  await page
+    .getByRole("button", { name: "Edit New outfit", exact: true })
+    .click();
+  editor = page.getByRole("dialog", { name: "Editing skin", exact: true });
+  await editor.getByLabel("Skin name", { exact: true }).fill("Discard this");
+  await editor.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Preview New outfit", exact: true }),
+  ).toBeVisible();
+  page.once("dialog", (d) => d.accept());
+  await page
+    .getByRole("button", { name: "Preview New outfit", exact: true })
+    .hover();
+  await page
+    .getByRole("button", { name: "Remove New outfit", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Preview New outfit", exact: true }),
+  ).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath("skin-selector.png") });
+});
+test("the skin preview rotates with pointer and keyboard controls", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/#/wardrobe");
+  const model = page.locator(".skin-current .skin-model-person");
+  await expect(model).toBeVisible();
+  const before = await model.getAttribute("style");
+  await page
+    .getByRole("button", { name: "Rotate skin right", exact: true })
+    .click();
+  await expect(model).not.toHaveAttribute("style", before!);
+  await page
+    .getByRole("button", { name: "Reset skin rotation", exact: true })
+    .click();
+  await expect(model).toHaveAttribute("style", before!);
+  const bounds = await page
+    .locator(".skin-current .skin-model-stage")
+    .boundingBox();
+  await page.mouse.move(
+    bounds!.x + bounds!.width / 2,
+    bounds!.y + bounds!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    bounds!.x + bounds!.width / 2 + 60,
+    bounds!.y + bounds!.height / 2,
+  );
+  await page.mouse.up();
+  await expect(model).not.toHaveAttribute("style", before!);
+});
+
+test("a native PNG drop opens the editor without changing the account", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/#/wardrobe");
+  await expect(
+    page.getByRole("button", { name: "Preview My skin" }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    (
+      window as unknown as { emitSkinDrop: (image: string) => void }
+    ).emitSkinDrop(c.toDataURL());
+  });
+  await expect(
+    page.getByRole("dialog", { name: "Add skin", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+        "wardrobe_apply",
+      ),
+    ),
+  ).toBe(false);
 });
