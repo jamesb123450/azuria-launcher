@@ -1,4 +1,6 @@
-//! Provider metadata is untrusted. Only native, revalidated plans may write instance files.
+mod catalog;
+pub use catalog::*;
+// Provider metadata is untrusted. Only native, revalidated plans may write instance files.
 use azuria_launch::safe_join;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -66,6 +68,7 @@ pub struct Project {
     pub author: String,
     pub url: String,
     pub downloads: u64,
+    pub icon_url: Option<String>,
     pub categories: Vec<String>,
 }
 #[derive(Serialize)]
@@ -82,6 +85,7 @@ pub struct Version {
     pub game_versions: Vec<String>,
     pub loaders: Vec<String>,
     pub release_type: String,
+    pub published: String,
 }
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -110,6 +114,8 @@ pub struct Plan {
     pub names: Vec<String>,
     pub projects: BTreeMap<String, String>,
     pub incompatible: Vec<String>,
+    pub previous: Option<Box<Plan>>,
+    pub owners: BTreeMap<String, String>,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -383,6 +389,7 @@ impl Client {
                             text(p, "slug")?
                         ),
                         downloads: p["downloads"].as_u64().unwrap_or(0),
+                        icon_url: p["icon_url"].as_str().map(str::to_owned),
                         categories: list(&p["categories"]),
                     })
                 })
@@ -409,6 +416,7 @@ impl Client {
                             .into(),
                         url: text(&p["links"], "websiteUrl")?,
                         downloads: p["downloadCount"].as_f64().unwrap_or(0.0) as u64,
+                        icon_url: p["logo"]["thumbnailUrl"].as_str().map(str::to_owned),
                         categories: p["categories"]
                             .as_array()
                             .map(|a| {
@@ -540,6 +548,8 @@ impl Client {
             names: vec![],
             projects: BTreeMap::new(),
             incompatible: vec![],
+            previous: None,
+            owners: BTreeMap::new(),
         };
         let mut seen = BTreeMap::new();
         self.resolve(&mut plan, project, selected, kind, world, &mut seen, cancel)?;
@@ -609,6 +619,7 @@ impl Client {
         }
         let mut f = file(plan.provider, &f)?;
         f.path = format!("{folder}/{name}");
+        plan.owners.insert(f.path.clone(), project.into());
         plan.files.push(f);
         if let Some(deps) = raw["dependencies"].as_array() {
             for dep in deps {
@@ -760,6 +771,8 @@ impl Client {
             names: vec![index["name"].as_str().unwrap_or("Modpack").into()],
             projects: BTreeMap::from([(project.into(), selected.into())]),
             incompatible: vec![],
+            previous: None,
+            owners: BTreeMap::new(),
         };
         let files = index["files"]
             .as_array()
@@ -810,6 +823,7 @@ impl Client {
                 let mut f = file(provider, &primary(provider, &raw)?)?;
                 f.path = format!("{folder}/{}", text(&primary(provider, &raw)?, "filename")?);
                 allowed_path(&f.path)?;
+                plan.owners.insert(f.path.clone(), pid);
                 plan.files.push(f);
             }
         }
@@ -941,6 +955,7 @@ fn version(provider: Provider, v: &Value) -> Result<Version, String> {
             name: text(v, "name")?,
             game_versions: list(&v["game_versions"]),
             loaders: list(&v["loaders"]),
+            published: v["date_published"].as_str().unwrap_or("").into(),
             release_type: v["version_type"].as_str().unwrap_or("release").into(),
         })
     } else {
@@ -954,6 +969,7 @@ fn version(provider: Provider, v: &Value) -> Result<Version, String> {
                 .filter(|s| matches!(s.as_str(), "forge" | "fabric" | "quilt" | "neoforge"))
                 .collect(),
             game_versions: games,
+            published: v["fileDate"].as_str().unwrap_or("").into(),
             release_type: match v["releaseType"].as_u64() {
                 Some(1) => "release",
                 Some(2) => "beta",
@@ -1165,6 +1181,12 @@ fn pack_target(provider: Provider, index: &Value) -> Result<Target, String> {
     }
 }
 
+fn asset_project(file: &File) -> Option<&str> {
+    let url = file.url.as_deref()?;
+    url.strip_prefix("https://cdn.modrinth.com/data/")?
+        .split('/')
+        .next()
+}
 pub struct Staged {
     dir: tempfile::TempDir,
 }
@@ -1180,43 +1202,36 @@ impl Staged {
             .filter(|a| a.len() < 1024)
             .ok_or("Content history is invalid or full.")?;
         for old in installs {
-            if old["provider"] == json!(plan.provider)
-                && old["project"]
+            let updating = plan.previous.as_ref().is_some_and(|p| {
+                old["provider"] == json!(p.provider)
+                    && (old["root"] == p.project
+                        || (old["root"].is_null()
+                            && old["project"]
+                                .as_str()
+                                .is_some_and(|id| p.projects.contains_key(id))))
+            });
+            if updating {
+                continue;
+            }
+            let present = old["files"].as_array().is_some_and(|a| {
+                a.iter().filter_map(Value::as_str).any(|p| {
+                    safe_join(root, p).is_ok_and(|p| p.exists())
+                        || safe_join(root, &format!("{p}.disabled")).is_ok_and(|p| p.exists())
+                })
+            });
+            if present && old["provider"] == json!(plan.provider) {
+                if old["project"]
                     .as_str()
                     .is_some_and(|p| plan.incompatible.iter().any(|id| id == p))
-                && old["files"].as_array().is_some_and(|a| {
-                    a.iter()
-                        .filter_map(Value::as_str)
-                        .any(|p| safe_join(root, p).is_ok_and(|p| p.exists()))
-                })
-            {
-                return Err("This project is incompatible with managed content already installed in the instance.".into());
-            }
-            if old["provider"] == json!(plan.provider)
-                && old["project"]
+                {
+                    return Err("This project is incompatible with installed content.".into());
+                }
+                if old["project"]
                     .as_str()
                     .is_some_and(|p| plan.projects.get(p).is_some_and(|v| old["version"] != *v))
-                && old["files"].as_array().is_some_and(|a| {
-                    a.iter()
-                        .filter_map(Value::as_str)
-                        .any(|p| safe_join(root, p).is_ok_and(|p| p.exists()))
-                })
-            {
-                return Err("Another version of this project is already installed. Remove it before installing this version.".into());
-            }
-        }
-        let mut pending = vec![];
-        for f in &plan.files {
-            let path = safe_join(root, &f.path)?;
-            if path.exists() {
-                if !verify(&path, f)? {
-                    return Err(format!(
-                        "{} already exists with different content. Nothing was overwritten.",
-                        f.path
-                    ));
+                {
+                    return Err("Another managed project depends on a different version. Update that project first.".into());
                 }
-            } else {
-                pending.push(f.clone());
             }
         }
         let token = self
@@ -1226,24 +1241,119 @@ impl Staged {
             .and_then(|s| s.to_str())
             .ok_or_else(fail)?
             .to_string();
+        let mut pending = vec![];
+        let mut backups = vec![];
+        let mut preserve = BTreeSet::new();
+        let mut disabled_replacements = BTreeSet::new();
+        let previous = plan.previous.as_ref();
+        if let Some(previous) = previous {
+            for old in &previous.files {
+                let original = safe_join(root, &old.path)?;
+                let disabled = safe_join(root, &format!("{}.disabled", old.path))?;
+                let (path, name) = if original.exists() {
+                    (original, old.path.clone())
+                } else if disabled.exists() {
+                    (disabled, format!("{}.disabled", old.path))
+                } else {
+                    continue;
+                };
+                let replacement = plan.files.iter().find(|f| f.path == old.path);
+                if name.ends_with(".disabled") {
+                    let matched = plan.files.iter().find(|new| {
+                        new.path == old.path
+                            || asset_project(old).is_some_and(|id| asset_project(new) == Some(id))
+                            || (plan.kind == Kind::Mods
+                                && plan.files.first().is_some_and(|f| f.path == new.path)
+                                && previous.files.first().is_some_and(|f| f.path == old.path))
+                    });
+                    if let Some(new) = matched {
+                        disabled_replacements.insert(new.path.clone());
+                    } else if plan.provider == Provider::Curseforge
+                        && plan.kind == Kind::Modpacks
+                        && old.path.starts_with("mods/")
+                    {
+                        return Err("A disabled CurseForge pack mod cannot be matched to its replacement. Enable it before updating, then disable it again afterwards.".into());
+                    }
+                }
+
+                if !verify(&path, old)? {
+                    if old.path.starts_with("mods/")
+                        || old.path.starts_with("resourcepacks/")
+                        || old.path.starts_with("shaderpacks/")
+                    {
+                        return Err(format!("{} was modified locally. Keep a copy and resolve the conflict before updating.",old.path));
+                    }
+                    preserve.insert(old.path.clone());
+                    continue;
+                }
+                if replacement.is_some_and(|f| f.sha1 == old.sha1 && f.sha512 == old.sha512) {
+                    preserve.insert(old.path.clone());
+                    continue;
+                }
+                let backup = format!(".azuria/backups/{token}/{name}");
+                backups.push(json!({"path":name,"backup":backup,"size":old.size,"sha1":old.sha1,"sha512":old.sha512}));
+            }
+        }
+        for f in &plan.files {
+            if preserve.contains(&f.path) {
+                continue;
+            }
+            let path = safe_join(root, &f.path)?;
+            let removed = backups
+                .iter()
+                .any(|b| b["path"] == f.path || b["path"] == format!("{}.disabled", f.path));
+            if path.exists() && !removed {
+                if !verify(&path, f)? {
+                    return Err(format!(
+                        "{} already exists with different content. Nothing was overwritten.",
+                        f.path
+                    ));
+                }
+            } else {
+                let mut publish = f.clone();
+                if disabled_replacements.contains(&f.path) {
+                    publish.path = format!("{}.disabled", f.path);
+                }
+                pending.push((f.path.clone(), publish));
+            }
+        }
         let journal = safe_join(root, ".azuria/content-transaction.json")?;
         let entries = pending
             .iter()
-            .map(|f| json!({"path":f.path,"size":f.size,"sha1":f.sha1,"sha512":f.sha512}))
+            .map(|(_, f)| json!({"path":f.path,"size":f.size,"sha1":f.sha1,"sha512":f.sha512}))
             .collect::<Vec<_>>();
-        atomic_json(&journal, &json!({"token":token,"files":entries}))?;
+        atomic_json(
+            &journal,
+            &json!({"token":token,"files":entries,"backups":backups}),
+        )?;
         let publish = (|| {
-            for f in &pending {
-                let source = safe_join(self.dir.path(), &f.path)?;
+            for b in &backups {
+                let source = safe_join(root, &text(b, "path")?)?;
+                let target = safe_join(root, &text(b, "backup")?)?;
+                fs::create_dir_all(target.parent().ok_or_else(fail)?).map_err(io)?;
+                fs::rename(source, target).map_err(io)?;
+            }
+            for (source, f) in &pending {
+                let source = safe_join(self.dir.path(), source)?;
                 let target = safe_join(root, &f.path)?;
                 fs::create_dir_all(target.parent().ok_or_else(fail)?).map_err(io)?;
-                if target.exists() {
-                    return Err("An instance file appeared during installation. Retry after closing other file managers.".into());
-                }
-                fs::hard_link(&source, &target).map_err(io)?;
+                fs::hard_link(source, target).map_err(io)?;
+            }
+            if let Some(p) = previous {
+                manifest["installs"]
+                    .as_array_mut()
+                    .ok_or_else(fail)?
+                    .retain(|old| {
+                        !(old["provider"] == json!(p.provider)
+                            && (old["root"] == p.project
+                                || (old["root"].is_null()
+                                    && old["project"]
+                                        .as_str()
+                                        .is_some_and(|id| p.projects.contains_key(id)))))
+                    });
             }
             for (project, version) in &plan.projects {
-                manifest["installs"].as_array_mut().ok_or_else(fail)?.push(json!({"provider":plan.provider,"project":project,"version":version,"files":plan.files.iter().map(|f|f.path.clone()).collect::<Vec<_>>()}));
+                manifest["installs"].as_array_mut().ok_or_else(fail)?.push(json!({"provider":plan.provider,"project":project,"root":plan.project,"kind":plan.kind,"version":version,"target":plan.target,"files":plan.files.iter().filter(|f|project==&plan.project||plan.owners.get(&f.path)==Some(project)).map(|f|f.path.clone()).collect::<Vec<_>>()}));
             }
             manifest["transactions"]
                 .as_array_mut()
@@ -1303,6 +1413,10 @@ fn read_json(path: &Path) -> Result<Option<Value>, String> {
         .map_err(|_| "Content history is unreadable. Keep the file for recovery.".into())
 }
 fn atomic_json(path: &Path, value: &Value) -> Result<(), String> {
+    let bytes = serde_json::to_vec(value).map_err(|_| fail())?;
+    if bytes.len() > 4 * 1024 * 1024 {
+        return Err("Content history exceeds its size limit. No update was committed.".into());
+    }
     fs::create_dir_all(path.parent().ok_or_else(fail)?).map_err(io)?;
     let temp = path.with_extension("json.part");
     safe_join(
@@ -1317,8 +1431,7 @@ fn atomic_json(path: &Path, value: &Value) -> Result<(), String> {
         .create_new(true)
         .open(&temp)
         .map_err(io)?;
-    file.write_all(&serde_json::to_vec(value).map_err(|_| fail())?)
-        .map_err(io)?;
+    file.write_all(&bytes).map_err(io)?;
     file.sync_all().map_err(io)?;
     drop(file);
     if path.exists() {
@@ -1367,9 +1480,58 @@ pub fn recover(root: &Path) -> Result<(), String> {
             };
             if target.exists() {
                 if !verify(&target, &f)? {
+                    // A crash can occur before an old file was moved to its backup.
+                    let original = data["backups"]
+                        .as_array()
+                        .and_then(|a| a.iter().find(|b| b["path"] == f.path));
+                    if let Some(old) = original {
+                        let backup = safe_join(root, &text(old, "backup")?)?;
+                        let old_file = File {
+                            path: f.path.clone(),
+                            url: None,
+                            bytes: None,
+                            sha1: old["sha1"].as_str().map(str::to_owned),
+                            sha512: old["sha512"].as_str().map(str::to_owned),
+                            size: old["size"].as_u64().ok_or_else(fail)?,
+                        };
+                        if !backup.exists() && verify(&target, &old_file)? {
+                            continue;
+                        }
+                    }
                     return Err("An interrupted install contains changed files. They were preserved; keep the content transaction journal for recovery.".into());
                 }
                 fs::remove_file(target).map_err(io)?;
+            }
+        }
+    }
+    if !committed {
+        if let Some(backups) = data["backups"].as_array() {
+            for entry in backups.iter().rev() {
+                let path = text(entry, "path")?;
+                allowed_path(&path)?;
+                let backup = text(entry, "backup")?;
+                if !backup.starts_with(".azuria/backups/") {
+                    return Err(fail());
+                }
+                let source = safe_join(root, &backup)?;
+                let target = safe_join(root, &path)?;
+                if source.exists() {
+                    let f = File {
+                        path: path.clone(),
+                        url: None,
+                        bytes: None,
+                        sha1: entry["sha1"].as_str().map(str::to_owned),
+                        sha512: entry["sha512"].as_str().map(str::to_owned),
+                        size: entry["size"].as_u64().ok_or_else(fail)?,
+                    };
+                    if target.exists() || !verify(&source, &f)? {
+                        return Err(
+                            "Update recovery found changed files. Backups were preserved.".into(),
+                        );
+                    }
+                    fs::create_dir_all(target.parent().ok_or_else(fail)?).map_err(io)?;
+                    fs::rename(source, target).map_err(io)?;
+                }
             }
         }
     }
@@ -1402,6 +1564,8 @@ mod tests {
             names: vec!["Example".into()],
             projects: BTreeMap::from([("project".into(), "v1".into())]),
             incompatible: vec![],
+            previous: None,
+            owners: BTreeMap::new(),
         }
     }
     #[test]
@@ -1534,6 +1698,131 @@ mod tests {
             Some("0.16.10")
         );
     }
+
+    #[test]
+    fn update_replaces_old_files_and_preserves_worlds_and_edited_config() {
+        let root = tempfile::tempdir().unwrap();
+        let cache = tempfile::tempdir().unwrap();
+        let client = Client::new(None).unwrap();
+        let mut old = plan(b"old");
+        let mut config = old.files[0].clone();
+        config.path = "config/settings.txt".into();
+        old.files.push(config);
+        client
+            .stage(&old, cache.path(), &AtomicBool::new(false), &|_, _| {})
+            .unwrap()
+            .commit(&old, root.path())
+            .unwrap();
+        fs::write(root.path().join("config/settings.txt"), b"user settings").unwrap();
+        fs::create_dir_all(root.path().join("saves/My World")).unwrap();
+        fs::write(root.path().join("saves/My World/level.dat"), b"world").unwrap();
+        let mut new = plan(b"new");
+        new.version = "v2".into();
+        new.projects.insert("project".into(), "v2".into());
+        new.files[0].path = "mods/new.jar".into();
+        let mut cfg = new.files[0].clone();
+        cfg.path = "config/settings.txt".into();
+        new.files.push(cfg);
+        new.previous = Some(Box::new(old));
+        client
+            .stage(&new, cache.path(), &AtomicBool::new(false), &|_, _| {})
+            .unwrap()
+            .commit(&new, root.path())
+            .unwrap();
+        assert!(!root.path().join("mods/example.jar").exists());
+        assert_eq!(fs::read(root.path().join("mods/new.jar")).unwrap(), b"new");
+        assert_eq!(
+            fs::read(root.path().join("config/settings.txt")).unwrap(),
+            b"user settings"
+        );
+        assert_eq!(
+            fs::read(root.path().join("saves/My World/level.dat")).unwrap(),
+            b"world"
+        );
+        let backup = fs::read_dir(root.path().join(".azuria/backups"))
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap()
+            .path();
+        assert_eq!(fs::read(backup.join("mods/example.jar")).unwrap(), b"old");
+    }
+    #[test]
+    fn update_preserves_disabled_state_across_filename_changes() {
+        let root = tempfile::tempdir().unwrap();
+        let cache = tempfile::tempdir().unwrap();
+        let client = Client::new(None).unwrap();
+        let old = plan(b"old");
+        client
+            .stage(&old, cache.path(), &AtomicBool::new(false), &|_, _| {})
+            .unwrap()
+            .commit(&old, root.path())
+            .unwrap();
+        fs::rename(
+            root.path().join("mods/example.jar"),
+            root.path().join("mods/example.jar.disabled"),
+        )
+        .unwrap();
+        let mut new = plan(b"new");
+        new.version = "v2".into();
+        new.projects.insert("project".into(), "v2".into());
+        new.files[0].path = "mods/new.jar".into();
+        new.previous = Some(Box::new(old));
+        client
+            .stage(&new, cache.path(), &AtomicBool::new(false), &|_, _| {})
+            .unwrap()
+            .commit(&new, root.path())
+            .unwrap();
+        assert!(!root.path().join("mods/new.jar").exists());
+        assert_eq!(
+            fs::read(root.path().join("mods/new.jar.disabled")).unwrap(),
+            b"new"
+        );
+    }
+    #[test]
+    fn interrupted_update_restores_backup_and_keeps_unmoved_old_files() {
+        for moved in [false, true] {
+            let root = tempfile::tempdir().unwrap();
+            let old = plan(b"old");
+            let new = plan(b"new");
+            let f = &old.files[0];
+            fs::create_dir(root.path().join("mods")).unwrap();
+            fs::write(root.path().join(&f.path), b"old").unwrap();
+            let backup = ".azuria/backups/update/mods/example.jar";
+            if moved {
+                fs::create_dir_all(root.path().join(".azuria/backups/update/mods")).unwrap();
+                fs::rename(root.path().join(&f.path), root.path().join(backup)).unwrap();
+                fs::write(root.path().join(&f.path), b"new").unwrap();
+            }
+            atomic_json(&root.path().join(".azuria/content-transaction.json"),&json!({"token":"update","files":[{"path":f.path,"size":new.files[0].size,"sha1":new.files[0].sha1}],"backups":[{"path":f.path,"backup":backup,"size":f.size,"sha1":f.sha1}]})).unwrap();
+            recover(root.path()).unwrap();
+            assert_eq!(fs::read(root.path().join(&f.path)).unwrap(), b"old");
+        }
+    }
+    #[test]
+    fn update_refuses_modified_mods_without_overwriting() {
+        let root = tempfile::tempdir().unwrap();
+        let cache = tempfile::tempdir().unwrap();
+        let client = Client::new(None).unwrap();
+        let old = plan(b"old");
+        client
+            .stage(&old, cache.path(), &AtomicBool::new(false), &|_, _| {})
+            .unwrap()
+            .commit(&old, root.path())
+            .unwrap();
+        fs::write(root.path().join("mods/example.jar"), b"user").unwrap();
+        let mut new = plan(b"new");
+        new.previous = Some(Box::new(old));
+        assert!(client
+            .stage(&new, cache.path(), &AtomicBool::new(false), &|_, _| {})
+            .unwrap()
+            .commit(&new, root.path())
+            .is_err());
+        assert_eq!(
+            fs::read(root.path().join("mods/example.jar")).unwrap(),
+            b"user"
+        );
+    }
     #[test]
     fn curseforge_requires_author_download_and_hash() {
         let restricted = json!({"fileName":"test.jar", "downloadUrl":null, "fileLength":4, "hashes":[{"algo":1,"value":"0".repeat(40)}]});
@@ -1626,6 +1915,11 @@ mod tests {
             .unwrap()
             .commit(&p, root.path())
             .unwrap();
+        let inventory = client.inventory(root.path(), &p.target).unwrap();
+        assert!(!inventory.files.is_empty());
+        assert!(inventory.files[0].project.icon_url.is_some());
+        let project = client.project(Provider::Modrinth, "AANobbMI").unwrap();
+        assert!(!project.body.is_empty());
     }
     #[test]
     #[ignore = "downloads a public Modrinth pack manifest"]

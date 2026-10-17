@@ -21,6 +21,7 @@ struct Saved {
     instance_id: Option<String>,
     name: String,
     world: Option<String>,
+    expected_target: Option<Target>,
 }
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -193,6 +194,7 @@ pub async fn content_plan(
     }
     let worker_app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        let expected_target = t.clone();
         let plan = Client::new(if provider == Provider::Curseforge {
             key()?
         } else {
@@ -227,6 +229,7 @@ pub async fn content_plan(
                 instance_id,
                 name,
                 world,
+                expected_target,
             },
         );
         Ok(response)
@@ -339,7 +342,11 @@ pub fn content_install(app: tauri::AppHandle, plan_id: String) -> Result<(), Str
             }
             let (item, root) = if let Some(id) = saved.instance_id.as_deref() {
                 let data = instance(&app, id)?;
-                if target(&data.0) != saved.plan.target {
+                if saved
+                    .expected_target
+                    .as_ref()
+                    .is_some_and(|t| target(&data.0) != *t)
+                {
                     return Err("Instance settings changed after the plan was made. Review the install again.".into());
                 }
                 data
@@ -383,6 +390,24 @@ pub fn content_install(app: tauri::AppHandle, plan_id: String) -> Result<(), Str
                 }
             }
             staged.commit(&saved.plan, &root)?;
+            if saved.plan.previous.is_some()
+                && saved.plan.kind == Kind::Modpacks
+                && item.loader_version != saved.plan.target.loader_version
+            {
+                return with_store(&app.state::<AppState>(), |s| {
+                    s.update(
+                        &item.id,
+                        azuria_core::InstanceInput {
+                            name: item.name.clone(),
+                            minecraft_version: item.minecraft_version.clone(),
+                            loader: item.loader.clone(),
+                            loader_version: saved.plan.target.loader_version.clone(),
+                            memory_mb: item.memory_mb,
+                            icon: item.icon.clone(),
+                        },
+                    ).map_err(|e|format!("Content was installed, but the pack loader setting could not be saved: {e}. Use Check for updates and Repair before playing."))
+                });
+            }
             Ok(item)
         })();
         app.state::<Games>().release_content(&reservation);
@@ -428,10 +453,7 @@ pub fn content_install(app: tauri::AppHandle, plan_id: String) -> Result<(), Str
 pub fn content_open_url(url: String) -> Result<(), String> {
     let parsed = reqwest::Url::parse(&url).map_err(|_| "Invalid project link.")?;
     if parsed.scheme() != "https"
-        || !matches!(
-            parsed.host_str(),
-            Some("modrinth.com" | "www.curseforge.com")
-        )
+        || parsed.host_str().is_none()
         || !parsed.username().is_empty()
         || parsed.password().is_some()
         || parsed.port().is_some()
@@ -441,11 +463,80 @@ pub fn content_open_url(url: String) -> Result<(), String> {
     {
         #[cfg(windows)]
         {
-            crate::browser::open_sign_in(&url).map_err(str::to_string)
+            crate::browser::open_web(&url).map_err(str::to_string)
         }
         #[cfg(not(windows))]
         {
             Err("Open provider links from the Windows desktop app.".into())
         }
     }
+}
+
+#[tauri::command]
+pub async fn content_project(
+    provider: Provider,
+    project: String,
+) -> Result<azuria_content::ProjectDetails, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        Client::new(if provider == Provider::Curseforge {
+            key()?
+        } else {
+            None
+        })?
+        .project(provider, &project)
+    })
+    .await
+    .map_err(|_| "Project details stopped unexpectedly.")?
+}
+
+#[tauri::command]
+pub async fn content_inventory(
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<azuria_content::Inventory, String> {
+    let (item, root) = instance(&app, &id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        Client::new(key()?)?.inventory(&root, &target(&item))
+    })
+    .await
+    .map_err(|_| "Content update check stopped unexpectedly.")?
+}
+#[tauri::command]
+pub async fn content_update_plan(
+    app: tauri::AppHandle,
+    id: String,
+    provider: Provider,
+    project: String,
+) -> Result<PlanResponse, String> {
+    let (item, root) = instance(&app, &id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let client = Client::new(key()?)?;
+        let inventory = client.inventory(&root, &target(&item))?;
+        let installed = inventory.pack.iter().chain(inventory.projects.iter())
+            .find(|p| p.provider == provider && p.project.id == project)
+            .ok_or("This project is not managed or recognised in this instance.")?;
+        let version = installed.latest.as_deref().unwrap_or(&installed.version);
+        let cancel = AtomicBool::new(false);
+        let mut previous = client.plan(provider, &project, &installed.version, installed.kind, Some(target(&item)), None, &cancel)?;
+        if let Some(name) = &installed.local_file {
+            let folder = if installed.kind == Kind::Mods { "mods" } else { "resourcepacks" };
+            if let Some(file) = previous.files.first_mut() {
+                file.path = format!("{folder}/{}", name.trim_end_matches(".disabled"));
+            }
+        }
+        let mut plan = if version == installed.version { previous.clone() } else {
+            client.plan(provider, &project, version, installed.kind, Some(target(&item)), None, &cancel)?
+        };
+        if plan.target.minecraft != item.minecraft_version || plan.target.loader != target(&item).loader {
+            return Err("This update requires a different Minecraft version or loader. Install it as a new instance to keep your worlds safe.".into());
+        }
+        plan.previous = Some(Box::new(previous));
+        let state = app.state::<ContentState>();
+        let plan_id = state.sequence.fetch_add(1, Ordering::Relaxed).to_string();
+        let response = PlanResponse { id: plan_id.clone(), preview: plan.preview() };
+        let mut plans = state.plans.lock().map_err(|_| "Content plans are unavailable.")?;
+        while plans.len() >= 2 { plans.pop_first(); }
+        plans.insert(plan_id, Saved { plan, instance_id: Some(id), name: item.name.clone(), world: None, expected_target: Some(target(&item)) });
+        Ok(response)
+    }).await.map_err(|_| "Content update planning stopped unexpectedly.")?
 }

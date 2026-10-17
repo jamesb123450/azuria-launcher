@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import LibraryView from "./views/LibraryView.vue";
 import SettingsView from "./views/SettingsView.vue";
+import ProjectView from "./views/ProjectView.vue";
 import DiscoverView from "./views/DiscoverView.vue";
 import RoadmapView from "./views/RoadmapView.vue";
 import WardrobeView from "./views/WardrobeView.vue";
@@ -27,6 +28,7 @@ export const router = createRouter({
       }),
     },
     { path: "/discover", component: DiscoverView },
+    { path: "/discover/:provider/:kind/:project", component: ProjectView },
     { path: "/roadmap", component: RoadmapView },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
