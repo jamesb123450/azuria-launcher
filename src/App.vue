@@ -24,8 +24,10 @@ import WindowControls from "./components/WindowControls.vue";
 import InstanceIcon from "./components/InstanceIcon.vue";
 import { useUpdates } from "./stores/updates";
 import { useAccount } from "./stores/account";
+import { useContent } from "./stores/content";
 import { useGame } from "./stores/game";
 const game = useGame();
+const content = useContent();
 const account = useAccount();
 function focusMain() {
   document.getElementById("main-content")?.focus();
@@ -98,6 +100,7 @@ function storagePrepared() {
   storageReady.value = true;
   void store.init();
   void game.init();
+  void content.init();
   void account.init();
   void updates.init();
 }
@@ -243,13 +246,45 @@ function storagePrepared() {
       >
         <RouteSurface :key="instanceSettingsRevision" :route="displayedRoute" />
       </main>
-      <div v-if="game.error" class="alert error" role="alert">
+      <div
+        v-if="content.job"
+        :class="['alert', content.job.stage === 'error' ? 'error' : 'success']"
+        role="status"
+      >
+        <span
+          >{{ content.job.message
+          }}<template v-if="content.busy && content.job.total">
+            ·
+            {{
+              Math.min(
+                100,
+                Math.round((content.job.completed / content.job.total) * 100),
+              )
+            }}%</template
+          ></span
+        >
+        <button
+          v-if="content.busy"
+          :disabled="content.job.stage === 'installing'"
+          @click="content.cancel"
+        >
+          Cancel install
+        </button>
+        <button
+          v-else
+          aria-label="Dismiss content status"
+          @click="content.job = null"
+        >
+          ×
+        </button>
+      </div>
+      <div v-else-if="game.error" class="alert error" role="alert">
         {{ game.error
         }}<button @click="game.error = ''" aria-label="Dismiss game error">
           ×
         </button>
       </div>
-      <div v-if="store.error" class="alert error" role="alert">
+      <div v-else-if="store.error" class="alert error" role="alert">
         {{ store.error
         }}<button @click="store.error = ''" aria-label="Dismiss error">
           ×

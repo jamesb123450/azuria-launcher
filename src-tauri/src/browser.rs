@@ -2,7 +2,9 @@
 // URL to Windows. Explorer's command-line parser is not a browser URL handler.
 #[cfg(any(windows, test))]
 fn wide_url(url: &str) -> Result<Vec<u16>, ()> {
-    if !url.starts_with("https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?")
+    if !(url.starts_with("https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?")
+        || url.starts_with("https://modrinth.com/")
+        || url.starts_with("https://www.curseforge.com/"))
         || url.contains('\0')
     {
         return Err(());

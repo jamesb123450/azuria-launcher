@@ -1,4 +1,5 @@
 mod browser;
+mod content;
 mod cosmetics;
 mod game;
 mod instances;
@@ -323,7 +324,17 @@ pub fn run() {
                 }
             }
         })
+        .manage(content::ContentState::default())
         .invoke_handler(tauri::generate_handler![
+            content::content_status,
+            content::content_set_curseforge_key,
+            content::content_search,
+            content::content_versions,
+            content::content_plan,
+            content::content_install,
+            content::content_cancel,
+            content::content_job,
+            content::content_open_url,
             skin_library::skin_library_list,
             skin_library::skin_library_save,
             skin_library::skin_library_remove,

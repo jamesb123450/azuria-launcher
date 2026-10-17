@@ -241,6 +241,11 @@ impl Store {
         store.recover_deletions()?;
         Ok(store)
     }
+    pub fn instances_directory(&self) -> Result<PathBuf, String> {
+        let path = self.root.join("instances");
+        folders::plain_directory(&path)?;
+        Ok(path)
+    }
     pub fn list(&mut self) -> Result<Vec<Instance>, String> {
         self.recover_deletions()?;
         let mut stmt = self.conn.prepare("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version FROM instances ORDER BY created_at DESC,id").map_err(error)?;

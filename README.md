@@ -20,9 +20,13 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 - **Screenshots and logs:** Browse instance screenshots, preview/export PNGs, move unwanted images to Azuria’s trash, and follow live log output with pause controls.
 - **Vanilla launching:** Play prepares Mojang game files, libraries, native dependencies and assets, plus a matching Mojang Java runtime or a validated custom Java executable. Use Play/Stop and track running state and exit/crash feedback from the Library or instance page.
 - **In-app updates:** published Windows builds automatically check and download signed updates at startup, with progress, release notes and a restart countdown.
-- **Discover preview:** browse the proposed modpack, mod, datapack and resource-pack interface, including search, sorting and a separate filter sidebar on the right.
+- **Discover:** search live Modrinth and CurseForge catalogues for mods, modpacks, datapacks and resource packs, with compatible version selection, required dependencies and verified downloads. Filters remain in a separate sidebar on the right.
 
-Discover uses fictional example projects, creators and statistics. Live Modrinth/CurseForge results, content installation, modpack upload and instance import are not connected. Unavailable actions are labelled or disabled.
+Modrinth works without an API key. CurseForge requires approved API access configured in **Settings → Content providers**; the key is stored in Windows Credential Manager and sent only to CurseForge API/download hosts. It is never stored in the repository or instance database. Author download restrictions are respected.
+
+Choose an instance and a compatible content version, then review the download before installing. Datapacks require an existing world. Modpacks create new Vanilla or Fabric instances and start game-file preparation without launching Minecraft. Other pack loaders remain unsupported. Required dependencies are included; optional client files are skipped. Modrinth packs with files hosted outside Modrinth’s CDN currently report an unsupported-host error.
+
+Content installs preserve different existing files and stop on conflicts. Changing a managed project version in place is not supported yet. Downloads stage separately, verify hashes, and record a recovery journal before publication. Provider search and downloads contact the selected service; search errors do not display sample results. Browser previews support public Modrinth search, but installation and CurseForge configuration require the desktop app.
 
 ## Download and update
 
@@ -56,7 +60,7 @@ Keep Azuria open while Minecraft runs. This initial implementation blocks normal
 
 ## Development direction
 
-The next core work is broader loader support and live Modrinth/CurseForge discovery. Modpack import/export and broader content management are also planned.
+The next core work is broader loader support, content updates and broader modpack import/export support.
 
 Planned features are not promises of a release date.
 
