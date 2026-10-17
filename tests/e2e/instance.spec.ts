@@ -200,3 +200,52 @@ test("icon studio offers distinct symbols and finishes and saves the chosen icon
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
 });
+
+test("navigation highlights only the current page and screenshot tab matches its peers", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const library = page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Library", exact: true });
+  const quick = page.getByRole("link", { name: "Open Aurora", exact: true });
+  await expect(library).toHaveClass(/router-link-exact-active/);
+  await expect(quick).not.toHaveClass(/active/);
+  await quick.click();
+  await expect(quick).toHaveClass(/active/);
+  await expect(library).not.toHaveClass(/router-link-exact-active/);
+  const tabs = page.getByRole("navigation", { name: "Instance sections" });
+  const content = tabs.getByRole("button", { name: "Content", exact: true });
+  const shots = tabs.getByRole("link", { name: "Screenshots", exact: true });
+  expect(await shots.evaluate((e) => getComputedStyle(e).fontWeight)).toBe(
+    await content.evaluate((e) => getComputedStyle(e).fontWeight),
+  );
+  await expect(shots.locator("svg")).toHaveCount(1);
+  await shots.click();
+  await expect(
+    page.getByRole("link", { name: "Screenshots", exact: true }),
+  ).toHaveClass(/router-link-exact-active/);
+  await expect(quick).not.toHaveClass(/active/);
+  await library.click();
+  await expect(quick).not.toHaveClass(/active/);
+});
+test("ad placeholder fits the bottom of the information sidebar", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  const ad = page.getByRole("region", { name: "Advertisement placeholder" });
+  await expect(ad).toBeVisible();
+  const sidebar = await page
+    .getByRole("complementary", { name: "Launcher information" })
+    .boundingBox();
+  const box = await ad.boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(sidebar!.x);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(
+    sidebar!.x + sidebar!.width + 1,
+  );
+  expect(
+    Math.abs(box!.y + box!.height - sidebar!.y - sidebar!.height),
+  ).toBeLessThan(2);
+  await page.screenshot({ path: test.info().outputPath("sidebar-ad.png") });
+});

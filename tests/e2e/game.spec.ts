@@ -14,6 +14,13 @@ async function setup(page: Page, denied = false) {
       pixels.fillStyle = "#e5a3c6";
       pixels.fillRect(0, 0, 64, 64);
       const skin = texture.toDataURL();
+      texture.height = 32;
+      const capePixels = texture.getContext("2d")!;
+      capePixels.fillStyle = "#e789b8";
+      capePixels.fillRect(1, 1, 10, 16);
+      capePixels.fillStyle = "#81a6ed";
+      capePixels.fillRect(3, 4, 6, 10);
+      const capeTexture = texture.toDataURL();
       const item = {
         id,
         name: "Vanilla test",
@@ -100,7 +107,7 @@ async function setup(page: Page, denied = false) {
                     id: "cape-one",
                     alias: "Test cape",
                     active: false,
-                    image: null,
+                    image: capeTexture,
                   },
                 ],
               };
@@ -339,4 +346,22 @@ test("Stop terminates a running game after acknowledgement", async ({
       ),
     )
     .toBe(true);
+});
+
+test("owned capes show cropped wearable faces instead of the atlas", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/#/wardrobe");
+  const cape = page.getByRole("img", { name: "Test cape cape preview" });
+  await expect(cape).toBeVisible();
+  await expect(cape.locator(".cape-front")).toHaveCSS(
+    "background-position",
+    "-5px -5px",
+  );
+  await expect(cape.locator(".cape-model")).not.toHaveCSS("transform", "none");
+  await expect(
+    page.getByRole("button", { name: /Test cape/ }).locator("img"),
+  ).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath("cape-preview.png") });
 });

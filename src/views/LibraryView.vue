@@ -553,74 +553,84 @@ onBeforeUnmount(closeDelete);
       class="context-panel"
       aria-label="Launcher information"
     >
-      <section class="account-panel">
-        <h2>Minecraft account</h2>
-        <RouterLink class="account-identity" to="/wardrobe"
-          ><span class="account-portrait"><SkinHead /></span>
-          <div>
-            <strong>{{ account.label }}</strong
-            ><span>{{
-              account.view.verified
-                ? "Minecraft Java verified"
-                : "Minecraft account"
-            }}</span>
-          </div>
-          <ChevronDown :size="16"
-        /></RouterLink>
-      </section>
-      <details class="setup-panel" :open="!setupComplete">
-        <summary class="context-heading">
-          <h2>Getting started</h2>
-          <span
-            >{{
-              Number(!!store.instances.length) + Number(account.view.verified)
-            }}
-            / 2</span
+      <div class="context-content">
+        <section class="account-panel">
+          <h2>Minecraft account</h2>
+          <RouterLink class="account-identity" to="/wardrobe"
+            ><span class="account-portrait"><SkinHead /></span>
+            <div>
+              <strong>{{ account.label }}</strong
+              ><span>{{
+                account.view.verified
+                  ? "Minecraft Java verified"
+                  : "Minecraft account"
+              }}</span>
+            </div>
+            <ChevronDown :size="16"
+          /></RouterLink>
+        </section>
+        <details class="setup-panel" :open="!setupComplete">
+          <summary class="context-heading">
+            <h2>Getting started</h2>
+            <span
+              >{{
+                Number(!!store.instances.length) + Number(account.view.verified)
+              }}
+              / 2</span
+            >
+          </summary>
+          <button
+            class="setup-item"
+            :disabled="!!store.instances.length"
+            @click="open()"
           >
-        </summary>
-        <button
-          class="setup-item"
-          :disabled="!!store.instances.length"
-          @click="open()"
-        >
-          <span :class="['check-ring', { done: store.instances.length }]"
-            ><Check v-if="store.instances.length" :size="14" /><Circle
-              v-else
-              :size="14" /></span
-          ><span>{{
-            store.instances.length
-              ? "Instance created"
-              : "Create your first instance"
-          }}</span></button
-        ><RouterLink to="/settings#account" class="setup-item"
-          ><span class="check-ring"><UserRound :size="14" /></span
-          ><span
-            >Sign in to Minecraft<span class="setup-subtitle">{{
-              account.view.verified ? "Connected" : "Microsoft account"
-            }}</span></span
-          ></RouterLink
-        >
-      </details>
-      <section class="development-panel">
-        <h2>Azuria {{ updates.version }}</h2>
+            <span :class="['check-ring', { done: store.instances.length }]"
+              ><Check v-if="store.instances.length" :size="14" /><Circle
+                v-else
+                :size="14" /></span
+            ><span>{{
+              store.instances.length
+                ? "Instance created"
+                : "Create your first instance"
+            }}</span></button
+          ><RouterLink to="/settings#account" class="setup-item"
+            ><span class="check-ring"><UserRound :size="14" /></span
+            ><span
+              >Sign in to Minecraft<span class="setup-subtitle">{{
+                account.view.verified ? "Connected" : "Microsoft account"
+              }}</span></span
+            ></RouterLink
+          >
+        </details>
+        <section class="development-panel">
+          <h2>Azuria {{ updates.version }}</h2>
 
-        <h3>What’s available</h3>
-        <p class="muted">
-          Manage instance settings and connect your Microsoft account. Game mod
-          loader installation is still in development.
-        </p>
-        <RouterLink class="text-link" to="/roadmap"
-          >View roadmap <ArrowUpRight :size="14"
+          <h3>What’s available</h3>
+          <p class="muted">
+            Manage instance settings and connect your Microsoft account. Game
+            mod loader installation is still in development.
+          </p>
+          <RouterLink class="text-link" to="/roadmap"
+            >View roadmap <ArrowUpRight :size="14"
+          /></RouterLink>
+        </section>
+        <RouterLink class="context-settings text-link" to="/settings"
+          >{{
+            updates.update
+              ? "Update available · Launcher settings"
+              : "Launcher settings"
+          }}
+          <ArrowUpRight :size="14"
         /></RouterLink>
-      </section>
-      <RouterLink class="context-settings text-link" to="/settings"
-        >{{
-          updates.update
-            ? "Update available · Launcher settings"
-            : "Launcher settings"
-        }}
-        <ArrowUpRight :size="14"
-      /></RouterLink>
+      </div>
+      <div
+        class="sidebar-ad"
+        role="region"
+        aria-label="Advertisement placeholder"
+      >
+        <span>Advertisement</span>
+        <div class="sidebar-ad-space">Ad space</div>
+      </div>
     </aside>
   </div>
   <InstanceDialog

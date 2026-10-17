@@ -115,9 +115,6 @@ function storagePrepared() {
         <RouterLink
           to="/"
           class="rail-link"
-          :class="{
-            'router-link-exact-active': route.path.startsWith('/instances/'),
-          }"
           aria-label="Library"
           title="Library"
           ><Play :size="22" /><span class="rail-tooltip"
@@ -157,11 +154,13 @@ function storagePrepared() {
           :class="[
             'quick-instance',
             item.loader,
-            { active: store.selected?.id === item.id },
+            { active: route.path === `/instances/${item.id}` },
           ]"
           :aria-label="'Open ' + item.name"
           :title="item.name"
-          :aria-current="store.selected?.id === item.id ? 'true' : undefined"
+          :aria-current="
+            route.path === `/instances/${item.id}` ? 'page' : undefined
+          "
           @click="store.selectedId = item.id"
           ><InstanceIcon
             :loader="item.loader"
