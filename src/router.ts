@@ -9,6 +9,7 @@ import InstanceView from "./views/InstanceView.vue";
 export const router = createRouter({
   history: createWebHashHistory(),
   scrollBehavior(to) {
+    if (to.path === "/settings") return false;
     return to.hash ? { el: to.hash, behavior: "smooth" } : { top: 0 };
   },
   routes: [

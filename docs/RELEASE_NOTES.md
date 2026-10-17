@@ -1,5 +1,14 @@
 ## Changes
 
+- Replaced the settings page with a centred, category-based popup that keeps your current screen behind it.
+- Added a fixed Save/Reset footer, shared pending edits across categories, validation and an unsaved-change prompt. Reset restores the last saved values.
+- Reorganised appearance, account, Java/memory, window, storage and update settings. Planned features are clearly labelled Coming soon.
+
+- Rebuilt the skin selector around a large rotatable character preview and saved-skin cards, retaining Azuria’s current colours and interface.
+- Added local skin saving, PNG picking and drag-and-drop, hover/keyboard Edit and Remove actions, and an editor with Classic/Slim arms and owned cape selection.
+- Saved skins remain under `%APPDATA%\AzuriaLauncher\skins`, with bounded storage and a recovery backup. Saving locally and applying to the Minecraft account are separate actions.
+- Skin/cape application refreshes account appearance after partial service failures and reports what needs retrying.
+
 - Matched the instance Screenshots link to the other section controls, including its camera icon.
 - Fixed sidebar selection so Library and individual instances highlight only on their own pages.
 - Added a square advertisement placeholder anchored within the bottom-right Library sidebar. It contains no advertising scripts or network requests.

@@ -11,6 +11,7 @@ import {
 } from "../lib/launch-options";
 const props = defineProps<{
   inheritance?: boolean;
+  section?: "java" | "window";
   defaults?: LaunchOptions;
   disabled?: boolean;
 }>();
@@ -93,7 +94,7 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
 </script>
 <template>
   <fieldset class="launch-options" :disabled="disabled">
-    <section class="option-section">
+    <section v-if="section !== 'window'" class="option-section">
       <div class="option-heading">
         <div>
           <h3>Memory allocation</h3>
@@ -131,7 +132,7 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
         Using launcher default: {{ inherited.memoryMb }} MB
       </p>
     </section>
-    <section class="option-section">
+    <section v-if="section !== 'window'" class="option-section">
       <div class="option-heading">
         <div>
           <h3>Java installation</h3>
@@ -192,7 +193,7 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
       </p>
       <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
     </section>
-    <section class="option-section">
+    <section v-if="section !== 'window'" class="option-section">
       <div class="option-heading">
         <div>
           <h3>Java arguments</h3>
@@ -219,7 +220,7 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
         arguments
       </p>
     </section>
-    <section class="option-section">
+    <section v-if="section !== 'window'" class="option-section">
       <div class="option-heading">
         <div>
           <h3>Environment variables</h3>
@@ -267,7 +268,7 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
         {{ Object.keys(inherited.environment).length }} variables
       </p>
     </section>
-    <section class="option-section">
+    <section v-if="section !== 'java'" class="option-section">
       <div class="option-heading">
         <div>
           <h3>Game window</h3>

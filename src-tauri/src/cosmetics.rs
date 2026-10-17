@@ -221,8 +221,7 @@ pub async fn wardrobe_change(
     bytes(response, 1024 * 1024).await?;
     Ok(true)
 }
-#[cfg(any(windows, test))]
-fn validate_skin(data: &[u8]) -> Result<(), String> {
+pub(crate) fn validate_skin(data: &[u8]) -> Result<(), String> {
     if data.len() < 24 || !data.starts_with(b"\x89PNG\r\n\x1a\n") {
         return Err("Choose a valid PNG skin.".into());
     }
@@ -245,4 +244,61 @@ mod tests {
         png.resize(24, 0);
         assert!(validate_skin(&png).is_err());
     }
+}
+
+#[tauri::command]
+pub async fn wardrobe_apply(
+    app: tauri::AppHandle,
+    image: String,
+    variant: String,
+    cape_id: Option<String>,
+    expected_id: String,
+) -> Result<(), String> {
+    let data = crate::skin_library::decode_skin(&image)?;
+    if !["classic", "slim"].contains(&variant.as_str()) {
+        return Err("Choose Classic or Slim arms.".into());
+    }
+    let accounts = app.state::<Accounts>();
+    let session = accounts
+        .launch_session(crate::auth_progress(app.clone()))
+        .await
+        .map_err(|e| e.message)?;
+    if session.account.minecraft_id != expected_id {
+        return Err("Account changed. Reopen the skin editor.".into());
+    }
+    let client = client()?;
+    if let Some(id) = &cape_id {
+        let owned = profile(&client, &session.access_token).await?;
+        if !owned["capes"]
+            .as_array()
+            .is_some_and(|a| a.iter().any(|c| c["id"].as_str() == Some(id)))
+        {
+            return Err("This account does not own the selected cape. Choose another cape.".into());
+        }
+    }
+    let part = reqwest::multipart::Part::bytes(data)
+        .file_name("skin.png")
+        .mime_str("image/png")
+        .map_err(|_| "Invalid skin format.")?;
+    let response = client
+        .post(format!("{PROFILE}/skins"))
+        .bearer_auth(&session.access_token)
+        .multipart(
+            reqwest::multipart::Form::new()
+                .text("variant", variant)
+                .part("file", part),
+        )
+        .send()
+        .await
+        .map_err(|_| "Could not apply the skin. Check your connection and retry.")?;
+    bytes(response, 1024 * 1024).await?;
+    let request = match cape_id {
+        Some(id) => client
+            .put(format!("{PROFILE}/capes/active"))
+            .json(&json!({"capeId":id})),
+        None => client.delete(format!("{PROFILE}/capes/active")),
+    };
+    let response=request.bearer_auth(&session.access_token).send().await.map_err(|_|"Your skin changed, but the cape could not be updated. Refresh and retry the cape selection.")?;
+    bytes(response,1024*1024).await.map_err(|_|"Your skin changed, but Minecraft Services rejected the cape change. Refresh and retry the cape selection.".to_string())?;
+    Ok(())
 }

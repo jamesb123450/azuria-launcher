@@ -3,6 +3,7 @@ mod cosmetics;
 mod game;
 mod instances;
 mod media;
+mod skin_library;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
 use std::sync::Mutex;
@@ -292,6 +293,9 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
+                skin_library::dropped(window.app_handle().clone(), paths.clone());
+            }
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 let state = window.state::<AppState>();
                 let blocked = state
@@ -307,6 +311,11 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            skin_library::skin_library_list,
+            skin_library::skin_library_save,
+            skin_library::skin_library_remove,
+            skin_library::skin_pick_texture,
+            cosmetics::wardrobe_apply,
             cosmetics::wardrobe_profile,
             cosmetics::wardrobe_change,
             media::screenshot_image,
