@@ -7,6 +7,13 @@ async function setup(page: Page, denied = false) {
       const handlers: Record<string, number> = {};
       let sequence = 0;
       const calls: string[] = [];
+      const texture = document.createElement("canvas");
+      texture.width = 64;
+      texture.height = 64;
+      const pixels = texture.getContext("2d")!;
+      pixels.fillStyle = "#e5a3c6";
+      pixels.fillRect(0, 0, 64, 64);
+      const skin = texture.toDataURL();
       const item = {
         id,
         name: "Vanilla test",
@@ -86,7 +93,7 @@ async function setup(page: Page, denied = false) {
             if (cmd === "get_instance_overrides") return {};
             if (cmd === "wardrobe_profile")
               return {
-                skin: null,
+                skin,
                 variant: "CLASSIC",
                 capes: [
                   {
@@ -111,7 +118,7 @@ async function setup(page: Page, denied = false) {
                       directory: false,
                     },
                   ]
-                : args?.section === "logs"
+                : args?.section === "logs" && !denied
                   ? [
                       {
                         name: "latest.log",
@@ -237,7 +244,7 @@ test("wardrobe applies an owned cape and supports hiding it", async ({
   page,
 }) => {
   await setup(page);
-  await page.goto("/wardrobe");
+  await page.goto("/#/wardrobe");
   await expect(
     page.getByRole("heading", { name: "Skins & capes" }),
   ).toBeVisible();
@@ -266,7 +273,7 @@ test("screenshots preview and export through native commands", async ({
   page,
 }) => {
   await setup(page);
-  await page.goto("/screenshots");
+  await page.goto("/#/screenshots");
   await page
     .getByRole("button", { name: "2026-10-17.png Vanilla test" })
     .click();
@@ -287,7 +294,7 @@ test("screenshots preview and export through native commands", async ({
 });
 test("live log updates can be paused and resumed", async ({ page }) => {
   await setup(page);
-  await page.goto(`/instances/${id}?tab=logs`);
+  await page.goto(`/#/instances/${id}?tab=logs`);
   const output = page.getByLabel("Live game log output");
   await expect(output).toContainText("Live line");
   await page.getByLabel("Pause", { exact: true }).check();
@@ -296,4 +303,40 @@ test("live log updates can be paused and resumed", async ({ page }) => {
   await expect(output).toHaveText(text!);
   await page.getByLabel("Pause", { exact: true }).uncheck();
   await expect(output).not.toHaveText(text!);
+});
+
+test("the account sidebar shows the player skin head", async ({ page }) => {
+  await setup(page);
+  await page.goto("/");
+  await expect(page.locator(".account-portrait canvas")).toBeVisible();
+  await page.locator(".account-identity").click();
+  await expect(
+    page.getByRole("img", { name: "Current Minecraft skin preview" }),
+  ).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("wardrobe.png") });
+});
+test("Stop terminates a running game after acknowledgement", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await page.evaluate(() =>
+    (
+      window as unknown as {
+        emitGame: (stage: string, message: string) => void;
+      }
+    ).emitGame("running", "Minecraft running"),
+  );
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+          "cancel_launch",
+        ),
+      ),
+    )
+    .toBe(true);
 });

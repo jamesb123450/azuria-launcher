@@ -262,9 +262,16 @@ impl Running {
                 break status;
             }
             if cancel.load(Ordering::Relaxed) {
-                self.child
-                    .kill()
-                    .map_err(|_| "Could not stop Minecraft. Close it from the game window.")?;
+                if self.child.kill().is_err() {
+                    if let Some(status) = self
+                        .child
+                        .try_wait()
+                        .map_err(|_| "Could not read the game exit status.")?
+                    {
+                        break status;
+                    }
+                    return Err("Could not stop Minecraft. Close it from the game window.".into());
+                }
                 break self
                     .child
                     .wait()
