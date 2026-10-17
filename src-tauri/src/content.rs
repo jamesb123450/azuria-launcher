@@ -507,6 +507,7 @@ pub async fn content_update_plan(
     id: String,
     provider: Provider,
     project: String,
+    requested_version: Option<String>,
 ) -> Result<PlanResponse, String> {
     let (item, root) = instance(&app, &id)?;
     tauri::async_runtime::spawn_blocking(move || {
@@ -515,7 +516,8 @@ pub async fn content_update_plan(
         let installed = inventory.pack.iter().chain(inventory.projects.iter())
             .find(|p| p.provider == provider && p.project.id == project)
             .ok_or("This project is not managed or recognised in this instance.")?;
-        let version = installed.latest.as_deref().unwrap_or(&installed.version);
+        let version = requested_version.as_deref().or(installed.latest.as_deref()).unwrap_or(&installed.version);
+        if requested_version.is_some() && !client.versions(provider,&project,Some(&target(&item)),installed.kind)?.iter().any(|v|v.id==version) {return Err("This version is not compatible with the instance. Use a separate instance for another Minecraft version or loader.".into());}
         let cancel = AtomicBool::new(false);
         let mut previous = client.plan(provider, &project, &installed.version, installed.kind, Some(target(&item)), None, &cancel)?;
         if let Some(name) = &installed.local_file {
@@ -539,4 +541,22 @@ pub async fn content_update_plan(
         plans.insert(plan_id, Saved { plan, instance_id: Some(id), name: item.name.clone(), world: None, expected_target: Some(target(&item)) });
         Ok(response)
     }).await.map_err(|_| "Content update planning stopped unexpectedly.")?
+}
+
+#[tauri::command]
+pub async fn content_version(
+    provider: Provider,
+    project: String,
+    version: String,
+) -> Result<azuria_content::VersionDetails, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        Client::new(if provider == Provider::Curseforge {
+            key()?
+        } else {
+            None
+        })?
+        .version_details(provider, &project, &version)
+    })
+    .await
+    .map_err(|_| "Version details stopped unexpectedly.")?
 }

@@ -129,6 +129,8 @@ pub struct InstalledProject {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstalledFile {
+    pub version_name: String,
+    pub release_type: String,
     pub provider: Provider,
     pub name: String,
     pub project: Project,
@@ -390,6 +392,8 @@ impl Client {
                     {
                         if let Some(name) = hashes.get(hash) {
                             files.push(InstalledFile {
+                                version_name: version(Provider::Modrinth, v)?.name,
+                                release_type: version(Provider::Modrinth, v)?.release_type,
                                 provider: Provider::Modrinth,
                                 name: name.clone(),
                                 project: summary(p)?,
@@ -479,6 +483,8 @@ impl Client {
                 };
                 files.retain(|f| f.name != file);
                 files.push(InstalledFile {
+                    version_name: version(Provider::Curseforge, v)?.name,
+                    release_type: version(Provider::Curseforge, v)?.release_type,
                     provider: Provider::Curseforge,
                     name: file,
                     project: Project {
@@ -499,5 +505,73 @@ impl Client {
             projects,
             files,
         })
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VersionDetails {
+    pub version: Version,
+    pub changelog: String,
+    pub html: bool,
+}
+impl Client {
+    pub fn version_details(
+        &self,
+        provider: Provider,
+        project: &str,
+        selected: &str,
+    ) -> Result<VersionDetails, String> {
+        let raw = self.raw_version(provider, project, selected)?;
+        let changelog = if provider == Provider::Modrinth {
+            raw["changelog"]
+                .as_str()
+                .unwrap_or("")
+                .chars()
+                .take(300_000)
+                .collect()
+        } else {
+            self.cf(&format!("mods/{project}/files/{selected}/changelog"), &[])?["data"]
+                .as_str()
+                .unwrap_or("")
+                .chars()
+                .take(300_000)
+                .collect()
+        };
+        Ok(VersionDetails {
+            version: version(provider, &raw)?,
+            changelog,
+            html: provider == Provider::Curseforge,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    #[ignore = "fetches public Modrinth version names and changelog"]
+    fn live_version_details() {
+        let client = Client::new(None).unwrap();
+        let target = Target {
+            minecraft: "1.21.1".into(),
+            loader: "fabric".into(),
+            loader_version: Some("0.16.10".into()),
+        };
+        let versions = client
+            .versions(Provider::Modrinth, "AANobbMI", Some(&target), Kind::Mods)
+            .unwrap();
+        let chosen = versions.first().unwrap();
+        let details = client
+            .version_details(Provider::Modrinth, "AANobbMI", &chosen.id)
+            .unwrap();
+        assert_eq!(details.version.id, chosen.id);
+        assert_eq!(details.version.name, chosen.name);
+        assert!(matches!(
+            details.version.release_type.as_str(),
+            "release" | "beta" | "alpha"
+        ));
+        assert!(!details.html);
+        assert!(!details.changelog.is_empty());
     }
 }

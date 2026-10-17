@@ -27,7 +27,13 @@ export interface InstalledProject {
 export interface Inventory {
   pack: InstalledProject | null;
   projects: InstalledProject[];
-  files: { name: string; project: Project; provider?: Provider }[];
+  files: {
+    name: string;
+    project: Project;
+    provider?: Provider;
+    versionName?: string;
+    releaseType?: string;
+  }[];
 }
 export interface ProjectDetails {
   project: Project;
@@ -42,6 +48,12 @@ export interface Version {
   gameVersions: string[];
   loaders: string[];
   releaseType: string;
+  published?: string;
+}
+export interface VersionDetails {
+  version: Version;
+  changelog: string;
+  html: boolean;
 }
 export interface Search {
   provider: Provider;
@@ -103,7 +115,34 @@ export const contentApi = {
     id: string,
     provider: Provider,
     project: string,
-  ): Promise<Plan> => invoke("content_update_plan", { id, provider, project }),
+    requestedVersion: string | null = null,
+  ): Promise<Plan> =>
+    invoke("content_update_plan", { id, provider, project, requestedVersion }),
+  version: async (
+    provider: Provider,
+    project: string,
+    version: string,
+  ): Promise<VersionDetails> => {
+    if (desktop)
+      return invoke("content_version", { provider, project, version });
+    if (provider !== "modrinth")
+      throw Error("Use the desktop app for CurseForge details.");
+    const v = await mr(`version/${encodeURIComponent(version)}`, {});
+    if (v.project_id !== project)
+      throw Error("Version does not belong to this project.");
+    return {
+      version: {
+        id: v.id,
+        name: v.name,
+        gameVersions: v.game_versions,
+        loaders: v.loaders,
+        releaseType: v.version_type,
+        published: v.date_published,
+      },
+      changelog: v.changelog ?? "",
+      html: false,
+    };
+  },
   project: async (
     provider: Provider,
     project: string,
@@ -153,6 +192,7 @@ export const contentApi = {
       gameVersions: v.game_versions,
       loaders: v.loaders,
       releaseType: v.version_type,
+      published: v.date_published,
     }));
   },
   status: (): Promise<{ curseforgeConfigured: boolean }> =>

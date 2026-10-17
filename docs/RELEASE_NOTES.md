@@ -1,5 +1,11 @@
 ## Changes
 
+- Kept additional content directly on the instance page with All/Mods/Resource packs filters, sorting, uploads, Discover browsing, selection actions and a compact project/version/actions table.
+- View content now opens a centred, searchable pack-content popup instead of replacing the additional-content list.
+- Added a version switcher with compatible provider version names, dates, Release/Beta/Alpha badges and on-demand changelogs. Selecting a version prepares a reviewed update or repair; no files change just by browsing versions.
+- Simplified instance and content actions with icon buttons, accessible names/tooltips and overflow menus.
+- Added an explicitly enabled website-only AdSense snippet slot at website/src/adsense.html, plus publisher setup and private-key storage instructions. Advertising remains off by default and is not loaded by the Windows launcher.
+
 - Added real project artwork and dedicated Description, Versions and Gallery pages using provider metadata, with sanitised rich descriptions and shared installation review.
 - Instance content shows recognised project icons and names. Modpack instances separate pack-managed files from additional content and show the installed pack version.
 - Added compatible stable update checks and missing-pack-file repair. Updates stage verified files, preserve edited configuration, worlds and added content, and back up replaced files. Interrupted publication restores backups; modified archives stop with a conflict.

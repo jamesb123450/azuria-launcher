@@ -128,7 +128,11 @@ test("website-only changes never request a new launcher release", () => {
 
 test("site contains no remote scripts, account form, analytics or unsupported platform downloads", async () => {
   const html = await readFile(resolve(root, "index.html"), "utf8");
-  assert.doesNotMatch(html, /<script[^>]+src="https?:/);
+  if (process.env.AZURIA_ADSENSE_ENABLED === "true") {
+    assert.match(html, /aria-label="Advertisement"/);
+    for (const match of html.matchAll(/<script[^>]+src=["'](https?:[^"']+)/g))
+      assert.equal(new URL(match[1]).hostname, "pagead2.googlesyndication.com");
+  } else assert.doesNotMatch(html, /<script[^>]+src="https?:/);
   assert.doesNotMatch(
     html,
     /<form|Google Analytics|Download for macOS|Download for Linux/,

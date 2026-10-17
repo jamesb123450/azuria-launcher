@@ -1270,3 +1270,21 @@ details > p {
     gap: 12px;
   }
 }
+
+.website-ad {
+  margin: 48px auto;
+  min-height: 100px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  overflow: hidden;
+}
+.website-ad > span {
+  display: block;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
