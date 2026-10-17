@@ -12,13 +12,13 @@ const stages = [
   {
     title: "Game installation & launching",
     description:
-      "Vanilla downloads, verified Java preparation and process monitoring. Authenticated play requires Minecraft Services access.",
+      "Vanilla and Fabric downloads, verified Java preparation and process monitoring. Authenticated play requires Minecraft Services access.",
     status: "This build",
   },
   {
-    title: "Fabric & modded instances",
+    title: "More loaders & modded content",
     description:
-      "Fabric installation, compatible mods, resource packs and shaders.",
+      "Quilt, Forge and NeoForge installation, compatible mods, resource packs and shaders.",
     status: "Planned",
   },
   {

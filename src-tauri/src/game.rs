@@ -140,8 +140,22 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                     .into_iter()
                     .find(|i| i.id == id)
                     .ok_or("Instance no longer exists.")?;
-                if instance.loader != azuria_core::Loader::Vanilla {
-                    return Err("Vanilla launching is available first. Fabric and other mod loaders follow separately.".into());
+                if !matches!(
+                    instance.loader,
+                    azuria_core::Loader::Vanilla | azuria_core::Loader::Fabric
+                ) {
+                    return Err("Vanilla and Fabric launching are supported. Quilt, Forge and NeoForge are coming soon.".into());
+                }
+                if instance.loader == azuria_core::Loader::Fabric
+                    && instance
+                        .loader_version
+                        .as_deref()
+                        .is_none_or(|v| v.trim().is_empty())
+                {
+                    return Err(
+                        "Choose a Fabric loader version in instance settings before launching."
+                            .into(),
+                    );
                 }
                 let game = s.instance_dir(&id)?;
                 let root = game
@@ -202,10 +216,15 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                     accounts.launch_session(crate::auth_progress(app.clone())),
                 )
                 .map_err(|e| e.message)?;
-                let prepared = azuria_launch::prepare(
+                let prepared = azuria_launch::prepare_with_loader(
                     &root,
                     &game,
                     &instance.minecraft_version,
+                    if instance.loader == azuria_core::Loader::Fabric {
+                        instance.loader_version.as_deref()
+                    } else {
+                        None
+                    },
                     options,
                     reporter.clone(),
                     cancel.clone(),

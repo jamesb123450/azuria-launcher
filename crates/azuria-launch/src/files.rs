@@ -48,6 +48,26 @@ pub fn safe_join(root: &Path, name: &str) -> Result<PathBuf, String> {
     }
     Ok(path)
 }
+fn trusted_url(url: &reqwest::Url) -> bool {
+    url.scheme() == "https"
+        && url.port().is_none()
+        && url.username().is_empty()
+        && url.password().is_none()
+        && matches!(
+            url.host_str(),
+            Some(
+                "piston-meta.mojang.com"
+                    | "piston-data.mojang.com"
+                    | "libraries.minecraft.net"
+                    | "resources.download.minecraft.net"
+                    | "launchermeta.mojang.com"
+                    | "launcher.mojang.com"
+                    | "launchercontent.mojang.com"
+                    | "meta.fabricmc.net"
+                    | "maven.fabricmc.net"
+            )
+        )
+}
 pub struct Downloader {
     client: Client,
     progress: Reporter,
@@ -60,7 +80,13 @@ impl Downloader {
             .https_only(true)
             .connect_timeout(Duration::from_secs(20))
             .timeout(Duration::from_secs(180))
-            .redirect(reqwest::redirect::Policy::limited(6))
+            .redirect(reqwest::redirect::Policy::custom(|attempt| {
+                if attempt.previous().len() >= 6 || !trusted_url(attempt.url()) {
+                    attempt.stop()
+                } else {
+                    attempt.follow()
+                }
+            }))
             .user_agent("Azuria-Launcher/0.1")
             .build()
             .map_err(|_| "Could not initialize secure game downloads.")?;
@@ -73,22 +99,7 @@ impl Downloader {
     fn response(&self, url: &str) -> Result<reqwest::blocking::Response, String> {
         cancelled(&self.cancel)?;
         let parsed = reqwest::Url::parse(url).map_err(|_| "Invalid game download URL.")?;
-        let host = parsed.host_str().unwrap_or("");
-        if parsed.scheme() != "https"
-            || !matches!(
-                host,
-                "piston-meta.mojang.com"
-                    | "piston-data.mojang.com"
-                    | "libraries.minecraft.net"
-                    | "resources.download.minecraft.net"
-                    | "launchermeta.mojang.com"
-                    | "launcher.mojang.com"
-                    | "launchercontent.mojang.com"
-            )
-            || parsed.port().is_some()
-            || !parsed.username().is_empty()
-            || parsed.password().is_some()
-        {
+        if !trusted_url(&parsed) {
             return Err(
                 "Unrecognized game download source. Update Azuria before using this version."
                     .into(),
@@ -117,6 +128,20 @@ impl Downloader {
         }
         serde_json::from_slice(&bytes)
             .map_err(|_| "The game service returned invalid metadata.".into())
+    }
+    pub(crate) fn checksum(&self, url: &str) -> Result<String, String> {
+        let mut bytes = Vec::new();
+        self.response(url)?
+            .take(257)
+            .read_to_end(&mut bytes)
+            .map_err(|_| "Could not read the Fabric library checksum.")?;
+        let hash = std::str::from_utf8(&bytes)
+            .map_err(|_| "Invalid Fabric library checksum.")?
+            .trim();
+        if hash.len() != 40 || !hash.bytes().all(|c| c.is_ascii_hexdigit()) {
+            return Err("Invalid Fabric library checksum.".into());
+        }
+        Ok(hash.into())
     }
     pub fn artifact(&self, meta: &Value, path: &Path, max: u64) -> Result<(), String> {
         cancelled(&self.cancel)?;
@@ -315,6 +340,24 @@ pub fn extract_zip(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn download_hosts_and_redirects_are_restricted() {
+        for url in [
+            "https://meta.fabricmc.net/v2/versions",
+            "https://maven.fabricmc.net/library.jar",
+            "https://libraries.minecraft.net/library.jar",
+        ] {
+            assert!(trusted_url(&reqwest::Url::parse(url).unwrap()));
+        }
+        for url in [
+            "http://maven.fabricmc.net/library.jar",
+            "https://maven.fabricmc.net.evil.example/library.jar",
+            "https://user@maven.fabricmc.net/library.jar",
+            "https://maven.fabricmc.net:8443/library.jar",
+        ] {
+            assert!(!trusted_url(&reqwest::Url::parse(url).unwrap()));
+        }
+    }
     fn archive(path: &Path, name: &str) {
         let file = fs::File::create(path).unwrap();
         let mut zip = zip::ZipWriter::new(file);

@@ -1,8 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 const id = "80f8b85f-0a61-42c4-90b5-3b32a01f49ff";
-async function setup(page: Page, denied = false) {
+async function setup(page: Page, denied = false, loader = "vanilla") {
   await page.addInitScript(
-    ({ id, denied }) => {
+    ({ id, denied, loader }) => {
       const callbacks: Record<number, (e: unknown) => void> = {};
       const handlers: Record<string, number> = {};
       let sequence = 0;
@@ -33,7 +33,8 @@ async function setup(page: Page, denied = false) {
       const item = {
         id,
         name: "Vanilla test",
-        loader: "vanilla",
+        loader,
+        loaderVersion: loader === "fabric" ? "0.16.10" : null,
         minecraftVersion: "1.21.1",
         memoryMb: 4096,
         favorite: false,
@@ -183,7 +184,7 @@ async function setup(page: Page, denied = false) {
         },
       });
     },
-    { id, denied },
+    { id, denied, loader },
   );
 }
 test("Vanilla launch shows progress, survives navigation and tracks running and exit", async ({
@@ -533,4 +534,27 @@ test("a native PNG drop opens the editor without changing the account", async ({
       ),
     ),
   ).toBe(false);
+});
+
+// Native preparation is tested separately; this verifies Fabric uses the existing UI lifecycle.
+test("Fabric uses Play/Stop and cancellation during loader preparation", async ({
+  page,
+}) => {
+  await setup(page, false, "fabric");
+  await page.goto("/");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await page.evaluate(() =>
+    (
+      window as unknown as {
+        emitGame: (stage: string, message: string) => void;
+      }
+    ).emitGame("loader", "Preparing Fabric"),
+  );
+  await expect(
+    page.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Play", exact: true }),
+  ).toBeEnabled();
 });
