@@ -1164,3 +1164,109 @@ details > p {
       border-color 0.15s;
   }
 }
+/* Reserve empty backdrop space so the showcase cannot cover hero text. */
+.hero {
+  min-height: 0;
+  padding-bottom: 170px;
+}
+.launcher-showcase {
+  margin-top: -85px;
+}
+.product-tour {
+  padding-top: 0;
+}
+.product-tour > .section-intro {
+  max-width: 680px;
+  margin-bottom: 48px;
+}
+.product-feature {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+  gap: 48px;
+  align-items: center;
+  padding-block: 38px;
+  border-top: 1px solid var(--border);
+}
+.product-feature.reverse .product-feature-copy {
+  order: 2;
+}
+.product-feature.reverse {
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+}
+.product-feature-copy h3 {
+  font-family: Sora, Inter, sans-serif;
+  font-size: clamp(23px, 2.5vw, 32px);
+  line-height: 1.3;
+  letter-spacing: -0.6px;
+  margin: 12px 0 20px;
+}
+.product-feature-copy p {
+  margin: 14px 0 0;
+  color: var(--muted);
+}
+.product-feature figure {
+  margin: 0;
+  min-width: 0;
+}
+.detail-shot img,
+.appearance-shot img,
+.hero-shot img {
+  height: auto;
+  aspect-ratio: 1280 / 900;
+}
+.section-topline > *,
+.download-layout > *,
+.footer-top > *,
+.header-inner > * {
+  min-width: 0;
+}
+.download-platform,
+.release-entry > header,
+.download-card h2 {
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.download-details dd,
+.release-notes,
+.legal-content,
+.help-content {
+  overflow-wrap: anywhere;
+}
+.button {
+  white-space: normal;
+  text-align: center;
+}
+@media (max-width: 1000px) {
+  .product-feature,
+  .product-feature.reverse {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+  .product-feature.reverse .product-feature-copy {
+    order: 0;
+  }
+  .product-feature-copy {
+    max-width: 65ch;
+  }
+}
+@media (max-width: 680px) {
+  .hero {
+    min-height: 0;
+    padding-block: 24px 48px;
+  }
+  .launcher-showcase {
+    margin-top: 0;
+    padding-top: 24px;
+  }
+  .product-feature {
+    padding-block: 30px;
+  }
+  .product-tour > .section-intro {
+    margin-bottom: 30px;
+  }
+  .section-topline {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
