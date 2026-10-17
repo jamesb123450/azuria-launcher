@@ -329,6 +329,32 @@ pub fn prepare_with_loader(
     progress: Reporter,
     cancel: Arc<AtomicBool>,
 ) -> Result<Prepared, String> {
+    prepare_with_download_limit(
+        root,
+        game,
+        version,
+        fabric_version,
+        options,
+        progress,
+        cancel,
+        8,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_with_download_limit(
+    root: &Path,
+    game: &Path,
+    version: &str,
+    fabric_version: Option<&str>,
+    options: LaunchOptions,
+    progress: Reporter,
+    cancel: Arc<AtomicBool>,
+    concurrent_downloads: u32,
+) -> Result<Prepared, String> {
+    if !(1..=16).contains(&concurrent_downloads) {
+        return Err("Use 1–16 concurrent downloads.".into());
+    }
     options.validate()?;
     if !game.is_absolute() || !root.is_absolute() {
         return Err("Launcher storage must use an absolute path.".into());
@@ -456,7 +482,7 @@ pub fn prepare_with_loader(
     let complete = std::sync::atomic::AtomicUsize::new(0);
     let failure = Mutex::new(None::<String>);
     std::thread::scope(|scope| {
-        for _ in 0..8 {
+        for _ in 0..concurrent_downloads {
             scope.spawn(|| loop {
                 if failure.lock().unwrap().is_some() {break;}
                 let n=next.fetch_add(1,Ordering::Relaxed);

@@ -1,3 +1,10 @@
+# Storage resources
+
+- Add real background storage measurements with per-instance categories, shared game files, runtimes, logs, screenshots, skins and trash. Hard-linked files are counted once.
+- Preview and confirm cleanup of abandoned staging downloads older than 24 hours, with stale-file checks and protection while Minecraft or content downloads are active.
+- Save or reset unused-download retention and Minecraft asset download concurrency in Settings → Storage. The retention limit applies when cleanup is run; worlds, installed content, shared files, runtimes and trash are kept.
+- Open the actual Azuria app directory directly from Storage settings.
+
 # Instance log console
 
 - Refine instance logs with a compact toolbar, search, severity filters and readable coloured output.
