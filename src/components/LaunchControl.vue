@@ -15,7 +15,7 @@ const active = computed(
   () => launch.value && !terminalStages.includes(launch.value.stage),
 );
 const supported = computed(
-  () => desktop && props.instance.loader === "vanilla",
+  () => desktop && ["vanilla", "fabric"].includes(props.instance.loader),
 );
 const label = computed(() =>
   !supported.value
@@ -65,7 +65,7 @@ function toggle() {
     <p v-if="!supported" class="launch-hint">
       {{
         desktop
-          ? "Vanilla launching is available first. Mod loader support follows separately."
+          ? "Vanilla and Fabric launching are supported. Other loaders are coming soon."
           : "Minecraft launching requires the Windows desktop app."
       }}
     </p>

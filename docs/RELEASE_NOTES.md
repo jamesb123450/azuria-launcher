@@ -1,5 +1,9 @@
 ## Changes
 
+- Added Windows Fabric launching using the selected Minecraft and pinned Fabric loader version. Quilt, Forge and NeoForge remain coming soon.
+- Fabric preparation merges official loader libraries and arguments with Mojang game metadata, verifies library checksums, and caches profiles by version pair. Existing Java/memory overrides, account verification, live logs and Play/Stop controls are reused.
+- Cancelling preparation preserves verified downloads for retry. Changing the loader version prepares a separate profile without removing instance content. Fabric API and mods are installed separately.
+
 - Replaced the settings page with a centred, category-based popup that keeps your current screen behind it.
 - Added a fixed Save/Reset footer, shared pending edits across categories, validation and an unsaved-change prompt. Reset restores the last saved values.
 - Reorganised appearance, account, Java/memory, window, storage and update settings. Planned features are clearly labelled Coming soon.

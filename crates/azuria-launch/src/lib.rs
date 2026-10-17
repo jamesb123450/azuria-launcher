@@ -1,4 +1,5 @@
-//! Windows x64 Vanilla preparation. Credentials are native-only and never serializable.
+//! Windows x64 Vanilla and Fabric preparation. Credentials are native-only and never serializable.
+mod fabric;
 mod files;
 mod metadata;
 mod runtime;
@@ -313,6 +314,20 @@ pub fn prepare(
     progress: Reporter,
     cancel: Arc<AtomicBool>,
 ) -> Result<Prepared, String> {
+    prepare_with_loader(root, game, version, None, options, progress, cancel)
+}
+
+/// A pinned Fabric version, or None for Vanilla. Other loaders use separate adapters.
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_with_loader(
+    root: &Path,
+    game: &Path,
+    version: &str,
+    fabric_version: Option<&str>,
+    options: LaunchOptions,
+    progress: Reporter,
+    cancel: Arc<AtomicBool>,
+) -> Result<Prepared, String> {
     options.validate()?;
     if !game.is_absolute() || !root.is_absolute() {
         return Err("Launcher storage must use an absolute path.".into());
@@ -338,10 +353,21 @@ pub fn prepare(
     fs::create_dir_all(&versions).map_err(files::io)?;
     let meta_path = safe_join(&versions, &format!("{version}.json"))?;
     downloader.artifact(entry, &meta_path, 16 * 1024 * 1024)?;
-    let metadata: Value = serde_json::from_slice(&fs::read(&meta_path).map_err(files::io)?)
+    let mut metadata: Value = serde_json::from_slice(&fs::read(&meta_path).map_err(files::io)?)
         .map_err(|_| "The downloaded version metadata is invalid.")?;
     if metadata["complianceLevel"].as_u64().unwrap_or(0) > 1 {
         return Err("This version requires a newer launcher protocol. Update Azuria first.".into());
+    }
+    if let Some(loader) = fabric_version {
+        report(
+            &progress,
+            "loader",
+            "Preparing the selected Fabric loader",
+            0,
+            0,
+        );
+        let profile = fabric::profile(root, version, loader, &downloader, &cancel)?;
+        metadata = fabric::merge(&metadata, &profile, version, loader)?;
     }
     let libraries = safe_join(root, "libraries")?;
     let assets = safe_join(root, "assets")?;

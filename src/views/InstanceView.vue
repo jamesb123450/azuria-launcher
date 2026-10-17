@@ -540,7 +540,13 @@ const prettySize = (size: number) =>
                 </div>
                 <div>
                   <dt>Status</dt>
-                  <dd>Ready for Vanilla preparation</dd>
+                  <dd>
+                    {{
+                      ["vanilla", "fabric"].includes(instance.loader)
+                        ? "Prepared automatically when you press Play"
+                        : "Loader launching coming soon"
+                    }}
+                  </dd>
                 </div>
               </dl>
               <button
@@ -569,7 +575,7 @@ const prettySize = (size: number) =>
               <h2>Overrides</h2>
               <p class="muted">
                 Use launcher defaults, or enable a custom setting for this
-                instance. Saved settings apply on the next Vanilla launch.
+                instance. Saved settings apply on the next supported launch.
               </p>
               <form @submit.prevent="saveOverrides">
                 <LaunchOptionsEditor

@@ -73,7 +73,7 @@ onMounted(load);
       </div>
     </div>
     <p class="instance-notice">
-      These preferences apply when launching Vanilla instances. Other mod
+      These preferences apply when launching Vanilla and Fabric instances. Other
       loaders are not yet supported.
     </p>
     <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
