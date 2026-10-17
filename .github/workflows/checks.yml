@@ -97,11 +97,6 @@ jobs:
     permissions:
       contents: write
       actions: write
-    env:
-      AZURIA_RELEASE_REPOSITORY: ${{ github.repository }}
-      AZURIA_RELEASE_COMMIT: ${{ github.sha }}
-      AZURIA_RELEASE_VERSION: 0.2.${{ github.run_number }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -112,14 +107,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - name: Verify public update host and configuration
-        shell: pwsh
-        run: |
-          if (-not $env:GH_TOKEN) { throw "The workflow token is unavailable" }
-          $private = gh api "repos/$env:AZURIA_RELEASE_REPOSITORY" --jq .private
-          if ($LASTEXITCODE -ne 0 -or $private -ne "false") { throw "The launcher repository must be public to host anonymous updates" }
-          if ([int]($env:AZURIA_RELEASE_VERSION.Split('.')[2]) -gt 65535) { throw "Windows version limit exceeded" }
-          @{ version = $env:AZURIA_RELEASE_VERSION; bundle = @{ createUpdaterArtifacts = $true } } | ConvertTo-Json -Depth 4 | Set-Content update-build.json
+      - name: Verify public update host and allocate release version
+        run: node scripts/release-host.mjs configure
+        env:
+          AZURIA_RELEASES_TOKEN: ${{ secrets.AZURIA_RELEASES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm ci
       - name: Build signed update
         run: npm run desktop:build -- --config update-build.json
@@ -127,17 +119,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       - run: node scripts/prepare-update.mjs
-      - name: Publish complete update atomically
-        shell: pwsh
-        run: |
-          $tag = "v$env:AZURIA_RELEASE_VERSION"
-          gh release create $tag --repo $env:AZURIA_RELEASE_REPOSITORY --draft --target $env:AZURIA_RELEASE_COMMIT --title "Azuria $env:AZURIA_RELEASE_VERSION" --notes-file docs/RELEASE_NOTES.md
-          if ($LASTEXITCODE -ne 0) { throw "Could not create draft release" }
-          $assets = Get-ChildItem src-tauri/target/release/bundle/nsis -File | Where-Object { $_.Name -match '\.exe(\.sig)?$|^latest\.json$' } | ForEach-Object { $_.FullName }
-          gh release upload $tag @assets --repo $env:AZURIA_RELEASE_REPOSITORY
-          if ($LASTEXITCODE -ne 0) { throw "Could not upload all update assets" }
-          gh release edit $tag --repo $env:AZURIA_RELEASE_REPOSITORY --draft=false --latest
-          if ($LASTEXITCODE -ne 0) { throw "Could not publish release" }
+      - name: Publish signed public update and legacy bridge
+        run: node scripts/release-host.mjs publish
+        env:
+          AZURIA_RELEASES_TOKEN: ${{ secrets.AZURIA_RELEASES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Refresh website build after publishing
         continue-on-error: true
         run: gh workflow run website.yml --ref main --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

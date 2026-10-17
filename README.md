@@ -2,7 +2,7 @@
 
 A Windows-first launcher for Minecraft: Java Edition, built around a local instance library and a charcoal, pink and blue interface. Azuria supports dark, light and system appearance, with separate configurations for different Minecraft versions and mod loaders.
 
-[Website](https://jamesb123450.github.io/azuria-launcher/) · [Download for Windows](https://github.com/jamesb123450/azuria-launcher/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-launcher/releases) · [Report an issue](https://github.com/jamesb123450/azuria-launcher/issues)
+[Website](https://jamesb123450.github.io/azuria-releases/) · [Download for Windows](https://github.com/jamesb123450/azuria-releases/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-releases/releases) · [Report an issue](https://github.com/jamesb123450/azuria-releases/issues)
 
 > **Early development:** Azuria currently manages instance settings. Vanilla and Fabric launching are implemented for Windows x64, including verified game downloads and automatic Java preparation. Quilt, Forge and NeoForge cannot launch yet. Download a development build to explore the interface and follow progress.
 
@@ -30,7 +30,7 @@ Modpack instances keep additional content on the instance page. **View content**
 
 ## Download and update
 
-Get the Windows installer from the [latest published release](https://github.com/jamesb123450/azuria-launcher/releases/latest). Windows is the initial supported platform; macOS and Linux builds are not currently distributed.
+Get the Windows installer from the [latest published release](https://github.com/jamesb123450/azuria-releases/releases/latest). Windows is the initial supported platform; macOS and Linux builds are not currently distributed.
 
 Azuria checks for updates on every startup and downloads available releases automatically. After signature verification, a visible 15-second countdown restarts Azuria to run the Windows installer. Choose **Later** to postpone the restart; **Settings → Launcher updates → Restart & install** finishes it when ready. Failed checks or downloads leave the current installation usable and provide a retry action.
 
@@ -109,16 +109,16 @@ With automatic releases enabled, launcher changes merged into `main` run the che
 
 ## Website and documentation
 
-The [public website](https://jamesb123450.github.io/azuria-launcher/) is hosted on GitHub Pages. Its source lives in [`website/`](website/) in this repository, with a separate static build and deployment workflow. Download links and release information use published GitHub releases.
+The [public website](https://jamesb123450.github.io/azuria-releases/) is hosted on GitHub Pages. Its source lives in [`website/`](website/) in this repository, with a separate static build workflow that publishes compiled output to the public distribution repository. Download links and release information use published GitHub releases.
 
-- [Privacy policy](https://jamesb123450.github.io/azuria-launcher/privacy/)
-- [Terms of service](https://jamesb123450.github.io/azuria-launcher/terms/)
+- [Privacy policy](https://jamesb123450.github.io/azuria-releases/privacy/)
+- [Terms of service](https://jamesb123450.github.io/azuria-releases/terms/)
 
 ## Feedback and licence
 
-Report bugs and suggest improvements through [GitHub Issues](https://github.com/jamesb123450/azuria-launcher/issues). Include the app version, Windows version and steps to reproduce a problem. Keep account credentials, tokens and personal data out of public reports.
+Report bugs and suggest improvements through [GitHub Issues](https://github.com/jamesb123450/azuria-releases/issues). Include the app version, Windows version and steps to reproduce a problem. Keep account credentials, tokens and personal data out of public reports.
 
-The source is publicly viewable, but a project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](docs/FONT-LICENSE.txt).
+A project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](docs/FONT-LICENSE.txt).
 
 Azuria is an independent project and is not affiliated with or endorsed by Mojang or Microsoft.
 
@@ -141,3 +141,19 @@ For this PC, enter the CurseForge key in **Azuria Settings → Content providers
 For CI-only credentials, use this repository’s **Settings → Secrets and variables → Actions → Secrets → New repository secret**, with a separate vault copy. Never print them or substitute them into Vue/Vite source, website output or distributed installers. A build-time secret becomes extractable if bundled into a client binary.
 
 To let public users access a service through your developer key, keep it in a private backend’s environment/secret manager and expose only the specific validated service operations, with authentication, quotas and rate limits. The client must never receive the key or an arbitrary forwarding endpoint. A hosted provider proxy is not included in this launcher; the existing CurseForge configuration remains local to each user.
+
+## Public distribution setup
+
+Builds run in this source repository. Signed installers, updater metadata and release notes are published to **jamesb123450/azuria-releases**. Only the compiled website is copied into its `site/` folder; launcher source and git history are not copied. Keep the existing Tauri signing secrets unchanged.
+
+Set up the migration in this order:
+
+1. Merge the distribution-host setup PR in `azuria-releases`. In that repository, open **Settings → Pages → Build and deployment → Source** and select **GitHub Actions**.
+2. Create a **fine-grained personal access token** at <https://github.com/settings/personal-access-tokens/new>. Choose the owning account, select **Only select repositories → azuria-releases**, and grant **Repository permissions → Contents: Read and write**. Set an expiry you can maintain.
+3. In **azuria-launcher → Settings → Secrets and variables → Actions → Secrets → New repository secret**, save it as **AZURIA_RELEASES_TOKEN**. Never put the token in code or chat. Keep existing signing secrets and automatic release variables.
+4. Merge the source migration PR. Foundation checks will publish the next numbered signed release to the public repository and, while the source remains public, publish a bridge release at the old address. The website workflow publishes compiled files to the public repository, whose Pages workflow deploys them.
+5. Verify the public installer, `latest.json`, website and an installed client's update to this bridge release **before** making the source repository private. Source privacy is changed manually, never by these workflows.
+
+Existing clients must install the bridge update before the source becomes private. Clients that miss it will need the public installer once, because their old updater address will become inaccessible. Subsequent releases use the new public address, retain signatures, continue version numbering and include `docs/RELEASE_NOTES.md`. Making a formerly public repository private cannot recall existing copies of its source.
+
+The website is served at <https://jamesb123450.github.io/azuria-releases/>. Its source remains in `website/`; the distribution repository stores only the built output. Update the token secret before its expiry. If publication fails, inspect incomplete draft releases before retrying; published version tags are never overwritten automatically.

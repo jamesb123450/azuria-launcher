@@ -1,3 +1,8 @@
+# Public release distribution
+
+- Move signed updates, downloads and the public website to azuria-releases so source access can be restricted without requiring users to authenticate.
+- Preserve release numbering, updater signatures and a temporary bridge for existing installations.
+
 ## Changes
 
 - Kept additional content directly on the instance page with All/Mods/Resource packs filters, sorting, uploads, Discover browsing, selection actions and a compact project/version/actions table.

@@ -72,10 +72,10 @@ const stages = [
   </ol>
   <a
     class="text-link"
-    href="https://github.com/jamesb123450/azuria-launcher"
+    href="https://github.com/jamesb123450/azuria-releases"
     @click.prevent="store.openProject"
     target="_blank"
     rel="noreferrer"
-    >Follow development on GitHub <ArrowUpRight :size="16"
+    >Releases & support on GitHub <ArrowUpRight :size="16"
   /></a>
 </template>

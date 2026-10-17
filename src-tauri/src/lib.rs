@@ -274,7 +274,7 @@ fn open_project_page() -> Result<(), String> {
     #[cfg(target_os = "linux")]
     let program = "xdg-open";
     std::process::Command::new(program)
-        .arg("https://github.com/jamesb123450/azuria-launcher")
+        .arg("https://github.com/jamesb123450/azuria-releases")
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("Could not open the project in your browser: {e}"))
