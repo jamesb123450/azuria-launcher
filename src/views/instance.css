@@ -266,12 +266,6 @@
   input:not([type="checkbox"]):not([type="range"]):not([type="file"]),
 .launch-options input:not([type="checkbox"]):not([type="range"]),
 .launch-options textarea {
-  border: 1px solid var(--border-strong);
-  background: var(--panel);
-  color: var(--text);
-  border-radius: 7px;
-  padding: 11px 12px;
-  font: inherit;
   min-width: 0;
   width: 100%;
 }

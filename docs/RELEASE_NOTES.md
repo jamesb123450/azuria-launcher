@@ -1,3 +1,9 @@
+# Consistent text fields
+
+- Theme text, password, numeric and multiline fields consistently across launcher popups, including storage preferences, provider keys and content installation.
+- Align Java and window settings with the shared field styling, with readable placeholders, disabled and read-only states, themed autofill and visible keyboard focus.
+- Preserve icon-led search layouts and give log search a clearer themed input frame.
+
 # Storage resources
 
 - Add real background storage measurements with per-instance categories, shared game files, runtimes, logs, screenshots, skins and trash. Hard-linked files are counted once.
