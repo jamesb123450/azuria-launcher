@@ -26,7 +26,7 @@ Modrinth works without an API key. CurseForge requires approved API access confi
 
 Choose an instance and a compatible content version, then review the download before installing. Datapacks require an existing world. Modpacks create new Vanilla or Fabric instances and start game-file preparation without launching Minecraft. Other pack loaders remain unsupported. Required dependencies are included; optional client files are skipped. Modrinth packs with files hosted outside Modrinth’s CDN currently report an unsupported-host error.
 
-Content installs preserve different existing files and stop on conflicts. Instance pages check for compatible stable releases and missing pack files. Review Update or Repair before applying changes. Replaced files are retained under `.azuria/backups` inside the instance; edited configuration, worlds and additional files are preserved. Modified mod or pack archives stop the update for manual conflict resolution. Pack updates keep the current Minecraft version and loader family; install a separate instance to move between them. Downloads stage separately, verify hashes, and record a recovery journal before publication. Provider search and downloads contact the selected service; search errors do not display sample results. Browser previews support public Modrinth search, but installation and CurseForge configuration require the desktop app.
+Modpack instances keep additional content on the instance page. **View content** opens the pack’s searchable file popup; **Switch version** lists compatible releases, beta and alpha versions with provider names, dates and changelogs. Changes require review before installation. Content installs preserve different existing files and stop on conflicts. Instance pages check for compatible stable releases and missing pack files. Review Update or Repair before applying changes. Replaced files are retained under `.azuria/backups` inside the instance; edited configuration, worlds and additional files are preserved. Modified mod or pack archives stop the update for manual conflict resolution. Pack updates keep the current Minecraft version and loader family; install a separate instance to move between them. Downloads stage separately, verify hashes, and record a recovery journal before publication. Provider search and downloads contact the selected service; search errors do not display sample results. Browser previews support public Modrinth search, but installation and CurseForge configuration require the desktop app.
 
 ## Download and update
 
@@ -121,3 +121,23 @@ Report bugs and suggest improvements through [GitHub Issues](https://github.com/
 The source is publicly viewable, but a project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](docs/FONT-LICENSE.txt).
 
 Azuria is an independent project and is not affiliated with or endorsed by Mojang or Microsoft.
+
+## Maintainer configuration
+
+### Website advertising
+
+Paste your complete **display ad-unit** snippet into [`website/src/adsense.html`](website/src/adsense.html). This source-only slot renders on the website home page, above the latest-release notice. There is no public configuration form. It is never loaded by the Windows launcher: standard AdSense does not support desktop software.
+
+In Google AdSense, open **Ads → By ad unit → Display ads → Save and get code**. Before enabling, add and obtain approval for your website and configure/publish a Google-certified consent message, for example **Privacy & messaging → European regulations**. Review the advertising disclosures and regional settings for your audience.
+
+In this repository, open **Settings → Secrets and variables → Actions → Variables** and add `AZURIA_ADSENSE_ENABLED=true` and `AZURIA_ADSENSE_CMP_READY=true` only after setup is complete. Then run **Actions → Website build and deploy → Run workflow → main**. Remove the enabled variable or set it to `false` to disable advertising. Both flags default to off; an enabled build rejects a missing/incomplete snippet. Google controls approval and ad availability. Publisher and ad-slot identifiers in the snippet are public identifiers, not API secrets.
+
+### Private API keys
+
+Keep a retrievable original in an encrypted password-manager vault belonging only to you. Create separate entries for each service/environment, enable MFA on the vault account, and retain its recovery information securely. Do not paste keys into issues, PRs, snippets or frontend configuration.
+
+For this PC, enter the CurseForge key in **Azuria Settings → Content providers** and press **Save**. It is stored natively in Windows Credential Manager for the current Windows user. The frontend cannot read the saved value; use your vault when you need to retrieve or replace it.
+
+For CI-only credentials, use this repository’s **Settings → Secrets and variables → Actions → Secrets → New repository secret**, with a separate vault copy. Never print them or substitute them into Vue/Vite source, website output or distributed installers. A build-time secret becomes extractable if bundled into a client binary.
+
+To let public users access a service through your developer key, keep it in a private backend’s environment/secret manager and expose only the specific validated service operations, with authentication, quotas and rate limits. The client must never receive the key or an arbitrary forwarding endpoint. A hosted provider proxy is not included in this launcher; the existing CurseForge configuration remains local to each user.

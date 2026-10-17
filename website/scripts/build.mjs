@@ -1,5 +1,6 @@
 import { mkdir, readFile, cp, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { advertisingMarkup } from "../src/advertising.mjs";
 import { render } from "../src/pages.mjs";
 const root = new URL("../", import.meta.url);
 const dist = new URL("dist/", root);
@@ -16,6 +17,11 @@ if (
 )
   throw new Error("Use an HTTPS site URL");
 if (!url.pathname.endsWith("/")) url.pathname += "/";
+const adSnippet = await readFile(new URL("src/adsense.html", root), "utf8");
+const adsense = advertisingMarkup(adSnippet, {
+  enabled: process.env.AZURIA_ADSENSE_ENABLED === "true",
+  consentReady: process.env.AZURIA_ADSENSE_CMP_READY === "true",
+});
 const releases = JSON.parse(
   await readFile(new URL("data/releases.json", root), "utf8"),
 );
@@ -53,7 +59,7 @@ for (const page of [
   await mkdir(new URL("./", destination), { recursive: true });
   await writeFile(
     destination,
-    render(page, { siteURL: url.href, base: url.pathname, releases }),
+    render(page, { siteURL: url.href, base: url.pathname, releases, adsense }),
   );
 }
 await writeFile(new URL(".nojekyll", dist), "");

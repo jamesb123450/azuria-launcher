@@ -32,6 +32,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm --prefix website run build
+        env:
+          AZURIA_ADSENSE_ENABLED: ${{ vars.AZURIA_ADSENSE_ENABLED }}
+          AZURIA_ADSENSE_CMP_READY: ${{ vars.AZURIA_ADSENSE_CMP_READY }}
       - run: npm --prefix website test
       - name: Save reviewable website artifact
         uses: actions/upload-artifact@v4

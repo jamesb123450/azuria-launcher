@@ -38,7 +38,7 @@ test("instance navigation, general settings, defaults and overrides persist", as
     page.getByRole("button", { name: "Launch unavailable" }),
   ).toBeDisabled();
   await expect(
-    page.getByRole("button", { name: "Import file" }),
+    page.getByRole("button", { name: "Upload files" }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Worlds", exact: true }).click();
   await expect(
@@ -139,7 +139,10 @@ test("minimum window settings fit and missing instances have an exit", async ({
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`/#/instances/${id}`);
   await expect(
-    page.getByRole("heading", { name: "No content added yet" }),
+    page.getByText(
+      "No additional content. Upload files or browse Discover to add some.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await page.screenshot({
     path: test.info().outputPath("instance-content.png"),

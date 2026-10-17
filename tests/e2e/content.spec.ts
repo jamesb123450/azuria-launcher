@@ -128,8 +128,18 @@ async function setup(page: Page, mode = "default") {
                     },
                   ],
                   files: [
-                    { name: "pack.jar", project },
-                    { name: "extra.jar", project: addon },
+                    {
+                      name: "pack.jar",
+                      project,
+                      versionName: "Pack mod 1.0",
+                      releaseType: "release",
+                    },
+                    {
+                      name: "extra.jar",
+                      project: addon,
+                      versionName: "Extra mod 2.0",
+                      releaseType: "beta",
+                    },
                   ],
                 }
               : { pack: null, projects: [], files: [] };
@@ -185,32 +195,87 @@ async function setup(page: Page, mode = "default") {
             };
           }
           if (cmd === "content_versions")
-            return [
-              {
-                id: "version",
-                name: "Compatible release",
-                gameVersions: ["1.21.1"],
-                loaders: ["fabric"],
-                releaseType: "release",
-              },
-            ];
-          if (cmd === "instance_entries")
             return mode === "pack"
               ? [
                   {
-                    name: "pack.jar",
-                    directory: false,
-                    size: 12,
-                    enabled: true,
+                    id: "old",
+                    name: "Pack 1.0",
+                    gameVersions: ["1.21.1"],
+                    loaders: ["fabric"],
+                    releaseType: "release",
+                    published: "2026-10-01T00:00:00Z",
                   },
                   {
-                    name: "extra.jar",
-                    directory: false,
-                    size: 10,
-                    enabled: true,
+                    id: "new",
+                    name: "Pack 2.0 beta",
+                    gameVersions: ["1.21.1"],
+                    loaders: ["fabric"],
+                    releaseType: "beta",
+                    published: "2026-10-17T00:00:00Z",
+                  },
+                  {
+                    id: "alpha",
+                    name: "Pack 2.1 alpha",
+                    gameVersions: ["1.21.1"],
+                    loaders: ["fabric"],
+                    releaseType: "alpha",
+                    published: "2026-10-18T00:00:00Z",
                   },
                 ]
-              : [{ name: "My World", directory: true, size: 0 }];
+              : [
+                  {
+                    id: "version",
+                    name: "Compatible release",
+                    gameVersions: ["1.21.1"],
+                    loaders: ["fabric"],
+                    releaseType: "release",
+                  },
+                ];
+          if (cmd === "content_version")
+            return {
+              version: {
+                id: args.version,
+                name:
+                  args.version === "new"
+                    ? "Pack 2.0 beta"
+                    : args.version === "alpha"
+                      ? "Pack 2.1 alpha"
+                      : "Pack 1.0",
+                gameVersions: ["1.21.1"],
+                loaders: ["fabric"],
+                releaseType:
+                  args.version === "new"
+                    ? "beta"
+                    : args.version === "alpha"
+                      ? "alpha"
+                      : "release",
+                published: "2026-10-17T00:00:00Z",
+              },
+              changelog:
+                "# Selected version changes\n\n- Fetched fixes for " +
+                args.version,
+              html: false,
+            };
+          if (cmd === "instance_entries")
+            return args.section === "worlds"
+              ? [{ name: "My World", directory: true, size: 0 }]
+              : mode === "pack" && args.section === "mods"
+                ? [
+                    {
+                      name: "pack.jar",
+                      directory: false,
+                      size: 12,
+                      enabled: true,
+                    },
+                    {
+                      name: "extra.jar",
+                      directory: false,
+                      size: 10,
+                      enabled: true,
+                    },
+                  ]
+                : [];
+          if (cmd === "toggle_instance_content") return;
           if (cmd === "get_instance_overrides") return {};
 
           if (cmd === "content_plan")
@@ -399,33 +464,81 @@ test("pack instance separates managed and extra content and reviews updates", as
   await expect(
     page.getByRole("heading", { name: "Modpack content", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".instance-file-row")).toHaveCount(1);
-  await expect(page.locator(".instance-file-row img")).toHaveAttribute(
+  const additional = page.getByRole("table", {
+    name: "Additional content",
+    exact: true,
+  });
+  await expect(additional.locator(".content-table-row")).toHaveCount(1);
+  await expect(additional.locator("img")).toHaveAttribute(
     "src",
     /cdn.modrinth.com/,
   );
-  await expect(page.getByText("Extra mod", { exact: true })).toBeVisible();
+  await expect(
+    additional.getByText("Extra mod", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "View content", exact: true }).click();
+  const pack = page.getByRole("dialog", {
+    name: "Modpack content",
+    exact: true,
+  });
+  await expect(pack.locator(".content-table-row")).toHaveCount(1);
+  await pack
+    .getByRole("textbox", { name: "Search pack content" })
+    .fill("nothing");
+  await expect(pack.getByText("No matching pack files.")).toBeVisible();
+  await pack.getByRole("textbox", { name: "Search pack content" }).fill("pack");
+  await page.setViewportSize({ width: 900, height: 650 });
+  await page.screenshot({ path: "test-results/pack-content-popup.png" });
+  await pack.getByRole("button", { name: "Close pack content" }).click();
+  await expect(additional.locator(".content-table-row")).toHaveCount(1);
   await page
-    .getByRole("button", { name: "View pack content", exact: true })
+    .getByRole("button", { name: "Switch version", exact: true })
     .click();
-  await expect(page.locator(".instance-file-row")).toHaveCount(2);
-  await page.getByRole("button", { name: "Update pack", exact: true }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog.getByText("Pack 2.0", { exact: true })).toBeVisible();
-  await dialog
-    .getByRole("button", { name: "Update instance", exact: true })
+  const versions = page.getByRole("dialog", {
+    name: "Switch modpack version",
+    exact: true,
+  });
+  await expect(
+    versions.getByRole("heading", { name: "Selected version changes" }),
+  ).toBeVisible();
+  await expect(
+    versions.locator(".switch-version-heading .release-badge"),
+  ).toHaveText("Beta");
+  await versions.getByRole("button", { name: /Alpha Pack 2.1 alpha/ }).click();
+  await expect(
+    versions.locator(".switch-version-heading .release-badge"),
+  ).toHaveText("Alpha");
+  await expect(
+    versions.getByText("Fetched fixes for alpha", { exact: false }),
+  ).toBeVisible();
+  await versions
+    .getByRole("button", { name: /Release Pack 1.0 Current/ })
     .click();
-  await expect(dialog).not.toBeVisible();
+  await expect(
+    versions.locator(".switch-version-heading .release-badge"),
+  ).toHaveText("Release");
+  await versions.getByRole("button", { name: /Beta Pack 2.0 beta/ }).click();
+  await versions
+    .getByRole("button", {
+      name: "Review update to Pack 2.0 beta",
+      exact: true,
+    })
+    .click();
+  await expect(versions.getByText("Ready to install 3 files")).toBeVisible();
+  await page.screenshot({ path: "test-results/version-switcher.png" });
+  await versions
+    .getByRole("button", { name: "Update to Pack 2.0 beta", exact: true })
+    .click();
+  await expect(versions).not.toBeVisible();
   expect(
     await page.evaluate(
       () =>
         (window as any).contentCalls
-          .filter((c: any) => c.cmd === "content_install")
-          .at(-1).args.planId,
+          .filter((c: any) => c.cmd === "content_update_plan")
+          .at(-1).args.requestedVersion,
     ),
-  ).toBe("update");
-  await page.setViewportSize({ width: 900, height: 650 });
-  await page.screenshot({ path: "test-results/pack-instance.png" });
+  ).toBe("new");
+  await page.screenshot({ path: "test-results/additional-content.png" });
 });
 test("Vanilla instances do not show or open a mods section", async ({
   page,

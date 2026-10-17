@@ -41,24 +41,15 @@ import InstanceIcon from "../components/InstanceIcon.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
 import LaunchOptionsEditor from "../components/LaunchOptionsEditor.vue";
 import "./instance.css";
+import InstanceContent from "../components/InstanceContent.vue";
+import { MoreVertical } from "@lucide/vue";
 import ContentIcon from "../components/ContentIcon.vue";
-import {
-  contentApi,
-  type Inventory,
-  type InstalledProject,
-  type Plan,
-} from "../content-api";
+import { contentApi, type Inventory } from "../content-api";
 import { useContent } from "../stores/content";
 const content = useContent();
 const inventory = ref<Inventory>({ pack: null, projects: [], files: [] }),
   inventoryBusy = ref(false),
-  inventoryError = ref(""),
-  showPackContent = ref(false);
-const updateDialog = ref<HTMLDialogElement>(),
-  updatePlan = ref<Plan | null>(null),
-  updateName = ref(""),
-  updateBusy = ref(false),
-  updateError = ref("");
+  inventoryError = ref("");
 let inventoryRequest = 0;
 async function checkUpdates() {
   if (!desktop || !instance.value) return;
@@ -74,43 +65,6 @@ async function checkUpdates() {
     if (token === inventoryRequest) inventoryBusy.value = false;
   }
 }
-async function reviewUpdate(item: InstalledProject) {
-  updateName.value = item.project.name;
-  updatePlan.value = null;
-  updateError.value = "";
-  updateBusy.value = true;
-  updateDialog.value?.showModal();
-  try {
-    updatePlan.value = await contentApi.updatePlan(
-      id.value,
-      item.provider,
-      item.project.id,
-    );
-  } catch (e) {
-    updateError.value = String(e);
-  } finally {
-    updateBusy.value = false;
-  }
-}
-async function installUpdate() {
-  if (!updatePlan.value) return;
-  await content.install(updatePlan.value.id);
-  if (!content.error) updateDialog.value?.close();
-  else updateError.value = content.error;
-}
-const projectFor = (name: string) =>
-  inventory.value.files.find((f) => f.name === name)?.project;
-const providerFor = (name: string) =>
-  inventory.value.files.find((f) => f.name === name)?.provider ?? "modrinth";
-const updateFor = (name: string) =>
-  inventory.value.projects.find((p) => p.project.id === projectFor(name)?.id);
-const managed = (name: string) =>
-  inventory.value.pack?.files?.some(
-    (p) =>
-      p ===
-      `${section.value === "mods" ? "mods" : section.value === "resourcePacks" ? "resourcepacks" : "shaderpacks"}/${name.replace(/\.disabled$/, "")}`,
-  ) ?? false;
-
 const store = useLauncher();
 const route = useRoute();
 const router = useRouter();
@@ -220,7 +174,7 @@ watch(
   (stage) => {
     if (stage === "installed") {
       void checkUpdates();
-      void refresh();
+      if (sectionView.value !== "content") void refresh();
     }
   },
 );
@@ -238,7 +192,7 @@ watch(
       tab.value = "resourcePacks";
     void loadPreferences();
     void checkUpdates();
-    void refresh();
+    if (sectionView.value !== "content") void refresh();
   },
   { immediate: true },
 );
@@ -246,15 +200,11 @@ watch(section, () => {
   search.value = "";
   log.value = "";
   logName.value = "";
-  void refresh();
+  if (sectionView.value !== "content") void refresh();
 });
 const visible = computed(() =>
-  entries.value.filter(
-    (e) =>
-      (showPackContent.value || !managed(e.name)) &&
-      (projectFor(e.name)?.name ?? e.name)
-        .toLowerCase()
-        .includes(search.value.toLowerCase()),
+  entries.value.filter((e) =>
+    e.name.toLowerCase().includes(search.value.toLowerCase()),
   ),
 );
 async function refresh() {
@@ -286,15 +236,6 @@ async function operate(action: () => Promise<unknown>, success = "") {
   } finally {
     actionBusy.value = false;
   }
-}
-function importContent() {
-  return operate(
-    () => instanceApi.import(id.value, section.value),
-    "Content refreshed.",
-  );
-}
-function toggleContent(name: string) {
-  return operate(() => instanceApi.toggle(id.value, section.value, name));
 }
 async function openFolder(name?: string) {
   error.value = "";
@@ -500,60 +441,63 @@ const prettySize = (size: number) =>
         </p>
       </div>
       <div class="instance-inline-actions">
-        <button
-          class="button secondary"
-          :disabled="!desktop || actionBusy"
-          @click="instanceApi.open(id).catch((e) => (error = String(e)))"
-        >
-          <FolderOpen :size="16" />Open folder</button
-        ><button class="button secondary" @click="openSettings()">
-          <Settings :size="16" />Settings
-        </button>
         <LaunchControl :instance="instance" />
+        <button
+          class="icon-button instance-settings-shortcut"
+          title="Settings"
+          aria-label="Settings"
+          @click="openSettings()"
+        >
+          <Settings :size="19" />
+        </button>
+        <details
+          class="instance-header-menu"
+          @keydown.esc="
+            ($event.currentTarget as HTMLDetailsElement).open = false
+          "
+        >
+          <summary
+            class="icon-button"
+            aria-label="More instance actions"
+            title="More actions"
+          >
+            <MoreVertical :size="20" />
+          </summary>
+          <div>
+            <button
+              :disabled="!desktop || actionBusy"
+              @click="
+                instanceApi.open(id).catch((e) => (error = String(e)));
+                ($event.currentTarget as HTMLElement)
+                  .closest('details')
+                  ?.removeAttribute('open');
+              "
+            >
+              <FolderOpen :size="16" />Open folder</button
+            ><button
+              @click="
+                ask('duplicate');
+                ($event.currentTarget as HTMLElement)
+                  .closest('details')
+                  ?.removeAttribute('open');
+              "
+            >
+              <Copy :size="16" />Duplicate instance</button
+            ><button
+              class="danger"
+              @click="
+                ask('remove-instance');
+                ($event.currentTarget as HTMLElement)
+                  .closest('details')
+                  ?.removeAttribute('open');
+              "
+            >
+              <Trash2 :size="16" />Remove instance
+            </button>
+          </div>
+        </details>
       </div>
     </header>
-    <dialog
-      ref="updateDialog"
-      class="instance-dialog content-update-dialog"
-      aria-labelledby="content-update-title"
-      @cancel.prevent="updateDialog?.close()"
-    >
-      <h2 id="content-update-title">Update {{ updateName }}</h2>
-      <p class="muted">
-        Latest compatible release for this Minecraft version and loader. Worlds
-        and additional content are kept. Replaced files are backed up under
-        .azuria/backups; edited configuration is preserved.
-      </p>
-      <p v-if="updateBusy" role="status">Checking update files…</p>
-      <p v-if="updateError" class="inline-error" role="alert">
-        {{ updateError }}
-      </p>
-      <div v-if="updatePlan">
-        <h3>Ready to update</h3>
-        <p>
-          {{ updatePlan.preview.files }} files · Minecraft
-          {{ updatePlan.preview.target.minecraft }} ·
-          {{ updatePlan.preview.target.loader }}
-          {{ updatePlan.preview.target.loaderVersion }}
-        </p>
-        <ul>
-          <li v-for="(name, index) in updatePlan.preview.names" :key="index">
-            {{ name }}
-          </li>
-        </ul>
-      </div>
-      <footer class="dialog-actions">
-        <button class="button secondary" @click="updateDialog?.close()">
-          Cancel</button
-        ><button
-          class="button primary"
-          :disabled="!updatePlan || updateBusy || content.busy"
-          @click="installUpdate"
-        >
-          Update instance
-        </button>
-      </footer>
-    </dialog>
     <dialog
       v-if="settings"
       ref="settingsDialog"
@@ -778,297 +722,80 @@ const prettySize = (size: number) =>
         >
       </nav>
       <LiveLogs v-if="showLiveLogs" :id="id" />
-      <template v-else>
-        <section
-          v-if="sectionView === 'content' && inventory.pack"
-          class="instance-pack-card"
-        >
-          <div class="pack-summary">
-            <ContentIcon
-              :url="inventory.pack.project.iconUrl"
-              :name="inventory.pack.project.name"
-            />
-            <div>
-              <h2>Modpack content</h2>
-              <p class="muted">
-                {{ inventory.pack.mods }} mods ·
-                {{ inventory.pack.resourcePacks }} resource packs
-              </p>
-            </div>
-            <button
-              class="button secondary"
-              @click="showPackContent = !showPackContent"
-            >
-              {{
-                showPackContent
-                  ? "Show additional content"
-                  : "View pack content"
-              }}
-            </button>
-          </div>
-          <footer>
-            <RouterLink
-              :to="`/discover/${inventory.pack.provider}/modpacks/${inventory.pack.project.id}`"
-              >{{ inventory.pack.project.name }}</RouterLink
-            ><span>{{ inventory.pack.versionName }}</span
-            ><button
-              v-if="inventory.pack.latest || inventory.pack.missing"
-              class="button secondary"
-              :disabled="content.busy"
-              @click="reviewUpdate(inventory.pack)"
-            >
-              {{
-                inventory.pack.latest
-                  ? "Update pack"
-                  : `Repair ${inventory.pack.missing} missing files`
-              }}</button
-            ><span v-else class="muted">Up to date</span>
-          </footer>
-        </section>
-        <div v-if="sectionView === 'content'" class="instance-update-bar">
-          <h2>
-            {{
-              inventory.pack
-                ? showPackContent
-                  ? "Pack content"
-                  : "Additional content"
-                : "Instance content"
-            }}
-          </h2>
-          <span v-if="inventoryBusy" class="muted" role="status"
-            >Checking content…</span
-          ><button
-            class="text-link"
-            :disabled="inventoryBusy || content.busy"
-            @click="checkUpdates"
-          >
-            <RefreshCw :size="14" />Check for updates
-          </button>
-        </div>
-        <p
-          v-if="inventoryError && sectionView === 'content'"
-          class="muted content-check-error"
-        >
-          {{ inventoryError }}
-          <button class="text-link" @click="checkUpdates">Retry check</button>
-        </p>
+      <InstanceContent
+        v-else-if="sectionView === 'content'"
+        :key="id"
+        :id="id"
+        :loader="instance.loader"
+        :inventory="inventory"
+        :checking="inventoryBusy"
+        :check-error="inventoryError"
+        @check="checkUpdates"
+        @settings="openSettings()"
+      />
+      <section v-else>
         <div class="instance-content-toolbar">
           <label class="search-box"
             ><Search :size="17" /><input
               v-model="search"
-              :aria-label="
-                sectionView === 'content'
-                  ? 'Search instance content'
-                  : sectionView === 'worlds'
-                    ? 'Search worlds'
-                    : 'Search logs'
-              "
-              :placeholder="`Search ${sectionView}`" /></label
+              aria-label="Search worlds"
+              placeholder="Search worlds…" /></label
           ><button
-            v-if="sectionView === 'content'"
-            class="button secondary"
-            :disabled="!desktop || actionBusy || filesBusy"
-            @click="importContent()"
-          >
-            <Upload :size="16" />Import file</button
-          ><button
-            class="button secondary"
+            class="icon-button"
+            aria-label="Open worlds folder"
+            title="Open folder"
             :disabled="!desktop || actionBusy"
             @click="openFolder()"
           >
-            <FolderOpen :size="16" />Open
-            {{
-              sectionView === "worlds"
-                ? "worlds"
-                : sectionView === "logs"
-                  ? "logs"
-                  : "content"
-            }}
-            folder</button
+            <FolderOpen :size="18" /></button
           ><button
             class="icon-button"
             aria-label="Refresh instance files"
-            :disabled="actionBusy || filesBusy"
+            title="Refresh"
+            :disabled="filesBusy"
             @click="refresh"
           >
             <RefreshCw :size="17" />
           </button>
         </div>
-        <div
-          v-if="sectionView === 'content'"
-          class="instance-content-types"
-          role="group"
-          aria-label="Content type"
-        >
-          <button
-            v-for="category in [
-              ...(instance.loader === 'vanilla'
-                ? []
-                : [{ id: 'mods', label: 'Mods' }]),
-              { id: 'resourcePacks', label: 'Resource packs' },
-              { id: 'shaderPacks', label: 'Shader packs' },
-            ]"
-            :key="category.id"
-            :aria-pressed="tab === category.id"
-            @click="tab = category.id as Section"
-          >
-            {{ category.label }}
-          </button>
-        </div>
-        <p v-if="!desktop" class="instance-notice">
-          Local files are available in the installed desktop app. This browser
-          preview does not access your computer’s instance folders.
-        </p>
         <p v-if="filesBusy" class="muted" role="status">
           Reading instance files…
         </p>
-        <div v-else-if="error" class="instance-files-empty">
-          <h2>Files could not be refreshed</h2>
-          <p class="muted">Check the message below, then retry.</p>
-          <button
-            class="button secondary"
-            :disabled="actionBusy"
-            @click="refresh"
-          >
-            Retry files
-          </button>
-        </div>
+        <p v-else-if="error" class="inline-error">{{ error }}</p>
         <div v-else-if="!visible.length" class="instance-files-empty">
-          <component
-            :is="
-              sectionView === 'worlds'
-                ? Globe
-                : sectionView === 'logs'
-                  ? ScrollText
-                  : Boxes
-            "
-            :size="28"
-          />
-          <h2>
-            {{
-              search
-                ? "No matching files"
-                : sectionView === "worlds"
-                  ? "No worlds yet"
-                  : sectionView === "logs"
-                    ? "No game logs yet"
-                    : "No content added yet"
-            }}
-          </h2>
+          <Globe :size="28" />
+          <h2>{{ search ? "No matching files" : "No worlds yet" }}</h2>
           <p class="muted">
             {{
               search
                 ? "Try another filename."
-                : sectionView === "worlds"
-                  ? "Worlds saved in this instance will appear here."
-                  : sectionView === "logs"
-                    ? "Existing .log files in the instance logs folder will appear here."
-                    : "Import a local mod or pack, or open its folder to add files."
+                : "Worlds saved in this instance will appear here."
             }}
           </p>
         </div>
         <div v-else class="instance-file-list">
-          <div class="instance-file-list-heading">
-            <span>{{
-              sectionView === "worlds"
-                ? "World"
-                : sectionView === "logs"
-                  ? "Log file"
-                  : "File"
-            }}</span
-            ><span>Actions</span>
-          </div>
           <article
             v-for="entry in visible"
             :key="entry.name"
             class="instance-file-row"
           >
-            <RouterLink
-              v-if="projectFor(entry.name)"
-              class="file-project-icon"
-              :to="`/discover/${providerFor(entry.name)}/${tab === 'mods' ? 'mods' : 'resourcepacks'}/${projectFor(entry.name)!.id}`"
-              :aria-label="'View ' + projectFor(entry.name)!.name"
-              ><ContentIcon
-                :url="projectFor(entry.name)!.iconUrl"
-                :name="projectFor(entry.name)!.name"
-            /></RouterLink>
-            <span v-else class="file-symbol"
-              ><component
-                :is="
-                  entry.directory
-                    ? Globe
-                    : sectionView === 'logs'
-                      ? ScrollText
-                      : Boxes
-                "
-                :size="21"
-            /></span>
+            <span class="file-symbol"><Globe :size="21" /></span>
             <div class="file-identity">
-              <strong>{{
-                projectFor(entry.name)?.name ??
-                entry.name.replace(/\.disabled$/, "")
-              }}</strong
-              ><span
-                >{{ entry.directory ? "World folder" : prettySize(entry.size)
-                }}<template v-if="!entry.enabled"> · Disabled</template></span
-              >
+              <strong>{{ entry.name }}</strong
+              ><span>World folder</span>
             </div>
-            <div class="instance-inline-actions">
-              <template v-if="sectionView === 'content'">
-                <button
-                  v-if="updateFor(entry.name)?.latest"
-                  class="button secondary"
-                  :disabled="content.busy || actionBusy"
-                  @click="reviewUpdate(updateFor(entry.name)!)"
-                >
-                  Update
-                </button>
-                <button
-                  class="content-switch"
-                  role="switch"
-                  :aria-checked="entry.enabled"
-                  :aria-label="
-                    'Enable ' + entry.name.replace(/\.disabled$/, '')
-                  "
-                  :disabled="actionBusy"
-                  @click="toggleContent(entry.name)"
-                >
-                  <span /></button
-                ><button
-                  class="icon-button danger"
-                  :aria-label="'Remove ' + entry.name"
-                  :disabled="actionBusy"
-                  @click="ask('remove-file', entry.name)"
-                >
-                  <Trash2 :size="17" /></button></template
-              ><button
-                v-else
-                class="button secondary"
-                :disabled="actionBusy"
-                @click="
-                  sectionView === 'worlds'
-                    ? openFolder(entry.name)
-                    : readLog(entry.name)
-                "
-              >
-                {{
-                  sectionView === "worlds" ? "Open world folder" : "View log"
-                }}
-              </button>
-            </div>
+            <button
+              class="icon-button"
+              :aria-label="'Open ' + entry.name"
+              title="Open world folder"
+              :disabled="!desktop || actionBusy"
+              @click="openFolder(entry.name)"
+            >
+              <FolderOpen :size="17" />
+            </button>
           </article>
         </div>
-        <section v-if="logName" class="instance-log">
-          <h2>{{ logName }}</h2>
-          <p class="muted">
-            Showing the last 64 KB. Common credential lines are hidden. Review
-            logs before sharing.
-          </p>
-          <pre tabindex="0" aria-label="Game log output">{{
-            log || "This log is empty."
-          }}</pre>
-        </section>
-      </template>
+      </section>
     </template>
     <p
       v-if="error && !settings"
@@ -1156,87 +883,53 @@ const prettySize = (size: number) =>
 </template>
 
 <style scoped>
-.instance-pack-card {
+.instance-settings-shortcut {
+  width: 38px;
+  height: 38px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 50%;
   background: var(--panel);
-  margin: 24px 0;
-  overflow: hidden;
 }
-.pack-summary {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
+.instance-header-menu {
+  position: relative;
 }
-.pack-summary > div {
-  flex: 1;
-}
-.pack-summary h2 {
-  margin: 0 0 8px;
-  font-size: 19px;
-}
-.pack-summary p {
-  margin: 0;
-  font-size: 12px;
-}
-.instance-pack-card footer {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  border-top: 1px solid var(--border);
-  padding: 14px 20px;
-  font-size: 12px;
-}
-.instance-pack-card footer button {
-  margin-left: auto;
-}
-.instance-pack-card a {
-  color: var(--text);
-  font-weight: 600;
-}
-.instance-update-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 24px 0 16px;
-}
-.instance-update-bar h2 {
-  font-size: 18px;
-  margin: 0;
-  flex: 1;
-}
-.instance-update-bar button {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  font-size: 12px;
-  background: transparent;
-  border: 0;
+.instance-header-menu summary {
+  list-style: none;
   cursor: pointer;
 }
-.file-project-icon :deep(.content-icon) {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+.instance-header-menu summary::-webkit-details-marker {
+  display: none;
 }
-.content-check-error {
-  font-size: 12px;
-  line-height: 1.6;
+.instance-header-menu[open] > div {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  z-index: 20;
+  width: 205px;
+  padding: 7px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 12px 35px #0005;
 }
-.content-update-dialog {
-  max-width: 620px;
-  max-height: calc(100dvh - 70px);
-  overflow: auto;
-}
-.content-update-dialog p {
+.instance-header-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: 0;
+  width: 100%;
+  padding: 11px;
+  border-radius: 7px;
+  color: var(--text);
+  cursor: pointer;
   font-size: 13px;
-  line-height: 1.7;
+  text-align: left;
 }
-.content-update-dialog ul {
-  max-height: 180px;
-  overflow: auto;
-  font-size: 13px;
+.instance-header-menu button:hover {
+  background: var(--hover);
+}
+.instance-header-menu button.danger {
+  color: var(--pink);
 }
 </style>

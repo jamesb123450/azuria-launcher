@@ -69,7 +69,7 @@ export function releaseNotes(text) {
     })
     .join("");
 }
-export function render(page, { siteURL, base, releases }) {
+export function render(page, { siteURL, base, releases, adsense = "" }) {
   const e = escapeHTML;
   const link = (path) => `${base}${path}`;
   const asset = (name) => link(`assets/${name}`);
@@ -753,10 +753,10 @@ export function render(page, { siteURL, base, releases }) {
               website hosting, account data and support information.
             </p>
             <p>
-              This website has no analytics, advertising scripts or website
-              accounts. Fonts and screenshots are served with the site. GitHub
-              hosts the site and installer downloads and processes requests
-              under its own policies.
+              ${adsense ? "Google AdSense display advertising is enabled on the home page. Google and its partners may process advertising requests and use cookies according to your consent choices. Manage your preferences through the consent message. This site has no website accounts." : "This website has no analytics, advertising scripts or website accounts."}
+              Fonts and screenshots are served with the site. GitHub hosts the
+              site and installer downloads and processes requests under its own
+              policies.
             </p>
             <p>
               The desktop launcher stores instance settings locally. Refresh
@@ -824,10 +824,8 @@ export function render(page, { siteURL, base, releases }) {
           <section id="website-data">
             <h2>When you visit this website</h2>
             <p>
-              This website does not create accounts, set its own cookies, store
-              preferences in your browser or include analytics, advertising
-              trackers or embedded social feeds. Fonts and images are hosted
-              with the website.
+              ${adsense ? `This website displays Google AdSense ads on its home page. Google and its advertising partners may process IP addresses, device information and cookies for ad delivery, measurement and, where you consent, personalised advertising. Use the consent message to accept, reject or manage choices. See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from partner sites</a>. No website accounts or social feeds are provided.` : "This website does not create accounts, set its own cookies, store preferences in your browser or include analytics, advertising trackers or embedded social feeds."}
+              Fonts and images are hosted with the website.
             </p>
             <p>
               GitHub Pages hosts the website and GitHub Releases hosts
@@ -1133,7 +1131,7 @@ export function render(page, { siteURL, base, releases }) {
       <body class="${page === "home" ? "home-page" : "inner-page"}">
         ${header}
         <main id="main" tabindex="-1">
-          ${content}
+          ${content} ${page === "home" ? adsense : ""}
           <aside
             class="latest-notice container"
             aria-label="Latest Azuria release"
