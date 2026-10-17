@@ -3,6 +3,8 @@ import { defineStore } from "pinia";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { desktop } from "../api";
+import { useLauncher } from "./launcher";
+import type { Instance } from "../types";
 export interface GameLaunch {
   id: string;
   stage: string;
@@ -10,8 +12,15 @@ export interface GameLaunch {
   completed: number;
   total: number;
   exitCode: number | null;
+  prepareOnly?: boolean;
 }
-export const terminalStages = ["exited", "crashed", "error", "cancelled"];
+export const terminalStages = [
+  "exited",
+  "crashed",
+  "error",
+  "cancelled",
+  "prepared",
+];
 export const useGame = defineStore("game", () => {
   const launches = ref<Record<string, GameLaunch>>({});
   const error = ref("");
@@ -34,6 +43,12 @@ export const useGame = defineStore("game", () => {
       await listen<GameLaunch>("game-progress", ({ payload }) =>
         update(payload),
       );
+      await listen<Instance>("instance-updated", ({ payload }) => {
+        const launcher = useLauncher();
+        launcher.instances = launcher.instances.map((item) =>
+          item.id === payload.id ? payload : item,
+        );
+      });
       await listen("game-close-blocked", () => {
         error.value =
           "Close Minecraft or cancel preparation before closing Azuria. This keeps game monitoring and instance protection active.";
@@ -47,7 +62,7 @@ export const useGame = defineStore("game", () => {
         "Could not connect to game status. Restart Azuria before launching.";
     }
   }
-  async function launch(id: string) {
+  async function start(id: string, prepareOnly: boolean) {
     if (!desktop) return;
     error.value = "";
     if (!ready.value) {
@@ -63,17 +78,23 @@ export const useGame = defineStore("game", () => {
     update({
       id,
       stage: "queued",
-      message: "Preparing Minecraft…",
+      prepareOnly,
+      message: prepareOnly
+        ? "Downloading Minecraft files…"
+        : "Preparing Minecraft…",
       completed: 0,
       total: 0,
       exitCode: null,
     });
     try {
-      await invoke("launch_instance", { id });
+      await invoke(prepareOnly ? "prepare_instance" : "launch_instance", {
+        id,
+      });
     } catch (e) {
       update({
         id,
         stage: "error",
+        prepareOnly,
         message:
           typeof e === "string"
             ? e
@@ -84,6 +105,8 @@ export const useGame = defineStore("game", () => {
       });
     }
   }
+  const launch = (id: string) => start(id, false);
+  const prepare = (id: string) => start(id, true);
   async function cancel(id: string) {
     stopping.value[id] = true;
     try {
@@ -93,5 +116,15 @@ export const useGame = defineStore("game", () => {
       error.value = String(e);
     }
   }
-  return { launches, active, ready, error, stopping, init, launch, cancel };
+  return {
+    launches,
+    active,
+    ready,
+    error,
+    stopping,
+    init,
+    launch,
+    prepare,
+    cancel,
+  };
 });

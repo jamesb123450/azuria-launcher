@@ -1,5 +1,10 @@
 ## Changes
 
+- Fixed Fabric Stable/Latest selections being sent as literal version strings. New instances save concrete versions; existing preferences resolve and pin on the next preparation attempt.
+- Added support for Minecraft 26.1 Fabric profiles, which no longer include intermediary mappings. Older Minecraft profiles retain mapping validation.
+- Creating a Vanilla or Fabric instance now downloads and verifies the required game files, libraries, assets and Java without opening Minecraft or requiring sign-in. Play reuses those files and verifies the account only before starting the game.
+- Added download progress, Stop, Resume/Retry download and a ready state. Failed or cancelled downloads retain the instance and verified cache for retry.
+
 - Added Windows Fabric launching using the selected Minecraft and pinned Fabric loader version. Quilt, Forge and NeoForge remain coming soon.
 - Fabric preparation merges official loader libraries and arguments with Mojang game metadata, verifies library checksums, and caches profiles by version pair. Existing Java/memory overrides, account verification, live logs and Play/Stop controls are reused.
 - Cancelling preparation preserves verified downloads for retry. Changing the loader version prepares a separate profile without removing instance content. Fabric API and mods are installed separately.

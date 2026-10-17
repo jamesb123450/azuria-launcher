@@ -99,3 +99,23 @@ export function loaderVersions(
   }
   return cache.get(key)!;
 }
+
+export async function resolveLoaderVersion(
+  loader: Loader,
+  game: string,
+  selection: string,
+): Promise<string> {
+  if (!["stable", "latest"].includes(selection)) {
+    if (!safeVersion.test(selection))
+      throw new Error("Choose a valid loader version.");
+    return selection;
+  }
+  const list = await loaderVersions(loader, game);
+  const selected =
+    selection === "stable" ? list.find((entry) => entry.stable) : list[0];
+  if (!selected)
+    throw new Error(
+      `No ${selection} loader is available for this Minecraft version. Choose another version.`,
+    );
+  return selected.id;
+}

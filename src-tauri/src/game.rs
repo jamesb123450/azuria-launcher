@@ -18,12 +18,13 @@ pub struct Launch {
     completed: u64,
     total: u64,
     exit_code: Option<i32>,
+    prepare_only: bool,
 }
 impl Launch {
     fn active(&self) -> bool {
         !matches!(
             self.stage.as_str(),
-            "exited" | "crashed" | "error" | "cancelled"
+            "exited" | "crashed" | "error" | "cancelled" | "prepared"
         )
     }
 }
@@ -87,6 +88,7 @@ impl Games {
                     completed: 0,
                     total: 0,
                     exit_code: code,
+                    prepare_only: entry.view.prepare_only,
                 };
                 let _ = app.emit("game-progress", &entry.view);
             }
@@ -116,15 +118,47 @@ pub fn cancel_launch(games: State<'_, Games>, id: String) -> Result<(), String> 
 }
 #[tauri::command]
 pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    start_task(app, id, false)
+}
+#[tauri::command]
+pub fn prepare_instance(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    start_task(app, id, true)
+}
+/// Creation remains successful even when its asynchronous download cannot start.
+pub fn preparation_failed(app: &tauri::AppHandle, id: &str, error: &str) {
+    let games = app.state::<Games>();
+    let Ok(mut entries) = games.entries.lock() else {
+        return;
+    };
+    let view = Launch {
+        id: id.into(),
+        stage: "error".into(),
+        message: error.into(),
+        completed: 0,
+        total: 0,
+        exit_code: None,
+        prepare_only: true,
+    };
+    entries.insert(
+        id.into(),
+        Entry {
+            view: view.clone(),
+            cancel: Arc::new(AtomicBool::new(false)),
+        },
+    );
+    let _ = app.emit("game-progress", &view);
+}
+
+fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(), String> {
     #[cfg(not(all(windows, target_arch = "x86_64")))]
     {
-        let _ = (app, id);
+        let _ = (app, id, prepare_only);
         Err("Minecraft launching currently requires the Windows x64 desktop app.".into())
     }
     #[cfg(all(windows, target_arch = "x86_64"))]
     {
         let cancel = Arc::new(AtomicBool::new(false));
-        let (game, root, instance, options) = {
+        let (game, root, mut instance, options) = {
             let games = app.state::<Games>();
             let mut entries = games
                 .entries
@@ -146,17 +180,6 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                 ) {
                     return Err("Vanilla and Fabric launching are supported. Quilt, Forge and NeoForge are coming soon.".into());
                 }
-                if instance.loader == azuria_core::Loader::Fabric
-                    && instance
-                        .loader_version
-                        .as_deref()
-                        .is_none_or(|v| v.trim().is_empty())
-                {
-                    return Err(
-                        "Choose a Fabric loader version in instance settings before launching."
-                            .into(),
-                    );
-                }
                 let game = s.instance_dir(&id)?;
                 let root = game
                     .parent()
@@ -172,14 +195,23 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                     view: Launch {
                         id: id.clone(),
                         stage: "queued".into(),
-                        message: "Waiting to prepare Minecraft".into(),
+                        message: if prepare_only {
+                            "Queued to download Minecraft files"
+                        } else {
+                            "Waiting to prepare Minecraft"
+                        }
+                        .into(),
                         completed: 0,
                         total: 0,
                         exit_code: None,
+                        prepare_only,
                     },
                     cancel: cancel.clone(),
                 },
             );
+            if let Some(entry) = entries.get(&id) {
+                let _ = app.emit("game-progress", &entry.view);
+            }
             prepared
         };
         // A native task owns preparation and process monitoring even if the view changes.
@@ -204,18 +236,22 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                     }
                 };
                 azuria_launch::cancelled(&cancel)?;
-                azuria_launch::report(
-                    &reporter,
-                    "account",
-                    "Checking your Minecraft account",
-                    0,
-                    0,
-                );
-                let accounts = app.state::<Accounts>();
-                tauri::async_runtime::block_on(
-                    accounts.launch_session(crate::auth_progress(app.clone())),
-                )
-                .map_err(|e| e.message)?;
+                if instance.loader == azuria_core::Loader::Fabric {
+                    let selected = instance.loader_version.as_deref().unwrap_or("stable");
+                    let resolved = azuria_launch::resolve_fabric_version(
+                        &instance.minecraft_version,
+                        selected,
+                        reporter.clone(),
+                        cancel.clone(),
+                    )?;
+                    if instance.loader_version.as_deref() != Some(&resolved) {
+                        let storage = app.state::<AppState>();
+                        instance = with_store(&storage, |s| s.pin_fabric_version(&id, &resolved))?;
+                        let _ = app.emit("instance-updated", &instance);
+                    }
+                }
+                // File preparation is public and does not need Minecraft credentials.
+                // A verified session is obtained only when a game process will be started.
                 let prepared = azuria_launch::prepare_with_loader(
                     &root,
                     &game,
@@ -229,6 +265,11 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                     reporter.clone(),
                     cancel.clone(),
                 )?;
+                azuria_launch::cancelled(&cancel)?;
+                if prepare_only {
+                    return Ok(None);
+                }
+                let accounts = app.state::<Accounts>();
                 // Large downloads can outlive the session. Refresh again immediately before spawning.
                 azuria_launch::report(&reporter, "account", "Refreshing the game session", 0, 0);
                 let session = tauri::async_runtime::block_on(
@@ -254,7 +295,13 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                 drop(preparation);
                 running.wait_with_cancel(cancel.clone())
             })();
-            match result {Ok(code) if cancel.load(Ordering::Relaxed)=>games.finish(&app,&id,"cancelled","Minecraft stopped",code),Ok(Some(0))=>games.finish(&app,&id,"exited","Minecraft closed normally",Some(0)),Ok(code)=>games.finish(&app,&id,"crashed","Minecraft exited unexpectedly. Open Logs to inspect azuria-launch.log and the game’s crash reports.",code),Err(error)=>{let stage=if cancel.load(Ordering::Relaxed){"cancelled"}else{"error"};games.finish(&app,&id,stage,&error,None);}}
+            match result {
+                Ok(code) if cancel.load(Ordering::Relaxed) => games.finish(&app, &id, "cancelled", if prepare_only { "Download cancelled. Verified files are kept; resume when ready." } else { "Minecraft stopped" }, code),
+                Ok(_) if prepare_only => games.finish(&app, &id, "prepared", "Minecraft files are ready. Press Play to start the game.", None),
+                Ok(Some(0)) => games.finish(&app, &id, "exited", "Minecraft closed normally", Some(0)),
+                Ok(code) => games.finish(&app, &id, "crashed", "Minecraft exited unexpectedly. Open Logs to inspect azuria-launch.log and the game’s crash reports.", code),
+                Err(error) => { let stage = if cancel.load(Ordering::Relaxed) { "cancelled" } else { "error" }; games.finish(&app, &id, stage, &error, None); }
+            }
         });
         Ok(())
     }

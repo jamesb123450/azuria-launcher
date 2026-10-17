@@ -108,6 +108,9 @@ impl Downloader {
         let response = self.client.get(parsed).send().map_err(|_| {
             "Could not reach the game download service. Check your connection and retry."
         })?;
+        if matches!(response.status().as_u16(), 400 | 404) {
+            return Err(format!("The selected game or loader files are unavailable (HTTP {}). Check the Minecraft and loader versions in instance settings.", response.status().as_u16()));
+        }
         if !response.status().is_success() {
             return Err(format!(
                 "The download service returned HTTP {}. Retry shortly.",

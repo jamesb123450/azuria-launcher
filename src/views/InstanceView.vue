@@ -543,7 +543,7 @@ const prettySize = (size: number) =>
                   <dd>
                     {{
                       ["vanilla", "fabric"].includes(instance.loader)
-                        ? "Prepared automatically when you press Play"
+                        ? "Downloads after creation; checked again on Play"
                         : "Loader launching coming soon"
                     }}
                   </dd>

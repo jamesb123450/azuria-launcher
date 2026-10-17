@@ -17,6 +17,11 @@ const active = computed(
 const supported = computed(
   () => desktop && ["vanilla", "fabric"].includes(props.instance.loader),
 );
+const retryPreparation = computed(
+  () =>
+    !!launch.value?.prepareOnly &&
+    ["error", "cancelled"].includes(launch.value.stage),
+);
 const label = computed(() =>
   !supported.value
     ? "Launch unavailable"
@@ -24,9 +29,13 @@ const label = computed(() =>
       ? game.stopping[props.instance.id]
         ? "Stopping…"
         : "Stop"
-      : launch.value?.stage === "error" || launch.value?.stage === "crashed"
-        ? "Retry launch"
-        : "Play",
+      : retryPreparation.value
+        ? launch.value?.stage === "cancelled"
+          ? "Resume download"
+          : "Retry download"
+        : launch.value?.stage === "error" || launch.value?.stage === "crashed"
+          ? "Retry launch"
+          : "Play",
 );
 function toggle() {
   if (active.value) {
@@ -38,7 +47,8 @@ function toggle() {
     )
       return;
     void game.cancel(props.instance.id);
-  } else void game.launch(props.instance.id);
+  } else if (retryPreparation.value) void game.prepare(props.instance.id);
+  else void game.launch(props.instance.id);
 }
 </script>
 <template>
@@ -58,7 +68,7 @@ function toggle() {
         :size="16"
         class="launch-spin"
       /><Square v-else-if="active" :size="15" /><RotateCcw
-        v-else-if="label === 'Retry launch'"
+        v-else-if="label === 'Retry launch' || retryPreparation"
         :size="16"
       /><Play v-else :size="16" />{{ label }}
     </button>
@@ -76,9 +86,17 @@ function toggle() {
             ? "Stopping Minecraft…"
             : launch?.stage === "running"
               ? "Minecraft running"
-              : "Preparing Minecraft…"
+              : launch?.prepareOnly
+                ? "Downloading game files…"
+                : "Preparing Minecraft…"
         }}
       </p>
+      <progress
+        v-if="active && launch?.prepareOnly && launch.total > 0"
+        :value="launch.completed"
+        :max="launch.total"
+        aria-label="Instance download progress"
+      />
       <div
         v-if="launch && !active"
         :role="['error', 'crashed'].includes(launch.stage) ? 'alert' : 'status'"
@@ -103,7 +121,7 @@ function toggle() {
       <p v-else class="launch-hint">
         {{
           account.view.verified
-            ? "Java and game files are prepared automatically on first launch."
+            ? "Java and game files download after creation. Play checks and reuses completed files."
             : "A verified Minecraft Java account is required. Sign in from Settings."
         }}
       </p></template
@@ -137,6 +155,7 @@ function toggle() {
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
+.launch-control > progress,
 .launch-status progress {
   width: 100%;
   height: 5px;

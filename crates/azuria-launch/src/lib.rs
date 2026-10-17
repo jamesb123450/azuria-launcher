@@ -1,5 +1,6 @@
 //! Windows x64 Vanilla and Fabric preparation. Credentials are native-only and never serializable.
 mod fabric;
+pub use fabric::resolve_version as resolve_fabric_version;
 mod files;
 mod metadata;
 mod runtime;
@@ -366,8 +367,9 @@ pub fn prepare_with_loader(
             0,
             0,
         );
-        let profile = fabric::profile(root, version, loader, &downloader, &cancel)?;
-        metadata = fabric::merge(&metadata, &profile, version, loader)?;
+        let loader = resolve_fabric_version(version, loader, progress.clone(), cancel.clone())?;
+        let profile = fabric::profile(root, version, &loader, &downloader, &cancel)?;
+        metadata = fabric::merge(&metadata, &profile, version, &loader)?;
     }
     let libraries = safe_join(root, "libraries")?;
     let assets = safe_join(root, "assets")?;

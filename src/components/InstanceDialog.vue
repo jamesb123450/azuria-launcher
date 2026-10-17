@@ -26,7 +26,11 @@ import { DEFAULT_INPUT, LOADERS, loaderName, validateInput } from "../types";
 import { useLauncher } from "../stores/launcher";
 import InstanceIcon from "./InstanceIcon.vue";
 import VersionPicker from "./VersionPicker.vue";
-import { loaderVersions, type LoaderVersion } from "../lib/loader-versions";
+import {
+  loaderVersions,
+  resolveLoaderVersion,
+  type LoaderVersion,
+} from "../lib/loader-versions";
 import {
   ICON_COLORS,
   ICON_GLYPHS,
@@ -47,6 +51,7 @@ const edit = Boolean(props.instance && !props.duplicate);
 const step = ref<"choose" | "setup">(props.instance ? "setup" : "choose");
 const error = ref("");
 const iconBusy = ref(false);
+const resolvingLoader = ref(false);
 const customizing = ref(false);
 const color = ref(ICON_COLORS[0]!);
 const glyph = ref<IconGlyph>("cube");
@@ -270,6 +275,7 @@ async function chooseUpload(event: Event) {
 async function save() {
   if (
     iconBusy.value ||
+    resolvingLoader.value ||
     store.busy ||
     (loaderPolicy.value === "other" && loaderLoading.value)
   )
@@ -296,10 +302,24 @@ async function save() {
           ? customLoaderVersion.value.trim()
           : loaderPolicy.value,
   };
-  error.value = validateInput(input) ?? "";
-  if (error.value) return;
-  if (await store.save(input, edit ? props.instance?.id : undefined))
-    emit("close");
+  resolvingLoader.value = true;
+  try {
+    if (input.loader === "fabric") {
+      input.loaderVersion = await resolveLoaderVersion(
+        input.loader,
+        input.minecraftVersion,
+        input.loaderVersion ?? "stable",
+      );
+    }
+    error.value = validateInput(input) ?? "";
+    if (error.value) return;
+    if (await store.save(input, edit ? props.instance?.id : undefined))
+      emit("close");
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : String(cause);
+  } finally {
+    resolvingLoader.value = false;
+  }
 }
 </script>
 <template>
@@ -307,7 +327,9 @@ async function save() {
     ref="dialog"
     class="instance-dialog create-dialog"
     aria-labelledby="dialog-title"
-    @cancel.prevent="!store.busy && !iconBusy && emit('close')"
+    @cancel.prevent="
+      !store.busy && !iconBusy && !resolvingLoader && emit('close')
+    "
   >
     <header class="create-heading">
       <h2 id="dialog-title">
@@ -323,7 +345,7 @@ async function save() {
         type="button"
         class="create-close icon-button"
         aria-label="Close dialog"
-        :disabled="store.busy || iconBusy"
+        :disabled="store.busy || iconBusy || resolvingLoader"
         @click="emit('close')"
       >
         <X :size="19" />
@@ -399,7 +421,10 @@ async function save() {
 
     <form v-else class="create-setup-body" @submit.prevent="save">
       <div class="setup-scroll">
-        <fieldset :disabled="store.busy || iconBusy" class="setup-fields">
+        <fieldset
+          :disabled="store.busy || iconBusy || resolvingLoader"
+          class="setup-fields"
+        >
           <div class="create-icon-row">
             <div class="create-icon-preview">
               <InstanceIcon
@@ -539,7 +564,7 @@ async function save() {
               ]"
               :show-all="snapshots"
               all-label="Show all versions"
-              :disabled="store.busy || iconBusy"
+              :disabled="store.busy || iconBusy || resolvingLoader"
               @update:model-value="selectVersion"
               @toggle-all="snapshots = !snapshots"
             />
@@ -583,7 +608,9 @@ async function save() {
                 label="Loader version number"
                 :options="loaderOptions"
                 :show-all="allLoaderVersions"
-                :disabled="loaderLoading || store.busy || iconBusy"
+                :disabled="
+                  loaderLoading || store.busy || iconBusy || resolvingLoader
+                "
                 :placeholder="
                   loaderLoading
                     ? 'Loading loader versions…'
@@ -621,7 +648,7 @@ async function save() {
           v-if="!props.instance"
           type="button"
           class="button secondary"
-          :disabled="store.busy || iconBusy"
+          :disabled="store.busy || iconBusy || resolvingLoader"
           @click="back"
         >
           <ArrowLeft :size="16" />Back
@@ -630,14 +657,23 @@ async function save() {
           v-else
           type="button"
           class="button secondary"
-          :disabled="store.busy || iconBusy"
+          :disabled="store.busy || iconBusy || resolvingLoader"
           @click="emit('close')"
         >
           Cancel
         </button>
-        <button class="button primary" :disabled="store.busy || iconBusy">
+        <button
+          class="button primary"
+          :disabled="store.busy || iconBusy || resolvingLoader"
+        >
           <Plus v-if="!edit && !store.busy" :size="16" />{{
-            store.busy ? "Saving…" : edit ? "Save changes" : "Create instance"
+            resolvingLoader
+              ? "Selecting loader…"
+              : store.busy
+                ? "Saving…"
+                : edit
+                  ? "Save changes"
+                  : "Create instance"
           }}
         </button>
       </footer>

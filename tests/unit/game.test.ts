@@ -42,3 +42,36 @@ it("keeps native launch failures actionable and allows a retry", async () => {
   await store.launch("one");
   expect(mocks.invoke).toHaveBeenCalledTimes(3);
 });
+
+it("prepares files without launching, and treats prepared as an idle state", async () => {
+  const store = useGame();
+  await store.init();
+  await store.prepare("one");
+  expect(mocks.invoke).toHaveBeenLastCalledWith("prepare_instance", {
+    id: "one",
+  });
+  expect(store.launches.one?.prepareOnly).toBe(true);
+  expect(mocks.invoke).not.toHaveBeenCalledWith(
+    "launch_instance",
+    expect.anything(),
+  );
+  const callback = mocks.listen.mock.calls.find(
+    ([name]) => name === "game-progress",
+  )?.[1];
+  callback({
+    payload: {
+      id: "one",
+      stage: "prepared",
+      prepareOnly: true,
+      message: "Files ready",
+      completed: 0,
+      total: 0,
+      exitCode: null,
+    },
+  });
+  expect(store.active).toHaveLength(0);
+  await store.launch("one");
+  expect(mocks.invoke).toHaveBeenLastCalledWith("launch_instance", {
+    id: "one",
+  });
+});

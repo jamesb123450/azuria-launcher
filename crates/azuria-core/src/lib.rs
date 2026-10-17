@@ -251,6 +251,27 @@ impl Store {
         valid_id(id)?;
         self.conn.query_row("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version FROM instances WHERE id=?1", [id], row_instance).map_err(|_| "Instance no longer exists.".into())
     }
+    /// Pin only the loader preference; do not rewrite memory, icons or instance folders.
+    pub fn pin_fabric_version(&mut self, id: &str, version: &str) -> Result<Instance, String> {
+        let current = self.get(id)?;
+        if current.loader != Loader::Fabric
+            || version.is_empty()
+            || version.len() > 80
+            || matches!(version, "stable" | "latest")
+            || !version
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"._+-".contains(&c))
+        {
+            return Err("Invalid pinned Fabric version.".into());
+        }
+        self.conn
+            .execute(
+                "UPDATE instances SET loader_version=?1 WHERE id=?2",
+                params![version, id],
+            )
+            .map_err(error)?;
+        self.get(id)
+    }
     pub fn create(&mut self, input: InstanceInput) -> Result<Instance, String> {
         self.recover_deletions()?;
         input.validate()?;
@@ -777,5 +798,26 @@ mod tests {
         store.conn.execute_batch("PRAGMA user_version=99").unwrap();
         drop(store);
         assert!(Store::open(root).is_err());
+    }
+    #[test]
+    fn fabric_pinning_changes_only_loader_version() {
+        let root = tempfile::tempdir().unwrap();
+        let mut store = Store::open(root.path().to_path_buf()).unwrap();
+        let original = store
+            .create(InstanceInput {
+                name: "Pinned world".into(),
+                minecraft_version: "26.1".into(),
+                loader: Loader::Fabric,
+                memory_mb: 8192,
+                icon: None,
+                loader_version: Some("stable".into()),
+            })
+            .unwrap();
+        let updated = store.pin_fabric_version(&original.id, "0.19.5").unwrap();
+        assert_eq!(updated.loader_version.as_deref(), Some("0.19.5"));
+        assert_eq!(updated.id, original.id);
+        assert_eq!(updated.name, original.name);
+        assert_eq!(updated.memory_mb, original.memory_mb);
+        assert!(store.pin_fabric_version(&original.id, "latest").is_err());
     }
 }
