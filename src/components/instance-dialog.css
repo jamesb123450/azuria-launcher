@@ -387,6 +387,7 @@
   color: var(--muted);
 }
 .create-search input {
+  min-height: 0;
   background: none;
   border: 0;
   width: 100%;

@@ -70,7 +70,8 @@ body {
 }
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 button,
@@ -95,6 +96,63 @@ select {
     background 0.18s,
     border-color 0.18s,
     color 0.18s;
+}
+/* Text-entry defaults apply in every popup, including fields without a wrapper class.
+   Keep specificity low so icon-led searches can retain their shared outer frame. */
+:where(
+  input:not([type]),
+  input[type="text"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="tel"],
+  textarea
+) {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--control-height);
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--input);
+  color: var(--text);
+  caret-color: var(--pink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+:where(input, textarea)::placeholder {
+  color: var(--subtle);
+  opacity: 1;
+}
+:where(input, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+:where(input, textarea)[readonly] {
+  color: var(--muted);
+}
+:where(input, textarea):focus {
+  border-color: var(--blue);
+}
+:where(input, textarea)[aria-invalid="true"] {
+  border-color: var(--pink);
+}
+textarea {
+  display: block;
+  min-height: 96px;
+  resize: vertical;
+}
+/* Chromium otherwise paints autofilled fields outside the active app theme. */
+input:autofill {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--pink);
+  box-shadow: 0 0 0 1000px var(--input) inset;
 }
 button:focus-visible,
 a:focus-visible,
@@ -1218,6 +1276,10 @@ main.is-library {
   color: var(--subtle);
 }
 .search-box input {
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  border-radius: 0;
   width: 100%;
   min-width: 0;
   background: transparent;
@@ -1228,6 +1290,11 @@ main.is-library {
 }
 .search-box input::placeholder {
   color: var(--subtle);
+}
+.search-box:has(input:focus-visible),
+.create-search:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 .search-box:focus-within {
   border-color: var(--blue);

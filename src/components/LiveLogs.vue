@@ -394,6 +394,10 @@ onBeforeUnmount(() => {
   margin: 0 5px;
 }
 .log-search {
+  background: var(--input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  padding: 0 10px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -402,6 +406,8 @@ onBeforeUnmount(() => {
   color: var(--muted);
 }
 .log-search input {
+  min-height: 34px;
+  border-radius: 0;
   width: 100%;
   min-width: 0;
   background: transparent;
@@ -415,7 +421,9 @@ onBeforeUnmount(() => {
   outline: none;
 }
 .log-search:focus-within {
-  color: var(--pink);
+  border-color: var(--blue);
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 .level-picker {
   width: 145px;
