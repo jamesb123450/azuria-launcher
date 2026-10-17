@@ -629,7 +629,20 @@ onBeforeUnmount(closeDelete);
         aria-label="Advertisement placeholder"
       >
         <span>Advertisement</span>
-        <div class="sidebar-ad-space">Ad space</div>
+        <div class="sidebar-ad-space">
+          <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5560411664655716"
+     crossorigin="anonymous"></script>
+<!-- SidebarAD -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5560411664655716"
+     data-ad-slot="4767588357"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+        </div>
       </div>
     </aside>
   </div>
