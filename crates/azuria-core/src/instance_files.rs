@@ -12,6 +12,7 @@ pub enum Section {
     ShaderPacks,
     Worlds,
     Logs,
+    Screenshots,
     Root,
 }
 impl Section {
@@ -22,6 +23,7 @@ impl Section {
             Self::ShaderPacks => "shaderpacks",
             Self::Worlds => "saves",
             Self::Logs => "logs",
+            Self::Screenshots => "screenshots",
             Self::Root => "",
         }
     }
@@ -66,6 +68,7 @@ fn content(section: Section, name: &str) -> bool {
         .to_lowercase();
     match section {
         Section::Mods => name.ends_with(".jar"),
+        Section::Screenshots => name.ends_with(".png"),
         Section::ResourcePacks | Section::ShaderPacks => name.ends_with(".zip"),
         _ => false,
     }
@@ -142,6 +145,9 @@ impl Store {
     }
     pub fn toggle_content(&self, id: &str, section: Section, name: &str) -> Result<(), String> {
         filename(name)?;
+        if section == Section::Screenshots {
+            return Err("Screenshots cannot be disabled.".into());
+        }
         if !content(section, name) {
             return Err("Choose a mod or pack file.".into());
         }
@@ -424,5 +430,47 @@ mod tests {
         assert!(s.duplicate(&i.id, true).is_err());
         assert_eq!(s.list().unwrap().len(), 1);
         assert_eq!(fs::read(&file).unwrap(), b"keep");
+    }
+}
+
+#[cfg(test)]
+mod screenshot_tests {
+    use super::*;
+    #[test]
+    fn screenshot_removal_retains_original_in_trash() {
+        let d = tempfile::tempdir().unwrap();
+        let mut store = Store::open(d.path().into()).unwrap();
+        let item = store
+            .create(InstanceInput {
+                name: "Photos".into(),
+                minecraft_version: "1.21.1".into(),
+                loader: Loader::Vanilla,
+                memory_mb: 4096,
+                icon: None,
+                loader_version: None,
+            })
+            .unwrap();
+        let folder = store
+            .openable_directory(&item.id, Section::Screenshots, None)
+            .unwrap();
+        fs::write(folder.join("moment.png"), b"retained PNG").unwrap();
+        assert_eq!(
+            store.entries(&item.id, Section::Screenshots).unwrap().len(),
+            1
+        );
+        assert!(store
+            .toggle_content(&item.id, Section::Screenshots, "moment.png")
+            .is_err());
+        store
+            .trash_content(&item.id, Section::Screenshots, "moment.png")
+            .unwrap();
+        assert!(!folder.join("moment.png").exists());
+        let trash = fs::read_dir(d.path().join("trash"))
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap()
+            .path();
+        assert_eq!(fs::read(trash.join("moment.png")).unwrap(), b"retained PNG");
     }
 }

@@ -196,3 +196,24 @@ fn official_mojang_1211_arguments_expand_without_unknown_placeholders() {
     assert!(args.contains(&"6979bfed-98b9-4801-8c21-f046c0ca82b3".into()));
     assert!(args.contains(&"1234567890".into()));
 }
+
+#[cfg(unix)]
+#[test]
+fn stop_terminates_the_owned_game_process() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = tempfile::tempdir().unwrap();
+    let java = directory.path().join("fake-java");
+    fs::write(&java, "#!/bin/sh\nexec sleep 30\n").unwrap();
+    fs::set_permissions(&java, fs::Permissions::from_mode(0o700)).unwrap();
+    let mut prepared = fixture(directory.path().into());
+    prepared.java = java;
+    let running = prepared.start(account()).unwrap();
+    let started = std::time::Instant::now();
+    assert_ne!(
+        running
+            .wait_with_cancel(Arc::new(AtomicBool::new(true)))
+            .unwrap(),
+        Some(0)
+    );
+    assert!(started.elapsed() < std::time::Duration::from_secs(3));
+}

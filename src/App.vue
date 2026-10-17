@@ -7,12 +7,15 @@ import {
   Compass,
   GitBranch,
   UserRound,
+  Camera,
+  Shirt,
   ChevronRight,
   CircleHelp,
   Download,
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import SkinHead from "./components/SkinHead.vue";
 import StartupUpdate from "./components/StartupUpdate.vue";
 import StorageMigration from "./components/StorageMigration.vue";
 import WindowControls from "./components/WindowControls.vue";
@@ -39,7 +42,11 @@ const page = computed(() =>
           ? "Instance settings"
           : route.name === "instance"
             ? "Instance"
-            : "Library",
+            : route.path === "/wardrobe"
+              ? "Skins & capes"
+              : route.path === "/screenshots"
+                ? "Screenshots"
+                : "Library",
 );
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
@@ -126,6 +133,20 @@ function storagePrepared() {
             >Discover</span
           ></RouterLink
         >
+        <RouterLink
+          to="/wardrobe"
+          class="rail-link"
+          aria-label="Skins and capes"
+          title="Skins and capes"
+          ><Shirt :size="21"
+        /></RouterLink>
+        <RouterLink
+          to="/screenshots"
+          class="rail-link"
+          aria-label="Screenshots"
+          title="Screenshots"
+          ><Camera :size="21"
+        /></RouterLink>
       </nav>
       <div class="rail-divider" />
       <div class="rail-instances" aria-label="Quick instance selection">
@@ -179,7 +200,7 @@ function storagePrepared() {
           :title="account.label"
           aria-label="Minecraft account"
         >
-          <UserRound :size="18" />
+          <SkinHead />
         </RouterLink>
       </div>
     </aside>

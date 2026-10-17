@@ -1,6 +1,8 @@
 mod browser;
+mod cosmetics;
 mod game;
 mod instances;
+mod media;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
 use std::sync::Mutex;
@@ -305,6 +307,10 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            cosmetics::wardrobe_profile,
+            cosmetics::wardrobe_change,
+            media::screenshot_image,
+            media::screenshot_export,
             game::launch_instance,
             game::cancel_launch,
             game::game_launches,
