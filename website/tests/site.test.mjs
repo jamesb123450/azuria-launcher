@@ -69,7 +69,7 @@ test("downloads resolve the latest release rather than a stale versioned install
     html,
     /href="https:\/\/github.com\/jamesb123450\/azuria-launcher\/releases\/latest"/,
   );
-  assert.match(html, /Game installation and launching aren’t available yet/);
+  assert.match(html, /Vanilla and Fabric launching/);
   assert.match(html, /not Authenticode signed/);
 });
 
@@ -133,10 +133,10 @@ test("site contains no remote scripts, account form, analytics or unsupported pl
     html,
     /<form|Google Analytics|Download for macOS|Download for Linux/,
   );
-  assert.doesNotMatch(
-    html,
-    /discover\.png|placeholder|Lorem ipsum|Coming soon/i,
-  );
+  assert.doesNotMatch(html, /discover\.png|Lorem ipsum/i);
+  // Published release summaries may legitimately describe a removed placeholder.
+  const productCopy = html.split(/<section\s+id="updates"/)[0];
+  assert.doesNotMatch(productCopy, /placeholder|Coming soon/i);
   assert.match(html, /data-latest-notice/);
   assert.match(html, /data-preview-image=/);
 });
@@ -223,4 +223,35 @@ test("panorama assets are packaged and unsupported WebGL keeps the static fallba
   assert.ok(
     html.indexOf('class="hero-shot"') < html.indexOf('class="section-intro"'),
   );
+});
+
+test("product pages describe current features and use refreshed captures", async () => {
+  const home = await readFile(resolve(root, "index.html"), "utf8");
+  for (const image of [
+    "library.webp",
+    "library-light.webp",
+    "create.webp",
+    "skins.webp",
+    "settings.webp",
+    "instance.webp",
+  ]) {
+    assert.ok(home.includes(image), image);
+    assert.ok((await stat(resolve(root, "assets", image))).size > 1000);
+  }
+  assert.match(home, /Save and Reset/);
+  for (const file of [
+    "index.html",
+    "downloads/index.html",
+    "help/index.html",
+    "terms/index.html",
+  ]) {
+    const html = (await readFile(resolve(root, file), "utf8")).replace(
+      /\s+/g,
+      " ",
+    );
+    assert.doesNotMatch(
+      html,
+      /launching aren’t available yet|approval (?:is currently )?pending|Check for updates|not installed yet/,
+    );
+  }
 });

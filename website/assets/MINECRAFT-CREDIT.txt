@@ -13,3 +13,5 @@ No endorsement of Azuria by the creator, shader projects, Mojang or Microsoft is
 
 Panorama source version: https://modrinth.com/resourcepack/karbin-panoramas/version/4C9kGikH
 The six original Minecraft panorama faces are converted to panorama-0.webp through panorama-5.webp. A static WebGL camera displays the real captured cubemap at the viewport aspect ratio; no scenery is AI generated or extended. Those image adaptations retain CC BY-SA 4.0.
+
+Product interface captures: current Azuria Launcher, with illustrative local instance data and a demo account. The Steve skin shown in skins.webp is a Minecraft default texture, copyright Mojang/Microsoft. Captures do not show a real player’s credentials or imply a live game session.

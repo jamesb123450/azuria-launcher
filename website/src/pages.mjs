@@ -89,7 +89,7 @@ export function render(page, { siteURL, base, releases }) {
     404: "Page not found — Azuria Launcher",
   };
   const descriptions = {
-    home: "A Windows-first Minecraft Java launcher in development. Organise instance settings, choose your theme and explore the Azuria interface.",
+    home: "A Windows Minecraft Java launcher with Vanilla and Fabric launching, saved skins, instance controls and automatic updates.",
     downloads:
       "Download the Azuria development preview for Windows x64. Installation instructions, requirements and in-app update guidance.",
     changelog:
@@ -123,8 +123,9 @@ export function render(page, { siteURL, base, releases }) {
     <div>
       <strong>Development preview</strong>
       <p>
-        Game installation and launching aren’t available yet.
-        Microsoft/Minecraft application access is awaiting review.
+        Vanilla and Fabric launching, Microsoft sign-in and automatic updates
+        are available in current Windows builds. See the release notes for your
+        version.
       </p>
     </div>
   </div>`;
@@ -230,8 +231,8 @@ export function render(page, { siteURL, base, releases }) {
               <span data-latest-version>${e(latest.tag)}</span> for Windows x64
             </p>
             <p class="hero-disclosure">
-              <strong>Development preview.</strong> Game installation and
-              launching aren’t available yet.
+              <strong>Development preview.</strong> Windows x64 · Minecraft Java
+              Edition. Vanilla and Fabric launching supported.
               <a href="${link("help/")}#status">Current status</a>
             </p>
           </div>
@@ -244,14 +245,14 @@ export function render(page, { siteURL, base, releases }) {
       >
         <figure class="hero-shot">
           <img
-            src="${asset("library.png")}"
-            alt="Azuria’s instance library with Vanilla and Fabric settings, favourites and version selectors."
+            src="${asset("library.webp")}"
+            alt="Azuria’s current library with sample Vanilla and Fabric instances, Play controls and a player skin head."
             width="1280"
             height="900"
             fetchpriority="high"
           />
           <figcaption>
-            Azuria’s instance library. Sample configurations shown.
+            Current launcher interface with sample instances and a demo account.
           </figcaption>
         </figure>
         <div class="section-intro">
@@ -282,17 +283,17 @@ export function render(page, { siteURL, base, releases }) {
           </div>
         </div>
         <p class="small-note">
-          These controls save setup preferences. Game files and mod loaders are
-          not installed yet.
+          Play prepares game files and Java automatically for Vanilla and
+          Fabric. Forge, NeoForge and Quilt launching remain in development.
         </p>
         <details class="create-detail">
           <summary>See instance creation</summary>
           <figure class="detail-shot">
             <img
-              src="${asset("create.png")}"
+              src="${asset("create.webp")}"
               alt="Azuria’s Create instance screen with the Custom setup option."
-              width="900"
-              height="650"
+              width="1280"
+              height="900"
               loading="lazy"
             />
             <figcaption>
@@ -300,6 +301,95 @@ export function render(page, { siteURL, base, releases }) {
             </figcaption>
           </figure>
         </details>
+      </section>
+      <section
+        class="section container product-tour"
+        aria-labelledby="tour-heading"
+      >
+        <div class="section-intro">
+          <h2 id="tour-heading">More of your launcher, in one place.</h2>
+          <p>Manage how you play, how you look and what each instance needs.</p>
+        </div>
+        <article class="product-feature">
+          <div class="product-feature-copy">
+            <span class="section-kicker">Skins &amp; capes</span>
+            <h3>A wardrobe of your own.</h3>
+            <p>
+              Save skins locally, turn the character preview to inspect them,
+              choose Classic or Slim arms and select a cape you own. Apply your
+              choice to your Minecraft account when you’re ready.
+            </p>
+            <p class="small-note">
+              Official Steve texture shown with a demo account. Cape choices
+              depend on your account.
+            </p>
+          </div>
+          <figure class="detail-shot">
+            <img
+              src="${asset("skins.webp")}"
+              width="1280"
+              height="900"
+              loading="lazy"
+              alt="Current Azuria skin selector with a rotatable Steve preview and a saved skin card."
+            />
+            <figcaption>
+              Saved skins and an interactive character preview.
+            </figcaption>
+          </figure>
+        </article>
+        <article class="product-feature reverse">
+          <div class="product-feature-copy">
+            <span class="section-kicker">Launcher settings</span>
+            <h3>Make it feel right.</h3>
+            <p>
+              Appearance, account controls, Java, memory and window defaults sit
+              in a centred settings popup. Save when you’re happy, or Reset to
+              return to your last saved values.
+            </p>
+            <p class="small-note">
+              Features still in development are marked in the app.
+            </p>
+          </div>
+          <figure class="detail-shot">
+            <img
+              src="${asset("settings.webp")}"
+              width="1280"
+              height="900"
+              loading="lazy"
+              alt="Azuria’s centred settings popup with category navigation, theme cards and fixed Save and Reset buttons."
+            />
+            <figcaption>
+              One settings popup with changes kept until you save.
+            </figcaption>
+          </figure>
+        </article>
+        <article class="product-feature">
+          <div class="product-feature-copy">
+            <span class="section-kicker">Your instances</span>
+            <h3>Everything for one world.</h3>
+            <p>
+              Open an instance for its content, worlds, screenshots and live
+              logs. Use per-instance overrides for Java, memory and window
+              preferences without changing your launcher defaults.
+            </p>
+            <p class="small-note">
+              Play becomes Stop during preparation and while Minecraft runs.
+              Screenshots can be previewed, exported or opened in their folder.
+            </p>
+          </div>
+          <figure class="detail-shot">
+            <img
+              src="${asset("instance.webp")}"
+              width="1280"
+              height="900"
+              loading="lazy"
+              alt="Azuria’s current instance page with Play, content navigation, logs, screenshots and settings controls."
+            />
+            <figcaption>
+              Instance detail view with sample library content.
+            </figcaption>
+          </figure>
+        </article>
       </section>
       <section id="appearance" class="appearance-section">
         <div class="container appearance-grid">
@@ -316,29 +406,29 @@ export function render(page, { siteURL, base, releases }) {
             >
               <button
                 aria-pressed="true"
-                data-preview-image="${asset("library.png")}"
+                data-preview-image="${asset("library.webp")}"
                 data-preview-alt="Azuria’s dark library with sample instance configurations."
                 data-preview-caption="Dark appearance, populated library"
               >
                 Dark</button
               ><button
                 aria-pressed="false"
-                data-preview-image="${asset("library-light.png")}"
-                data-preview-alt="Azuria’s light appearance with an empty library."
-                data-preview-caption="Light appearance, empty library"
+                data-preview-image="${asset("library-light.webp")}"
+                data-preview-alt="Azuria’s light appearance with the same sample instances."
+                data-preview-caption="Light appearance, sample library"
               >
                 Light
               </button>
             </div>
             <p class="small-note">
-              The screenshots show different library contents. This control
-              changes the image, not the website theme.
+              The same sample library in both themes. This control switches the
+              launcher preview; the website keeps its dark appearance.
             </p>
           </div>
           <figure class="appearance-shot">
             <img
               data-theme-preview
-              src="${asset("library.png")}"
+              src="${asset("library.webp")}"
               width="1280"
               height="900"
               alt="Azuria’s dark library with sample instance configurations."
@@ -391,7 +481,7 @@ export function render(page, { siteURL, base, releases }) {
             .join("")}
         </div>
         <p class="updates-note">
-          Already using Azuria? Check for updates in Settings.
+          Already using Azuria? Updates are checked automatically at startup.
         </p>
       </section>
       <section class="section container questions">
@@ -400,7 +490,7 @@ export function render(page, { siteURL, base, releases }) {
           <p>Platform support, updates and what works today.</p>
         </div>
         <div class="faq-list">
-          ${faq("Can I play Minecraft through Azuria yet?", "Not yet. You can create and organise instance settings, but game installation and launching are still in development. Microsoft/Minecraft application access is awaiting review.")}${faq("Which platforms are supported?", "Current builds support Windows x64. macOS, Linux and ARM64 builds are not available.")}${faq("How do updates work?", "Open Settings and check for updates. Choose Update & restart to install an available signed update.")}
+          ${faq("Can I play Minecraft through Azuria yet?", "Yes. Current Windows builds prepare and launch Vanilla and Fabric instances using a verified Minecraft Java account. Other loaders and live modpack installation are still in development.")}${faq("Which platforms are supported?", "Current builds support Windows x64. macOS, Linux and ARM64 builds are not available.")}${faq("How do updates work?", "Azuria checks for signed updates at startup and downloads them automatically. A restart countdown installs the update; choose Later to postpone. Updates wait while Minecraft is running.")}
         </div>
       </section>`;
   }
@@ -453,8 +543,9 @@ export function render(page, { siteURL, base, releases }) {
           <ul class="plain-list">
             <li>A Windows x64 PC with Microsoft Edge WebView2 available.</li>
             <li>
-              Game downloads, Java setup and Minecraft launching are not
-              implemented.
+              A Microsoft account that owns Minecraft Java Edition, plus
+              internet access and free disk space for the first game
+              installation.
             </li>
             <li>Only download builds from Azuria’s GitHub release page.</li>
             <li>
@@ -497,8 +588,8 @@ export function render(page, { siteURL, base, releases }) {
             <div>
               <h3>Keep it up to date</h3>
               <p>
-                Use Settings → Check for updates, then Update & restart when a
-                new version is available.
+                Azuria checks and downloads signed updates at startup. Restart
+                to install, or choose Later and return to Settings → Updates.
               </p>
             </div>
           </li>
@@ -519,8 +610,8 @@ export function render(page, { siteURL, base, releases }) {
     content = html`<section class="page-intro container">
         <h1>Release notes.</h1>
         <p>
-          Published changes, straight from the project’s release notes. Install
-          updates from Settings in Azuria.
+          Published changes, straight from the project’s release notes. Azuria
+          checks for updates automatically at startup.
         </p>
       </section>
       <div class="container changelog-layout">
@@ -577,8 +668,8 @@ export function render(page, { siteURL, base, releases }) {
             <h2>Current capabilities</h2>
             <p>
               Azuria is a Windows-first Minecraft Java launcher in development.
-              It is not ready to replace a working launcher for playing
-              Minecraft.
+              Current builds support Vanilla and Fabric launching, with
+              Minecraft Java ownership verified through Microsoft sign-in.
             </p>
             <table>
               <thead>
@@ -603,18 +694,36 @@ export function render(page, { siteURL, base, releases }) {
                   <td>Available in updater-enabled Windows builds</td>
                 </tr>
                 <tr>
+                  <th scope="row">Saved skins and owned capes</th>
+                  <td>
+                    Available; applying cosmetics requires a verified account
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Screenshot manager and live instance logs</th>
+                  <td>Available in the Windows app</td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    Instance overrides and Save/Reset settings
+                  </th>
+                  <td>Available</td>
+                </tr>
+                <tr>
                   <th scope="row">Discover catalogue</th>
                   <td>Fictional local preview; no installation</td>
                 </tr>
                 <tr>
                   <th scope="row">Microsoft / Minecraft account connection</th>
-                  <td>Implemented; Minecraft Services approval pending</td>
+                  <td>
+                    Available for accounts with Minecraft Java Edition access
+                  </td>
                 </tr>
                 <tr>
                   <th scope="row">
                     Game installation, Java setup and launching
                   </th>
-                  <td>In development</td>
+                  <td>Available for Vanilla and Fabric</td>
                 </tr>
               </tbody>
             </table>
@@ -625,16 +734,17 @@ export function render(page, { siteURL, base, releases }) {
           </section>
           <section id="updates">
             <h2>Updates</h2>
-            ${faq("How do I update?", "Open Settings → Check for updates. When a release is available, choose Update & restart. Azuria also checks when it opens; installation happens only when you choose it.")}${faq("What is the .sig file?", "It is the installer’s update signature, not a private signing key. The updater checks signed downloads against the public key included in the app. You normally do not need to handle the signature file yourself.")}${faq("What if an update fails?", "Check your connection and retry from Settings. If needed, use the latest installer from the project’s GitHub release page. Include the error and your Azuria version when reporting a problem; do not include account tokens.")}
+            ${faq("How do I update?", "Azuria checks at startup and downloads signed updates automatically. When ready, a restart countdown installs the update. Choose Later to postpone, then use Settings → Updates to restart when convenient. Active games block installation.")}${faq("What is the .sig file?", "It is the installer’s update signature, not a private signing key. The updater checks signed downloads against the public key included in the app. You normally do not need to handle the signature file yourself.")}${faq("What if an update fails?", "Check your connection and retry from Settings. If needed, use the latest installer from the project’s GitHub release page. Include the error and your Azuria version when reporting a problem; do not include account tokens.")}
           </section>
           <section id="accounts">
             <h2>Microsoft sign-in</h2>
             <p>
               Azuria opens your default browser for Microsoft sign-in. The
-              native app then checks Xbox and Minecraft Services access. The
-              application’s Minecraft Services approval is currently pending.
+              native app then checks Xbox and Minecraft Services access. Sign in
+              with a personal Microsoft account that owns Minecraft Java
+              Edition.
             </p>
-            ${faq("Why does Minecraft Services deny Azuria access?", "Microsoft and Xbox sign-in can succeed while Minecraft Services rejects the application. Azuria’s registration needs Minecraft access approval. The current generic HTTP 403 message does not, by itself, establish the exact service-side reason.")}${faq("Which account should I use?", "A personal Microsoft account with Minecraft Java Edition access. An organisation owning the app registration does not mean players should use a work or school account.")}${faq("What does signing out remove?", "Signing out removes the saved Azuria account from Windows Credential Manager. Your browser may stay signed in to Microsoft. Failed or cancelled account switches preserve the previously saved account.")}
+            ${faq("Why does Minecraft Services deny Azuria access?", "Use the latest Azuria release and an account that owns Minecraft Java Edition, then try reconnecting. If access is still denied, report the exact error and launcher version. A generic HTTP 403 alone does not identify the cause; never include account tokens in a report.")}${faq("Which account should I use?", "A personal Microsoft account with Minecraft Java Edition access. An organisation owning the app registration does not mean players should use a work or school account.")}${faq("What does signing out remove?", "Signing out removes the saved Azuria account from Windows Credential Manager. Your browser may stay signed in to Microsoft. Failed or cancelled account switches preserve the previously saved account.")}
           </section>
           <section id="privacy">
             <h2>Privacy & storage</h2>
@@ -655,10 +765,10 @@ export function render(page, { siteURL, base, releases }) {
               or upload logs.
             </p>
             <p>
-              Removing an instance keeps its files in local trash. Copying
-              settings does not copy worlds or mods. There is not yet a restore
-              interface; read the recovery instructions before attempting manual
-              recovery.
+              Removing an instance keeps its files in local trash. Duplicating
+              an instance can copy settings alone or include its local files.
+              There is not yet a restore interface; read the recovery
+              instructions before attempting manual recovery.
             </p>
             <a class="text-link" href="${repository}#accounts-and-local-data"
               >Storage & recovery instructions ${icon("external", 14)}</a
@@ -841,9 +951,9 @@ export function render(page, { siteURL, base, releases }) {
           <h2>Development builds</h2>
           <p>
             Current builds are offered without charge for Windows x64. Features
-            and availability can change. Game installation and launching are not
-            currently available, and Minecraft Services access for Azuria is
-            awaiting review. The
+            and availability can change. Current builds support Vanilla and
+            Fabric launching with a verified Minecraft Java account. Other
+            loaders and content integrations remain in development. The
             <a href="${link("help/")}#status">current status</a> and
             <a href="${link("changelog/")}">release notes</a> describe available
             functionality.
@@ -997,7 +1107,7 @@ export function render(page, { siteURL, base, releases }) {
         <meta property="og:type" content="website" />
         <meta property="og:title" content="${e(titles[page])}" />
         <meta property="og:description" content="${e(descriptions[page])}" />
-        <meta property="og:image" content="${e(siteURL)}assets/library.png" />
+        <meta property="og:image" content="${e(siteURL)}assets/library.webp" />
         <meta property="og:url" content="${e(canonical)}" />
         <meta name="twitter:card" content="summary_large_image" />
         ${page === "404" ? '<meta name="robots" content="noindex"/>' : ""}
