@@ -57,7 +57,8 @@
   border-bottom: 1px solid var(--border-strong);
   margin: 28px 0 22px;
 }
-.instance-tabs button {
+.instance-tabs button,
+.instance-tabs .instance-section-link {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -67,6 +68,9 @@
   background: none;
   color: var(--muted);
   font-weight: 600;
+}
+.instance-tabs .instance-section-link {
+  text-decoration: none;
 }
 .instance-tabs button[aria-pressed="true"] {
   border-color: var(--pink);

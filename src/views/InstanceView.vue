@@ -13,6 +13,7 @@ import {
   Boxes,
   Globe,
   ScrollText,
+  Camera,
   Search,
   RefreshCw,
   Upload,
@@ -620,8 +621,10 @@ const prettySize = (size: number) =>
         >
           <component :is="view.icon" :size="17" />{{ view.label }}
         </button>
-        <RouterLink class="text-link" :to="`/screenshots?instance=${id}`"
-          >Screenshots</RouterLink
+        <RouterLink
+          class="instance-section-link"
+          :to="`/screenshots?instance=${id}`"
+          ><Camera :size="17" />Screenshots</RouterLink
         >
       </nav>
       <LiveLogs v-if="showLiveLogs" :id="id" />

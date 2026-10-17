@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useAccount } from "../stores/account";
 import { useWardrobe } from "../stores/wardrobe";
+import CapePreview from "../components/CapePreview.vue";
 import SkinPreview from "../components/SkinPreview.vue";
 import SkinHead from "../components/SkinHead.vue";
 import VersionPicker from "../components/VersionPicker.vue";
@@ -111,11 +112,9 @@ const change = (action: string, cape?: string) =>
               :disabled="wardrobe.busy"
               @click="change('selectCape', cape.id)"
             >
-              <img
-                v-if="cape.image"
-                :src="cape.image"
-                :alt="cape.alias"
-              /><strong>{{ cape.alias }}</strong
+              <CapePreview :image="cape.image" :name="cape.alias" /><strong>{{
+                cape.alias
+              }}</strong
               ><span v-if="cape.active">Equipped</span>
             </button>
           </div>
@@ -189,12 +188,6 @@ const change = (action: string, cape?: string) =>
 .cape-card[aria-pressed="true"] {
   border-color: var(--pink);
   background: var(--accent-wash);
-}
-.cape-card img {
-  width: 90px;
-  height: 70px;
-  object-fit: contain;
-  image-rendering: pixelated;
 }
 .cape-card strong {
   font-size: 12px;
