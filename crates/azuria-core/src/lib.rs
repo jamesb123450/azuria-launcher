@@ -2,6 +2,7 @@ mod folders;
 pub mod instance_files;
 pub mod migration;
 pub mod preferences;
+pub mod resources;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::{

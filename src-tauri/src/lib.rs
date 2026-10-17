@@ -4,6 +4,7 @@ mod cosmetics;
 mod game;
 mod instances;
 mod media;
+mod resources;
 mod skin_library;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
@@ -325,7 +326,13 @@ pub fn run() {
             }
         })
         .manage(content::ContentState::default())
+        .manage(resources::Resources::default())
         .invoke_handler(tauri::generate_handler![
+            resources::resource_options,
+            resources::save_resource_options,
+            resources::storage_usage,
+            resources::storage_cleanup,
+            resources::open_data_folder,
             content::content_inventory,
             content::content_update_plan,
             content::content_version,

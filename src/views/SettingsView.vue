@@ -26,10 +26,16 @@ import {
 } from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
-import { api, desktop } from "../api";
+import { desktop } from "../api";
 import { instanceApi } from "../instance-api";
 import { defaultLaunchOptions, validateOptions } from "../lib/launch-options";
 import AccountPanel from "../components/AccountPanel.vue";
+import StoragePanel from "../components/StoragePanel.vue";
+import {
+  resourceApi,
+  defaultResources,
+  resourceValidation,
+} from "../resource-api";
 import UpdatePanel from "../components/UpdatePanel.vue";
 import LaunchOptionsEditor from "../components/LaunchOptionsEditor.vue";
 import { contentApi } from "../content-api";
@@ -49,7 +55,9 @@ const section = ref(
       ? "java"
       : route.hash === "#content-providers"
         ? "providers"
-        : "appearance",
+        : route.hash === "#storage"
+          ? "storage"
+          : "appearance",
 );
 const groups = [
   {
@@ -167,16 +175,6 @@ const planned: Record<string, { title: string; description: string }[]> = {
       description: "Keep launcher preferences across devices.",
     },
   ],
-  storage: [
-    {
-      title: "Storage usage & cleanup",
-      description: "Inspect downloads and safely remove unused cached files.",
-    },
-    {
-      title: "Custom data directory",
-      description: "Choose a different location for launcher data.",
-    },
-  ],
   troubleshooting: [
     { title: "Clear cache", description: "Rebuild cached launcher content." },
     {
@@ -225,14 +223,46 @@ watch(
   },
   { immediate: true },
 );
+const resources = ref(defaultResources());
+const resourceSnapshot = ref(JSON.stringify(resources.value));
+const resourceReady = ref(false);
+const resourceBusy = ref(false);
+const resourceError = ref("");
+const resourceChanged = computed(
+  () =>
+    resourceReady.value &&
+    JSON.stringify(resources.value) !== resourceSnapshot.value,
+);
+watch(
+  section,
+  async (value) => {
+    if (value !== "storage" || resourceReady.value) return;
+    resourceError.value = "";
+    try {
+      const value = await resourceApi.options();
+      if (!value || resourceValidation(value))
+        throw new Error(
+          "Storage preferences could not be loaded. Reopen Storage to retry.",
+        );
+      resources.value = value;
+      resourceSnapshot.value = JSON.stringify(value);
+      resourceReady.value = true;
+    } catch (e) {
+      resourceError.value = String(e);
+    }
+  },
+  { immediate: true },
+);
 const dirty = computed(
   () =>
     loaded.value &&
-    (keyChanged.value ||
+    (resourceChanged.value ||
+      keyChanged.value ||
       theme.value !== savedTheme.value ||
       JSON.stringify(form.value) !== snapshot.value),
 );
 function reset() {
+  resources.value = JSON.parse(resourceSnapshot.value);
   curseforgeKey.value = "";
   removeCurseforgeKey.value = false;
   theme.value = savedTheme.value;
@@ -261,10 +291,16 @@ async function load() {
 }
 async function save() {
   if (!loaded.value || busy.value) return false;
-  error.value = validateOptions(form.value);
+  error.value = resourceChanged.value
+    ? resourceValidation(resources.value)
+    : validateOptions(form.value);
   notice.value = "";
   if (error.value) {
-    section.value = /window|resolution/i.test(error.value) ? "window" : "java";
+    section.value = resourceChanged.value
+      ? "storage"
+      : /window|resolution/i.test(error.value)
+        ? "window"
+        : "java";
     return false;
   }
   busy.value = true;
@@ -279,6 +315,10 @@ async function save() {
       if (store.settings.theme !== theme.value)
         throw new Error("Appearance could not be saved. Please retry.");
       savedTheme.value = theme.value;
+    }
+    if (resourceChanged.value) {
+      await resourceApi.save(resources.value);
+      resourceSnapshot.value = JSON.stringify(resources.value);
     }
     if (keyChanged.value) {
       await contentApi.setKey(
@@ -298,7 +338,7 @@ async function save() {
   }
 }
 function requestClose() {
-  if (busy.value) return;
+  if (busy.value || resourceBusy.value) return;
   if (dirty.value) confirmClose.value = true;
   else emit("close");
 }
@@ -313,13 +353,6 @@ function discardAndClose() {
   confirmClose.value = false;
   emit("close");
 }
-async function openInstances() {
-  try {
-    await api.openInstancesFolder();
-  } catch (e) {
-    error.value = String(e);
-  }
-}
 function beforeUnload(event: BeforeUnloadEvent) {
   if (dirty.value) {
     event.preventDefault();
@@ -327,14 +360,18 @@ function beforeUnload(event: BeforeUnloadEvent) {
   }
 }
 const removeGuard = router.beforeEach((to) => {
-  if (to.path !== "/settings" && (busy.value || dirty.value)) {
-    if (!busy.value) confirmClose.value = true;
+  if (
+    to.path !== "/settings" &&
+    (busy.value || resourceBusy.value || dirty.value)
+  ) {
+    if (!busy.value && !resourceBusy.value) confirmClose.value = true;
     return false;
   }
 });
 watch(
   () => route.hash,
   (hash) => {
+    if (hash === "#storage") section.value = "storage";
     if (hash === "#account") section.value = "account";
     if (hash === "#content-providers") section.value = "providers";
   },
@@ -375,7 +412,7 @@ onBeforeUnmount(() => {
       <button
         class="icon-button settings-close"
         aria-label="Close settings"
-        :disabled="busy"
+        :disabled="busy || resourceBusy"
         @click="requestClose"
       >
         <X :size="20" />
@@ -509,20 +546,49 @@ onBeforeUnmount(() => {
             :section="section"
             :disabled="busy"
         /></template>
-        <template v-if="section === 'storage'"
-          ><div class="settings-storage-path">
-            <h3>App directory</h3>
-            <p>Your instances and launcher data stay on this computer.</p>
-            <code>%APPDATA%\AzuriaLauncher</code
-            ><button
-              class="button secondary"
-              :disabled="!desktop"
-              @click="openInstances"
-            >
-              <FolderOpen :size="16" />Open instances folder
-            </button>
-          </div></template
-        >
+        <template v-if="section === 'storage'">
+          <StoragePanel
+            :disabled="busy"
+            :unsaved="resourceChanged"
+            :revision="resourceSnapshot"
+            @busy="resourceBusy = $event"
+          />
+          <p v-if="resourceError" class="inline-error" role="alert">
+            {{ resourceError }}
+          </p>
+          <fieldset
+            class="storage-preferences"
+            :disabled="!resourceReady || busy || resourceBusy"
+          >
+            <legend>Download preferences</legend>
+            <label class="instance-field"
+              >Keep unused downloads (GiB)<input
+                v-model.number="resources.unusedDownloadGib"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+            /></label>
+            <p class="muted">
+              Keep up to this amount of abandoned staging downloads when you run
+              cleanup. Use 0 to clear eligible files. Recent downloads are
+              always kept for 24 hours.
+            </p>
+            <label class="instance-field"
+              >Maximum concurrent downloads<input
+                v-model.number="resources.concurrentDownloads"
+                type="number"
+                min="1"
+                max="16"
+                step="1"
+            /></label>
+            <p class="muted">
+              Limits Minecraft’s asset download pool on the next preparation.
+              Content packs currently download sequentially. Save or Reset these
+              preferences below.
+            </p>
+          </fieldset>
+        </template>
         <p v-if="section === 'privacy'" class="settings-inheritance">
           This build does not collect analytics or upload your logs. Microsoft
           credentials are handled by the desktop account system.
@@ -559,11 +625,15 @@ onBeforeUnmount(() => {
       </div>
       <button
         class="button secondary"
-        :disabled="busy || !dirty"
+        :disabled="busy || resourceBusy || !dirty"
         @click="reset"
       >
         Reset</button
-      ><button class="button primary" :disabled="busy || !dirty" @click="save">
+      ><button
+        class="button primary"
+        :disabled="busy || resourceBusy || !dirty"
+        @click="save"
+      >
         Save
       </button>
     </footer>

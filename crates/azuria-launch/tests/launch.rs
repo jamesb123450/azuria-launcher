@@ -217,3 +217,23 @@ fn stop_terminates_the_owned_game_process() {
     );
     assert!(started.elapsed() < std::time::Duration::from_secs(3));
 }
+
+#[test]
+fn invalid_download_pool_limits_fail_before_preparation() {
+    use std::sync::{atomic::AtomicBool, Arc};
+    let dir = tempfile::tempdir().unwrap();
+    let options = azuria_core::preferences::LaunchOptions::default();
+    for limit in [0, 17] {
+        let result = azuria_launch::prepare_with_download_limit(
+            dir.path(),
+            dir.path(),
+            "1.21.1",
+            None,
+            options.clone(),
+            Arc::new(|_| {}),
+            Arc::new(AtomicBool::new(false)),
+            limit,
+        );
+        assert!(result.err().unwrap().contains("concurrent downloads"));
+    }
+}

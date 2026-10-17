@@ -48,6 +48,25 @@ impl Games {
             })
             .unwrap_or(true)
     }
+    pub fn with_all_idle<T>(
+        &self,
+        action: impl FnOnce() -> Result<T, String>,
+    ) -> Result<T, String> {
+        let entries = self
+            .entries
+            .lock()
+            .map_err(|_| "Game state is unavailable.")?;
+        let content = self
+            .content
+            .lock()
+            .map_err(|_| "Content state is unavailable.")?;
+        if entries.values().any(|e| e.view.active()) || !content.is_empty() {
+            return Err(
+                "Stop Minecraft and finish or cancel downloads before cleaning storage.".into(),
+            );
+        }
+        action()
+    }
     pub fn with_idle<T>(
         &self,
         id: &str,
@@ -182,7 +201,7 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
     #[cfg(all(windows, target_arch = "x86_64"))]
     {
         let cancel = Arc::new(AtomicBool::new(false));
-        let (game, root, mut instance, options) = {
+        let (game, root, mut instance, options, resources) = {
             let games = app.state::<Games>();
             let mut entries = games
                 .entries
@@ -217,7 +236,7 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     .ok_or("Invalid instance storage.")?
                     .join("game-cache");
                 let options = s.launch_overrides(&id)?.effective(&s.launch_defaults()?);
-                Ok((game, root, instance, options))
+                Ok((game, root, instance, options, s.resource_options()?))
             })?;
             entries.insert(
                 id.clone(),
@@ -283,7 +302,7 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                 }
                 // File preparation is public and does not need Minecraft credentials.
                 // A verified session is obtained only when a game process will be started.
-                let prepared = azuria_launch::prepare_with_loader(
+                let prepared = azuria_launch::prepare_with_download_limit(
                     &root,
                     &game,
                     &instance.minecraft_version,
@@ -295,6 +314,7 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     options,
                     reporter.clone(),
                     cancel.clone(),
+                    resources.concurrent_downloads,
                 )?;
                 azuria_launch::cancelled(&cancel)?;
                 if prepare_only {

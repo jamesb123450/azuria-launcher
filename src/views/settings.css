@@ -304,3 +304,23 @@
     padding: 12px;
   }
 }
+
+.storage-preferences {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.storage-preferences legend {
+  font-size: 14px;
+  font-weight: 550;
+  padding: 0 0 16px;
+}
+.storage-preferences input[type="number"] {
+  max-width: 130px;
+}
+.storage-preferences > p {
+  font-size: 12px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
