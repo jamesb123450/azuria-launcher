@@ -1,3 +1,9 @@
+# Instance log console
+
+- Refine instance logs with a compact toolbar, search, severity filters and readable coloured output.
+- Add copy and export for visible lines, display-only clearing, wrapping and auto-scroll that pauses while reading older output.
+- Keep live polling and credential filtering, with accessible controls and light-theme colours.
+
 # Public release distribution
 
 - Move signed updates, downloads and the public website to azuria-releases so source access can be restricted without requiring users to authenticate.

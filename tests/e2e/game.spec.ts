@@ -375,12 +375,36 @@ test("live log updates can be paused and resumed", async ({ page }) => {
   await page.goto(`/#/instances/${id}?tab=logs`);
   const output = page.getByLabel("Live game log output");
   await expect(output).toContainText("Live line");
-  await page.getByLabel("Pause", { exact: true }).check();
+  await page
+    .getByRole("button", { name: "Pause live updates", exact: true })
+    .click();
   const text = await output.textContent();
   await page.waitForTimeout(1200);
   await expect(output).toHaveText(text!);
-  await page.getByLabel("Pause", { exact: true }).uncheck();
+  await page
+    .getByRole("button", { name: "Resume live updates", exact: true })
+    .click();
   await expect(output).not.toHaveText(text!);
+  await page
+    .getByRole("button", { name: "Pause live updates", exact: true })
+    .click();
+  await page
+    .getByRole("searchbox", { name: "Search logs" })
+    .fill("no matching output");
+  await expect(
+    page.getByRole("heading", { name: "No matching lines" }),
+  ).toBeVisible();
+  await page.getByRole("searchbox", { name: "Search logs" }).fill("");
+  await expect(output).toContainText("Live line");
+  await page.getByRole("button", { name: "Clear displayed logs" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Display cleared" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Resume live updates", exact: true })
+    .click();
+  await expect(output).toContainText("Live line");
+  await page.screenshot({ path: test.info().outputPath("console-logs.png") });
 });
 
 test("the account sidebar shows the player skin head", async ({ page }) => {
