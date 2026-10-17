@@ -41,21 +41,27 @@ pub fn instance_entries(
 }
 #[tauri::command]
 pub fn toggle_instance_content(
+    games: State<'_, crate::game::Games>,
     state: State<'_, AppState>,
     id: String,
     section: Section,
     name: String,
 ) -> Result<(), String> {
-    with_store(&state, |s| s.toggle_content(&id, section, &name))
+    games.with_idle(&id, || {
+        with_store(&state, |s| s.toggle_content(&id, section, &name))
+    })
 }
 #[tauri::command]
 pub fn remove_instance_content(
+    games: State<'_, crate::game::Games>,
     state: State<'_, AppState>,
     id: String,
     section: Section,
     name: String,
 ) -> Result<(), String> {
-    with_store(&state, |s| s.trash_content(&id, section, &name))
+    games.with_idle(&id, || {
+        with_store(&state, |s| s.trash_content(&id, section, &name))
+    })
 }
 #[tauri::command]
 pub fn instance_log(
@@ -129,7 +135,9 @@ pub async fn import_instance_content(
                 return Ok(());
             };
             let state = app.state::<AppState>();
-            with_store(&state, |s| s.import_content(&id, section, &file))
+            app.state::<crate::game::Games>().with_idle(&id, || {
+                with_store(&state, |s| s.import_content(&id, section, &file))
+            })
         }
         #[cfg(not(windows))]
         {

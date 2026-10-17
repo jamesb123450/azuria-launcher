@@ -32,6 +32,7 @@ import { defaultLaunchOptions, validateOptions } from "../lib/launch-options";
 import AccountPanel from "../components/AccountPanel.vue";
 import UpdatePanel from "../components/UpdatePanel.vue";
 import LaunchOptionsEditor from "../components/LaunchOptionsEditor.vue";
+import { contentApi } from "../content-api";
 import type { Theme } from "../types";
 import "./instance.css";
 import "./settings.css";
@@ -46,7 +47,9 @@ const section = ref(
     ? "account"
     : route.hash === "#launch-defaults"
       ? "java"
-      : "appearance",
+      : route.hash === "#content-providers"
+        ? "providers"
+        : "appearance",
 );
 const groups = [
   {
@@ -78,6 +81,7 @@ const groups = [
   {
     label: "System",
     items: [
+      { id: "providers", label: "Content providers", icon: Download },
       { id: "storage", label: "Storage", icon: FolderOpen },
       { id: "updates", label: "Updates", icon: Download },
       { id: "troubleshooting", label: "Troubleshooting", icon: Wrench },
@@ -199,13 +203,38 @@ const busy = ref(false);
 const error = ref("");
 const notice = ref("");
 const confirmClose = ref(false);
+const curseforgeKey = ref("");
+const removeCurseforgeKey = ref(false);
+const curseforgeConfigured = ref(false);
+const providerError = ref("");
+const keyChanged = computed(
+  () => !!curseforgeKey.value.trim() || removeCurseforgeKey.value,
+);
+watch(
+  section,
+  async (value) => {
+    if (value !== "providers") return;
+    providerError.value = "";
+    try {
+      curseforgeConfigured.value = (
+        await contentApi.status()
+      ).curseforgeConfigured;
+    } catch (e) {
+      providerError.value = String(e);
+    }
+  },
+  { immediate: true },
+);
 const dirty = computed(
   () =>
     loaded.value &&
-    (theme.value !== savedTheme.value ||
+    (keyChanged.value ||
+      theme.value !== savedTheme.value ||
       JSON.stringify(form.value) !== snapshot.value),
 );
 function reset() {
+  curseforgeKey.value = "";
+  removeCurseforgeKey.value = false;
   theme.value = savedTheme.value;
   if (snapshot.value) form.value = JSON.parse(snapshot.value);
   error.value = "";
@@ -250,6 +279,14 @@ async function save() {
       if (store.settings.theme !== theme.value)
         throw new Error("Appearance could not be saved. Please retry.");
       savedTheme.value = theme.value;
+    }
+    if (keyChanged.value) {
+      await contentApi.setKey(
+        removeCurseforgeKey.value ? null : curseforgeKey.value.trim(),
+      );
+      curseforgeConfigured.value = !removeCurseforgeKey.value;
+      curseforgeKey.value = "";
+      removeCurseforgeKey.value = false;
     }
     notice.value = "Settings saved.";
     return true;
@@ -299,6 +336,7 @@ watch(
   () => route.hash,
   (hash) => {
     if (hash === "#account") section.value = "account";
+    if (hash === "#content-providers") section.value = "providers";
   },
 );
 const previousFocus = document.activeElement as HTMLElement | null;
@@ -414,6 +452,50 @@ onBeforeUnmount(() => {
             <span class="coming-soon">Coming soon</span>
           </div></template
         >
+        <template v-else-if="section === 'providers'">
+          <p class="settings-inheritance">
+            Modrinth search and downloads use its public API. CurseForge
+            requires approved API access for Azuria.
+          </p>
+          <div class="settings-planned-row">
+            <div>
+              <h3>Modrinth</h3>
+              <p>Ready to use. No API key required.</p>
+            </div>
+          </div>
+          <div class="settings-storage-path">
+            <h3>CurseForge API access</h3>
+            <p>
+              {{
+                curseforgeConfigured
+                  ? "A key is stored in Windows Credential Manager on this PC."
+                  : "No API key is stored on this PC."
+              }}
+            </p>
+            <p v-if="providerError" class="inline-error">{{ providerError }}</p>
+            <label class="instance-field"
+              >{{ curseforgeConfigured ? "Replacement API key" : "API key"
+              }}<input
+                v-model="curseforgeKey"
+                type="password"
+                autocomplete="off"
+                spellcheck="false"
+                :disabled="!desktop || busy || removeCurseforgeKey"
+            /></label>
+            <label v-if="curseforgeConfigured"
+              ><input
+                v-model="removeCurseforgeKey"
+                type="checkbox"
+                :disabled="busy"
+              />Remove the saved key when I press Save</label
+            >
+            <p class="muted">
+              Use an approved key. It is stored natively, never in your instance
+              settings, browser storage or repository. Save and Reset below
+              apply to these changes too.
+            </p>
+          </div>
+        </template>
         <AccountPanel v-else-if="section === 'account'" />
         <UpdatePanel v-else-if="section === 'updates'" />
         <template v-else-if="section === 'java' || section === 'window'"

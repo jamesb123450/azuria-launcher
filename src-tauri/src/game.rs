@@ -2,7 +2,7 @@ use crate::{with_store, Accounts, AppState};
 use azuria_launch::{Credentials, Progress, Reporter};
 use serde::Serialize;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -36,12 +36,16 @@ struct Entry {
 pub struct Games {
     entries: Mutex<BTreeMap<String, Entry>>,
     preparation: Mutex<()>,
+    content: Mutex<BTreeSet<String>>,
 }
 impl Games {
     pub fn has_active(&self) -> bool {
         self.entries
             .lock()
-            .map(|entries| entries.values().any(|e| e.view.active()))
+            .map(|entries| {
+                entries.values().any(|e| e.view.active())
+                    || self.content.lock().map(|c| !c.is_empty()).unwrap_or(true)
+            })
             .unwrap_or(true)
     }
     pub fn with_idle<T>(
@@ -53,12 +57,32 @@ impl Games {
             .entries
             .lock()
             .map_err(|_| "Game state is unavailable.")?;
-        if entries.get(id).is_some_and(|e| e.view.active()) {
+        if entries.get(id).is_some_and(|e| e.view.active())
+            || self
+                .content
+                .lock()
+                .map_err(|_| "Content status is unavailable.")?
+                .contains(id)
+        {
             return Err(
                 "Close Minecraft or cancel preparation before changing this instance.".into(),
             );
         }
         action()
+    }
+    pub fn reserve_content(&self, id: &str) -> Result<(), String> {
+        self.with_idle(id, || {
+            self.content
+                .lock()
+                .map_err(|_| "Content status is unavailable.")?
+                .insert(id.into());
+            Ok(())
+        })
+    }
+    pub fn release_content(&self, id: &str) {
+        if let Ok(mut content) = self.content.lock() {
+            content.remove(id);
+        }
     }
     fn update(&self, app: &tauri::AppHandle, id: &str, progress: Progress) {
         if let Ok(mut entries) = self.entries.lock() {
@@ -164,7 +188,13 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                 .entries
                 .lock()
                 .map_err(|_| "Game state is unavailable.")?;
-            if entries.get(&id).is_some_and(|e| e.view.active()) {
+            if entries.get(&id).is_some_and(|e| e.view.active())
+                || games
+                    .content
+                    .lock()
+                    .map_err(|_| "Content status is unavailable.")?
+                    .contains(&id)
+            {
                 return Err("This instance is already preparing or running.".into());
             }
             let storage = app.state::<AppState>();
@@ -236,6 +266,7 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     }
                 };
                 azuria_launch::cancelled(&cancel)?;
+                azuria_content::recover(&game)?;
                 if instance.loader == azuria_core::Loader::Fabric {
                     let selected = instance.loader_version.as_deref().unwrap_or("stable");
                     let resolved = azuria_launch::resolve_fabric_version(

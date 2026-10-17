@@ -120,6 +120,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "azuria-content"
+version = "0.1.0"
+dependencies = [
+ "azuria-launch",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha1",
+ "sha2",
+ "tempfile",
+ "zip 2.6.1",
+]
+
+[[package]]
 name = "azuria-core"
 version = "0.1.0"
 dependencies = [
@@ -150,10 +165,12 @@ name = "azuria-launcher"
 version = "0.2.1"
 dependencies = [
  "azuria-auth",
+ "azuria-content",
  "azuria-core",
  "azuria-launch",
  "base64 0.22.1",
  "image",
+ "keyring",
  "reqwest",
  "rfd",
  "serde",

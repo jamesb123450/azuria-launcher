@@ -1,110 +1,96 @@
 import { expect, test } from "@playwright/test";
-test("discovery preview supports categories, search, filters, sorting and pagination", async ({
+test.beforeEach(async ({ page }) => {
+  await page.route("https://piston-meta.mojang.com/**", (route) =>
+    route.fulfill({
+      json: {
+        versions: [
+          { id: "26.1", type: "release" },
+          { id: "1.21.1", type: "release" },
+        ],
+      },
+    }),
+  );
+  await page.route("https://api.modrinth.com/v2/search**", (route) => {
+    const url = new URL(route.request().url());
+    const query = url.searchParams.get("query") ?? "";
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    return route.fulfill({
+      json: {
+        total_hits: query === "none" ? 0 : 8,
+        hits:
+          query === "none"
+            ? []
+            : Array.from({ length: offset ? 2 : 6 }, (_, n) => ({
+                project_id: "p" + (n + offset),
+                title: (query || "Project") + " " + (n + offset),
+                description: "A provider project description.",
+                author: "Provider author",
+                slug: "project-" + n,
+                downloads: 100 + n,
+                categories: ["optimization"],
+              })),
+      },
+    });
+  });
+});
+test("real search UI applies filters and pagination without fictional fallback", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.getByRole("link", { name: "Discover", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Discover", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Fictional projects, creators and statistics.", {
-      exact: false,
-    }),
-  ).toBeVisible();
+  await page.goto("/#/discover");
   await expect(page.locator(".discover-project")).toHaveCount(6);
   await expect(
-    page.getByRole("button", {
-      name: "Install Wildlight — coming soon",
-      exact: true,
-    }),
+    page.getByRole("button", { name: "Install Project 0", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Next catalogue page" }).click();
+  await page.getByRole("button", { name: "Next results page" }).click();
   await expect(page.locator(".discover-project")).toHaveCount(2);
+  await page.getByRole("textbox", { name: "Search modpacks" }).fill("none");
   await expect(
-    page.getByRole("button", { name: "Catalogue page 2", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
-  await page.getByRole("combobox", { name: "Sort projects" }).click();
-  await page
-    .getByRole("option", { name: "Recently updated", exact: true })
-    .click();
-  await expect(page.locator(".discover-project h2").first()).toHaveText(
-    "Copper & Steam",
-  );
-  await page
-    .getByRole("textbox", { name: "Search modpacks", exact: true })
-    .fill("wildlight");
-  await expect(page.locator(".discover-project")).toHaveCount(1);
-  await page.getByRole("button", { name: "Clear discovery search" }).click();
+    page.getByRole("heading", { name: "No projects found" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "CurseForge", exact: true }).click();
-  await expect(page.locator(".discover-project")).toHaveCount(2);
-  await page
-    .getByRole("button", { name: "Reset filters", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Mods 6", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("API access");
   await expect(
-    page.getByRole("textbox", { name: "Search mods", exact: true }),
+    page.getByRole("link", { name: "Set up CurseForge access" }),
   ).toBeVisible();
-  await page.getByRole("combobox", { name: "Discover loader" }).click();
-  await page.getByRole("option", { name: "NeoForge", exact: true }).click();
-  await expect(page.locator(".discover-project h2")).toHaveText([
-    "Moss & Meadow",
-  ]);
-  await page.getByRole("button", { name: "Datapacks 6", exact: true }).click();
-  await expect(page.locator(".discover-project")).toHaveCount(6);
-  await expect(
-    page.getByRole("combobox", { name: "Discover loader" }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Resource packs 6", exact: true })
-    .click();
-  await page
-    .getByRole("textbox", { name: "Search resource packs" })
-    .fill("nothing-matches");
-  await expect(
-    page.getByRole("heading", { name: "No examples found" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Clear search & filters" }).click();
-  await expect(page.locator(".discover-project")).toHaveCount(6);
 });
-
-test("discovery fits the minimum desktop size in both themes", async ({
+test("provider errors can retry without showing sample projects", async ({
+  page,
+}) => {
+  await page.route("https://api.modrinth.com/v2/search**", (route) =>
+    route.fulfill({ status: 429, json: {} }),
+  );
+  await page.goto("/#/discover");
+  await expect(page.getByRole("alert")).toContainText("rate limit");
+  await page.unroute("https://api.modrinth.com/v2/search**");
+  await page.route("https://api.modrinth.com/v2/search**", (route) =>
+    route.fulfill({ json: { total_hits: 0, hits: [] } }),
+  );
+  await page.getByRole("button", { name: "Retry search" }).click();
+  await expect(
+    page.getByRole("heading", { name: "No projects found" }),
+  ).toBeVisible();
+});
+test("right-hand filters and provider cards fit the minimum window in both themes", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 900, height: 650 });
   await page.goto("/#/discover");
-  await expect(
-    page.getByRole("heading", { name: "Discover", exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".discover-project")).toHaveCount(6);
   for (const theme of ["dark", "light"]) {
     await page.evaluate(
-      (value) => (document.documentElement.dataset.theme = value),
+      (theme) => (document.documentElement.dataset.theme = theme),
       theme,
     );
-    await expect(page.locator(".discover-project").first()).toHaveCSS(
-      "background-color",
-      theme === "dark" ? "rgb(37, 40, 47)" : "rgb(255, 255, 255)",
-    );
-    const bounds = await page
-      .locator(".discover-project")
-      .first()
-      .boundingBox();
-    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(900);
-    const sidebar = await page
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    const results = await page.locator(".discover-results").boundingBox();
+    const filters = await page
       .getByRole("complementary", { name: "Discovery filters" })
       .boundingBox();
-    expect(sidebar!.x).toBeGreaterThan(bounds!.x + bounds!.width);
-    expect(sidebar!.x + sidebar!.width).toBeLessThanOrEqual(900);
-    await expect(
-      page.getByRole("combobox", { name: "Sort projects" }),
-    ).toBeVisible();
-    await page.screenshot({ path: `/tmp/azuria-discover-${theme}-900.png` });
+    expect(filters!.x).toBeGreaterThan(results!.x + results!.width - 1);
+    await page.screenshot({ path: `test-results/discover-live-${theme}.png` });
   }
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.evaluate(() => (document.documentElement.dataset.theme = "dark"));
-  await expect(page.locator(".discover-project").first()).toHaveCSS(
-    "background-color",
-    "rgb(37, 40, 47)",
-  );
-  await page.screenshot({ path: "/tmp/azuria-discover-dark-1280.png" });
 });
