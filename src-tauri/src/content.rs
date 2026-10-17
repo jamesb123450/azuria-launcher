@@ -307,7 +307,6 @@ pub fn content_install(app: tauri::AppHandle, plan_id: String) -> Result<(), Str
     });
     let _ = app.emit("content-progress", status);
     drop(job);
-    drop(state);
     tauri::async_runtime::spawn_blocking(move || {
         let total = saved.plan.preview().bytes;
         let result: Result<azuria_core::Instance, String> = (|| {
