@@ -63,7 +63,7 @@ function closeSettings() {
 const page = computed(() =>
   route.path === "/settings"
     ? "Settings"
-    : route.path === "/discover"
+    : route.path.startsWith("/discover")
       ? "Discover"
       : route.path === "/roadmap"
         ? "Development"
@@ -158,6 +158,7 @@ function storagePrepared() {
         >
         <RouterLink
           to="/discover"
+          :class="{ 'router-link-active': route.path.startsWith('/discover') }"
           class="rail-link"
           aria-label="Discover"
           title="Discover"
@@ -248,7 +249,11 @@ function storagePrepared() {
       </main>
       <div
         v-if="content.job"
-        :class="['alert', content.job.stage === 'error' ? 'error' : 'success']"
+        :class="[
+          'alert',
+          'content-notification',
+          content.job.stage === 'error' ? 'error' : 'success',
+        ]"
         role="status"
       >
         <span
@@ -299,3 +304,41 @@ function storagePrepared() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.content-notification {
+  width: max-content;
+  max-width: calc(100vw - 100px);
+  gap: 18px;
+  padding: 12px 16px;
+  font-size: 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 32px #0003;
+  align-items: center;
+}
+.content-notification > span {
+  max-width: 460px;
+  line-height: 1.5;
+}
+.content-notification > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.content-notification > button:hover {
+  background: var(--hover);
+  border-color: var(--muted);
+}
+.content-notification > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+</style>

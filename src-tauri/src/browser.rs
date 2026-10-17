@@ -14,6 +14,25 @@ fn wide_url(url: &str) -> Result<Vec<u16>, ()> {
 
 #[cfg(windows)]
 pub fn open_sign_in(url: &str) -> Result<(), &'static str> {
+    open_encoded(wide_url(url).map_err(|_| "Unsupported browser link.")?)
+}
+
+#[cfg(windows)]
+pub fn open_web(url: &str) -> Result<(), &'static str> {
+    let parsed = reqwest::Url::parse(url).map_err(|_| "Invalid web link.")?;
+    if parsed.scheme() != "https"
+        || parsed.host_str().is_none()
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || url.contains('\0')
+    {
+        return Err("Unsupported web link.");
+    }
+    open_encoded(url.encode_utf16().chain(std::iter::once(0)).collect())
+}
+
+#[cfg(windows)]
+fn open_encoded(url: Vec<u16>) -> Result<(), &'static str> {
     use std::ptr::{null, null_mut};
     use windows_sys::Win32::{
         System::Com::{
@@ -21,8 +40,7 @@ pub fn open_sign_in(url: &str) -> Result<(), &'static str> {
         },
         UI::{Shell::ShellExecuteW, WindowsAndMessaging::SW_SHOWNORMAL},
     };
-    let error = "Windows could not open the sign-in page in your default browser.";
-    let url = wide_url(url).map_err(|_| error)?;
+    let error = "Windows could not open the page in your default browser.";
     // A dedicated thread owns COM initialization. Do not change the apartment
     // of a Tauri/Tokio worker, which may already be initialized differently.
     std::thread::Builder::new()

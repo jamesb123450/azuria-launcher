@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import "./discover.css";
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
+import ContentInstaller from "../components/ContentInstaller.vue";
+import ContentIcon from "../components/ContentIcon.vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   Search,
   X,
@@ -29,14 +24,11 @@ import {
   type Provider,
   type Kind,
   type Project,
-  type Version,
-  type Plan,
 } from "../content-api";
 import { useLauncher } from "../stores/launcher";
 import { useContent } from "../stores/content";
 import { desktop } from "../api";
 import { gameVersions } from "../lib/game-versions";
-import { instanceApi, type FileEntry } from "../instance-api";
 const store = useLauncher(),
   content = useContent();
 const tabs = [
@@ -59,6 +51,7 @@ const projects = ref<Project[]>([]),
   loading = ref(false),
   error = ref(""),
   gameChoices = ref<string[]>([]);
+const selectedTab = computed(() => tabs.find((t) => t.id === kind.value)!);
 const categories = computed(() =>
   [...new Set([category.value, ...projects.value.flatMap((p) => p.categories)])]
     .filter(Boolean)
@@ -76,8 +69,6 @@ const pages = computed(() =>
 const hasFilters = computed(
   () => !!(query.value || category.value || loader.value || version.value),
 );
-const selectedTab = computed(() => tabs.find((t) => t.id === kind.value)!);
-const activeIcon = computed(() => selectedTab.value.icon);
 let timer: ReturnType<typeof setTimeout> | undefined;
 let request = 0,
   controller: AbortController | undefined,
@@ -149,118 +140,9 @@ onMounted(() => {
     .then((v) => (gameChoices.value = v.slice(0, 150).map((v) => v.id)))
     .catch(() => {});
 });
-const dialog = ref<HTMLDialogElement>(),
-  project = ref<Project | null>(null),
-  instanceId = ref(""),
-  versions = ref<Version[]>([]),
-  selectedVersion = ref(""),
-  world = ref(""),
-  worlds = ref<FileEntry[]>([]),
-  name = ref(""),
-  versionLoading = ref(false),
-  planning = ref(false),
-  dialogError = ref(""),
-  plan = ref<Plan | null>(null);
-const eligible = computed(() =>
-  store.instances.filter(
-    (i) => kind.value !== "mods" || i.loader !== "vanilla",
-  ),
-);
-let planRequest = 0;
-let versionRequest = 0,
-  trigger: HTMLElement | null = null;
-async function open(projectValue: Project) {
-  trigger = document.activeElement as HTMLElement;
-  project.value = projectValue;
-  name.value = projectValue.name;
-  instanceId.value =
-    eligible.value.find((i) => i.id === store.selectedId)?.id ??
-    eligible.value[0]?.id ??
-    "";
-  selectedVersion.value = "";
-  plan.value = null;
-  dialogError.value = "";
-  await nextTick();
-  dialog.value?.showModal();
-  await loadVersions();
-}
-function close() {
-  planRequest++;
-  planning.value = false;
-  versionLoading.value = false;
-  dialog.value?.close();
-  project.value = null;
-  versionRequest++;
-  trigger?.focus();
-}
-async function loadVersions() {
-  if (!project.value) return;
-  const current = ++versionRequest;
-  plan.value = null;
-  dialogError.value = "";
-  versions.value = [];
-  worlds.value = [];
-  world.value = "";
-  if (kind.value !== "modpacks" && !instanceId.value) return;
-  versionLoading.value = true;
-  try {
-    const [list, files] = await Promise.all([
-      contentApi.versions(
-        source.value,
-        project.value.id,
-        kind.value,
-        kind.value === "modpacks" ? null : instanceId.value,
-      ),
-      kind.value === "datapacks"
-        ? instanceApi.entries(instanceId.value, "worlds")
-        : Promise.resolve([]),
-    ]);
-    if (current !== versionRequest || disposed) return;
-    versions.value = list;
-    selectedVersion.value =
-      list.find((v) => v.releaseType === "release")?.id ?? list[0]?.id ?? "";
-    worlds.value = files.filter((f) => f.directory);
-    world.value = worlds.value[0]?.name ?? "";
-    if (!list.length)
-      dialogError.value =
-        "No compatible versions were found for this instance.";
-  } catch (e) {
-    if (current === versionRequest) dialogError.value = String(e);
-  } finally {
-    if (current === versionRequest) versionLoading.value = false;
-  }
-}
-watch(instanceId, () => {
-  if (dialog.value?.open) void loadVersions();
-});
-watch([selectedVersion, world, name], () => (plan.value = null));
-async function review() {
-  if (!project.value) return;
-  planning.value = true;
-  const current = ++planRequest;
-  dialogError.value = "";
-  try {
-    const result = await contentApi.plan(
-      source.value,
-      project.value.id,
-      selectedVersion.value,
-      kind.value,
-      kind.value === "modpacks" ? null : instanceId.value,
-      name.value,
-      kind.value === "datapacks" ? world.value : null,
-    );
-    if (current === planRequest && project.value) plan.value = result;
-  } catch (e) {
-    if (current === planRequest) dialogError.value = String(e);
-  } finally {
-    if (current === planRequest) planning.value = false;
-  }
-}
-async function install() {
-  if (!plan.value) return;
-  await content.install(plan.value.id);
-  if (!content.error) close();
-}
+const installer = ref<InstanceType<typeof ContentInstaller>>();
+const projectPath = (p: Project) =>
+  `/discover/${source.value}/${kind.value}/${p.id}`;
 async function openProvider(p: Project) {
   try {
     await contentApi.open(p.url);
@@ -273,17 +155,11 @@ const number = (n: number) =>
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(n);
-const size = (n: number) =>
-  n >= 1024 * 1024
-    ? `${(n / 1024 / 1024).toFixed(1)} MB`
-    : `${Math.ceil(n / 1024)} KB`;
 onBeforeUnmount(() => {
   disposed = true;
   request++;
-  versionRequest++;
   clearTimeout(timer);
   controller?.abort();
-  dialog.value?.close();
 });
 </script>
 <template>
@@ -371,12 +247,17 @@ onBeforeUnmount(() => {
         </div>
         <div v-else-if="projects.length" class="discover-project-list">
           <article v-for="p in projects" :key="p.id" class="discover-project">
-            <div class="discover-project-art blocks" aria-hidden="true">
-              <component :is="activeIcon" :size="32" />
-            </div>
+            <RouterLink
+              :to="projectPath(p)"
+              :aria-label="'View ' + p.name"
+              class="discover-project-cover"
+              ><ContentIcon :url="p.iconUrl" :name="p.name"
+            /></RouterLink>
             <div class="discover-project-body">
               <div class="discover-project-title">
-                <h2>{{ p.name }}</h2>
+                <h2>
+                  <RouterLink :to="projectPath(p)">{{ p.name }}</RouterLink>
+                </h2>
                 <span>by {{ p.author }}</span>
               </div>
               <p>{{ p.description }}</p>
@@ -394,7 +275,7 @@ onBeforeUnmount(() => {
                 class="discover-install"
                 :disabled="!desktop || content.busy"
                 :aria-label="'Install ' + p.name"
-                @click="open(p)"
+                @click="installer?.open(p)"
               >
                 <Plus :size="15" />Install</button
               ><span><Download :size="13" />{{ number(p.downloads) }}</span
@@ -528,119 +409,21 @@ onBeforeUnmount(() => {
         </p>
       </aside>
     </div>
-    <dialog
-      ref="dialog"
-      class="instance-dialog content-install-dialog"
-      aria-labelledby="content-install-title"
-      @cancel.prevent="close"
-    >
-      <header class="create-heading">
-        <div>
-          <h2 id="content-install-title">Install {{ project?.name }}</h2>
-          <p class="muted">Review compatible files before installing.</p>
-        </div>
-        <button
-          class="icon-button"
-          aria-label="Close content installation"
-          @click="close"
-        >
-          <X :size="20" />
-        </button>
-      </header>
-      <label v-if="kind === 'modpacks'" class="instance-field"
-        >New instance name<input
-          v-model="name"
-          :disabled="planning"
-          maxlength="80"
-      /></label>
-      <VersionPicker
-        v-else
-        v-model="instanceId"
-        label="Install into instance"
-        :disabled="planning"
-        :options="
-          eligible.map((i) => ({
-            value: i.id,
-            label: i.name,
-            detail: `${i.loader} · ${i.minecraftVersion}`,
-          }))
-        "
-      />
-      <p v-if="kind !== 'modpacks' && !eligible.length" class="muted">
-        Create a compatible instance first. Mods require a mod loader.
-      </p>
-      <p v-if="versionLoading" role="status">Finding compatible versions…</p>
-      <VersionPicker
-        v-else-if="versions.length"
-        v-model="selectedVersion"
-        label="Content version"
-        :disabled="planning"
-        :options="
-          versions.map((v) => ({
-            value: v.id,
-            label: v.name,
-            detail: v.releaseType === 'release' ? '' : v.releaseType,
-          }))
-        "
-      />
-      <VersionPicker
-        v-if="kind === 'datapacks' && worlds.length"
-        v-model="world"
-        label="Install datapack into world"
-        :disabled="planning"
-        :options="worlds.map((w) => ({ value: w.name, label: w.name }))"
-      />
-      <p
-        v-if="kind === 'datapacks' && !worlds.length && !versionLoading"
-        class="muted"
-      >
-        Create a world in this instance before installing a datapack.
-      </p>
-      <p v-if="dialogError || content.error" class="inline-error" role="alert">
-        {{ dialogError || content.error }}
-      </p>
-      <section v-if="plan" class="content-plan">
-        <h3>Ready to install</h3>
-        <p>
-          {{ plan.preview.files }} files · {{ size(plan.preview.bytes) }} ·
-          Minecraft {{ plan.preview.target.minecraft }} ·
-          {{ plan.preview.target.loader }}
-        </p>
-        <ul>
-          <li v-for="(n, i) in plan.preview.names" :key="i">{{ n }}</li>
-        </ul>
-        <p class="muted">
-          Required dependencies are included. Optional client files are skipped.
-          Existing files with different content are kept and installation stops.
-        </p>
-      </section>
-      <footer class="dialog-actions">
-        <button class="button secondary" @click="close">Cancel</button
-        ><button
-          v-if="!plan"
-          class="button primary"
-          :disabled="
-            planning ||
-            versionLoading ||
-            !selectedVersion ||
-            (kind === 'datapacks' && !world)
-          "
-          @click="review"
-        >
-          {{ planning ? "Checking files…" : "Review installation" }}</button
-        ><button
-          v-else
-          class="button primary"
-          :disabled="content.busy"
-          @click="install"
-        >
-          Install {{ plan.preview.files }} files
-        </button>
-      </footer>
-    </dialog>
+    <ContentInstaller ref="installer" :provider="source" :kind="kind" />
   </div>
 </template>
 <style scoped>
+.discover-project-cover {
+  display: flex;
+  align-self: start;
+}
+.discover-project-title a {
+  color: inherit;
+  text-decoration: none;
+}
+.discover-project-title a:hover {
+  text-decoration: underline;
+}
 .content-project-link {
   border: 0;
   background: none;

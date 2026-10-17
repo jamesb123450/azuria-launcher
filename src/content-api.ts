@@ -9,7 +9,32 @@ export interface Project {
   author: string;
   url: string;
   downloads: number;
+  iconUrl?: string | null;
   categories: string[];
+}
+export interface InstalledProject {
+  provider: Provider;
+  project: Project;
+  kind: Kind;
+  version: string;
+  versionName: string;
+  latest: string | null;
+  missing: number;
+  mods: number;
+  resourcePacks: number;
+  files: string[];
+}
+export interface Inventory {
+  pack: InstalledProject | null;
+  projects: InstalledProject[];
+  files: { name: string; project: Project; provider?: Provider }[];
+}
+export interface ProjectDetails {
+  project: Project;
+  body: string;
+  bodyHtml: boolean;
+  followers: number;
+  gallery: { url: string; title: string; description: string }[];
 }
 export interface Version {
   id: string;
@@ -70,6 +95,66 @@ async function mr(
   return response.json();
 }
 export const contentApi = {
+  inventory: (id: string): Promise<Inventory> =>
+    desktop
+      ? invoke("content_inventory", { id })
+      : Promise.resolve({ pack: null, projects: [], files: [] }),
+  updatePlan: (
+    id: string,
+    provider: Provider,
+    project: string,
+  ): Promise<Plan> => invoke("content_update_plan", { id, provider, project }),
+  project: async (
+    provider: Provider,
+    project: string,
+  ): Promise<ProjectDetails> => {
+    if (desktop) return invoke("content_project", { provider, project });
+    if (provider !== "modrinth")
+      throw Error("CurseForge details require the Windows app and API access.");
+    const p = await mr(`project/${encodeURIComponent(project)}`, {});
+    return {
+      project: {
+        id: p.id,
+        name: p.title,
+        description: p.description,
+        author: p.slug,
+        url: `https://modrinth.com/${p.project_type}/${p.slug}`,
+        downloads: p.downloads,
+        categories: p.categories,
+        iconUrl: p.icon_url,
+      },
+      body: p.body,
+      bodyHtml: false,
+      followers: p.followers,
+      gallery: p.gallery,
+    };
+  },
+  catalogueVersions: async (
+    provider: Provider,
+    project: string,
+    kind: Kind,
+  ): Promise<Version[]> => {
+    if (desktop)
+      return invoke("content_versions", {
+        provider,
+        project,
+        kind,
+        instanceId: null,
+      });
+    if (provider !== "modrinth")
+      throw Error("CurseForge versions require the Windows app.");
+    const versions = await mr(
+      `project/${encodeURIComponent(project)}/version`,
+      { include_changelog: "false" },
+    );
+    return versions.slice(0, 256).map((v: any) => ({
+      id: v.id,
+      name: v.name,
+      gameVersions: v.game_versions,
+      loaders: v.loaders,
+      releaseType: v.version_type,
+    }));
+  },
   status: (): Promise<{ curseforgeConfigured: boolean }> =>
     desktop
       ? invoke("content_status")
@@ -118,6 +203,7 @@ export const contentApi = {
         author: String(p.author),
         url: `https://modrinth.com/${type}/${String(p.slug)}`,
         downloads: Number(p.downloads),
+        iconUrl: typeof p.icon_url === "string" ? p.icon_url : null,
         categories: Array.isArray(p.categories) ? p.categories : [],
       })),
     };
@@ -154,10 +240,7 @@ export const contentApi = {
     desktop ? invoke("content_job") : Promise.resolve(null),
   open: (url: string) => {
     const parsed = new URL(url);
-    if (
-      parsed.protocol !== "https:" ||
-      !["modrinth.com", "www.curseforge.com"].includes(parsed.hostname)
-    )
+    if (parsed.protocol !== "https:" || !!parsed.username || !!parsed.password)
       return;
     if (desktop) return invoke("content_open_url", { url });
     window.open(url, "_blank", "noopener,noreferrer");

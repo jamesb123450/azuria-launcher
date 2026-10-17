@@ -41,6 +41,76 @@ import InstanceIcon from "../components/InstanceIcon.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
 import LaunchOptionsEditor from "../components/LaunchOptionsEditor.vue";
 import "./instance.css";
+import ContentIcon from "../components/ContentIcon.vue";
+import {
+  contentApi,
+  type Inventory,
+  type InstalledProject,
+  type Plan,
+} from "../content-api";
+import { useContent } from "../stores/content";
+const content = useContent();
+const inventory = ref<Inventory>({ pack: null, projects: [], files: [] }),
+  inventoryBusy = ref(false),
+  inventoryError = ref(""),
+  showPackContent = ref(false);
+const updateDialog = ref<HTMLDialogElement>(),
+  updatePlan = ref<Plan | null>(null),
+  updateName = ref(""),
+  updateBusy = ref(false),
+  updateError = ref("");
+let inventoryRequest = 0;
+async function checkUpdates() {
+  if (!desktop || !instance.value) return;
+  const token = ++inventoryRequest;
+  inventoryBusy.value = true;
+  inventoryError.value = "";
+  try {
+    const result = await contentApi.inventory(id.value);
+    if (token === inventoryRequest) inventory.value = result;
+  } catch (e) {
+    if (token === inventoryRequest) inventoryError.value = String(e);
+  } finally {
+    if (token === inventoryRequest) inventoryBusy.value = false;
+  }
+}
+async function reviewUpdate(item: InstalledProject) {
+  updateName.value = item.project.name;
+  updatePlan.value = null;
+  updateError.value = "";
+  updateBusy.value = true;
+  updateDialog.value?.showModal();
+  try {
+    updatePlan.value = await contentApi.updatePlan(
+      id.value,
+      item.provider,
+      item.project.id,
+    );
+  } catch (e) {
+    updateError.value = String(e);
+  } finally {
+    updateBusy.value = false;
+  }
+}
+async function installUpdate() {
+  if (!updatePlan.value) return;
+  await content.install(updatePlan.value.id);
+  if (!content.error) updateDialog.value?.close();
+  else updateError.value = content.error;
+}
+const projectFor = (name: string) =>
+  inventory.value.files.find((f) => f.name === name)?.project;
+const providerFor = (name: string) =>
+  inventory.value.files.find((f) => f.name === name)?.provider ?? "modrinth";
+const updateFor = (name: string) =>
+  inventory.value.projects.find((p) => p.project.id === projectFor(name)?.id);
+const managed = (name: string) =>
+  inventory.value.pack?.files?.some(
+    (p) =>
+      p ===
+      `${section.value === "mods" ? "mods" : section.value === "resourcePacks" ? "resourcepacks" : "shaderpacks"}/${name.replace(/\.disabled$/, "")}`,
+  ) ?? false;
+
 const store = useLauncher();
 const route = useRoute();
 const router = useRouter();
@@ -69,7 +139,16 @@ async function closeSettings() {
   settingsTrigger?.focus();
   if (route.query.settings) await router.replace({ query: {} });
 }
-const tab = ref<Section>("mods");
+const tab = ref<Section>("resourcePacks");
+watch(
+  () => instance.value?.loader,
+  (loader) => {
+    if (loader === "vanilla" && tab.value === "mods")
+      tab.value = "resourcePacks";
+    else if (loader && loader !== "vanilla") tab.value = "mods";
+  },
+  { immediate: true },
+);
 const sectionView = ref<"content" | "worlds" | "logs">(
   route.query.tab === "logs" ? "logs" : "content",
 );
@@ -136,6 +215,15 @@ async function loadPreferences() {
     if (token === preferenceRequest) loadingPreferences.value = false;
   }
 }
+watch(
+  () => content.job?.stage,
+  (stage) => {
+    if (stage === "installed") {
+      void checkUpdates();
+      void refresh();
+    }
+  },
+);
 const section = computed<Section>(() =>
   sectionView.value === "content" ? tab.value : sectionView.value,
 );
@@ -145,7 +233,11 @@ watch(
     settingsDialog.value?.close();
     settings.value = false;
     allowLeave = false;
+    inventory.value = { pack: null, projects: [], files: [] };
+    if (instance.value?.loader === "vanilla" && tab.value === "mods")
+      tab.value = "resourcePacks";
     void loadPreferences();
+    void checkUpdates();
     void refresh();
   },
   { immediate: true },
@@ -157,8 +249,12 @@ watch(section, () => {
   void refresh();
 });
 const visible = computed(() =>
-  entries.value.filter((e) =>
-    e.name.toLowerCase().includes(search.value.toLowerCase()),
+  entries.value.filter(
+    (e) =>
+      (showPackContent.value || !managed(e.name)) &&
+      (projectFor(e.name)?.name ?? e.name)
+        .toLowerCase()
+        .includes(search.value.toLowerCase()),
   ),
 );
 async function refresh() {
@@ -380,7 +476,13 @@ const prettySize = (size: number) =>
       ><ArrowLeft :size="16" />{{ "Library" }}</RouterLink
     >
     <header class="instance-page-header">
+      <ContentIcon
+        v-if="inventory.pack"
+        :url="inventory.pack.project.iconUrl"
+        :name="inventory.pack.project.name"
+      />
       <InstanceIcon
+        v-else
         :loader="instance.loader"
         :seed="instance.id"
         :icon="instance.icon"
@@ -410,6 +512,48 @@ const prettySize = (size: number) =>
         <LaunchControl :instance="instance" />
       </div>
     </header>
+    <dialog
+      ref="updateDialog"
+      class="instance-dialog content-update-dialog"
+      aria-labelledby="content-update-title"
+      @cancel.prevent="updateDialog?.close()"
+    >
+      <h2 id="content-update-title">Update {{ updateName }}</h2>
+      <p class="muted">
+        Latest compatible release for this Minecraft version and loader. Worlds
+        and additional content are kept. Replaced files are backed up under
+        .azuria/backups; edited configuration is preserved.
+      </p>
+      <p v-if="updateBusy" role="status">Checking update files…</p>
+      <p v-if="updateError" class="inline-error" role="alert">
+        {{ updateError }}
+      </p>
+      <div v-if="updatePlan">
+        <h3>Ready to update</h3>
+        <p>
+          {{ updatePlan.preview.files }} files · Minecraft
+          {{ updatePlan.preview.target.minecraft }} ·
+          {{ updatePlan.preview.target.loader }}
+          {{ updatePlan.preview.target.loaderVersion }}
+        </p>
+        <ul>
+          <li v-for="(name, index) in updatePlan.preview.names" :key="index">
+            {{ name }}
+          </li>
+        </ul>
+      </div>
+      <footer class="dialog-actions">
+        <button class="button secondary" @click="updateDialog?.close()">
+          Cancel</button
+        ><button
+          class="button primary"
+          :disabled="!updatePlan || updateBusy || content.busy"
+          @click="installUpdate"
+        >
+          Update instance
+        </button>
+      </footer>
+    </dialog>
     <dialog
       v-if="settings"
       ref="settingsDialog"
@@ -635,6 +779,79 @@ const prettySize = (size: number) =>
       </nav>
       <LiveLogs v-if="showLiveLogs" :id="id" />
       <template v-else>
+        <section
+          v-if="sectionView === 'content' && inventory.pack"
+          class="instance-pack-card"
+        >
+          <div class="pack-summary">
+            <ContentIcon
+              :url="inventory.pack.project.iconUrl"
+              :name="inventory.pack.project.name"
+            />
+            <div>
+              <h2>Modpack content</h2>
+              <p class="muted">
+                {{ inventory.pack.mods }} mods ·
+                {{ inventory.pack.resourcePacks }} resource packs
+              </p>
+            </div>
+            <button
+              class="button secondary"
+              @click="showPackContent = !showPackContent"
+            >
+              {{
+                showPackContent
+                  ? "Show additional content"
+                  : "View pack content"
+              }}
+            </button>
+          </div>
+          <footer>
+            <RouterLink
+              :to="`/discover/${inventory.pack.provider}/modpacks/${inventory.pack.project.id}`"
+              >{{ inventory.pack.project.name }}</RouterLink
+            ><span>{{ inventory.pack.versionName }}</span
+            ><button
+              v-if="inventory.pack.latest || inventory.pack.missing"
+              class="button secondary"
+              :disabled="content.busy"
+              @click="reviewUpdate(inventory.pack)"
+            >
+              {{
+                inventory.pack.latest
+                  ? "Update pack"
+                  : `Repair ${inventory.pack.missing} missing files`
+              }}</button
+            ><span v-else class="muted">Up to date</span>
+          </footer>
+        </section>
+        <div v-if="sectionView === 'content'" class="instance-update-bar">
+          <h2>
+            {{
+              inventory.pack
+                ? showPackContent
+                  ? "Pack content"
+                  : "Additional content"
+                : "Instance content"
+            }}
+          </h2>
+          <span v-if="inventoryBusy" class="muted" role="status"
+            >Checking content…</span
+          ><button
+            class="text-link"
+            :disabled="inventoryBusy || content.busy"
+            @click="checkUpdates"
+          >
+            <RefreshCw :size="14" />Check for updates
+          </button>
+        </div>
+        <p
+          v-if="inventoryError && sectionView === 'content'"
+          class="muted content-check-error"
+        >
+          {{ inventoryError }}
+          <button class="text-link" @click="checkUpdates">Retry check</button>
+        </p>
         <div class="instance-content-toolbar">
           <label class="search-box"
             ><Search :size="17" /><input
@@ -685,7 +902,9 @@ const prettySize = (size: number) =>
         >
           <button
             v-for="category in [
-              { id: 'mods', label: 'Mods' },
+              ...(instance.loader === 'vanilla'
+                ? []
+                : [{ id: 'mods', label: 'Mods' }]),
               { id: 'resourcePacks', label: 'Resource packs' },
               { id: 'shaderPacks', label: 'Shader packs' },
             ]"
@@ -764,7 +983,16 @@ const prettySize = (size: number) =>
             :key="entry.name"
             class="instance-file-row"
           >
-            <span class="file-symbol"
+            <RouterLink
+              v-if="projectFor(entry.name)"
+              class="file-project-icon"
+              :to="`/discover/${providerFor(entry.name)}/${tab === 'mods' ? 'mods' : 'resourcepacks'}/${projectFor(entry.name)!.id}`"
+              :aria-label="'View ' + projectFor(entry.name)!.name"
+              ><ContentIcon
+                :url="projectFor(entry.name)!.iconUrl"
+                :name="projectFor(entry.name)!.name"
+            /></RouterLink>
+            <span v-else class="file-symbol"
               ><component
                 :is="
                   entry.directory
@@ -776,15 +1004,26 @@ const prettySize = (size: number) =>
                 :size="21"
             /></span>
             <div class="file-identity">
-              <strong>{{ entry.name.replace(/\.disabled$/, "") }}</strong
+              <strong>{{
+                projectFor(entry.name)?.name ??
+                entry.name.replace(/\.disabled$/, "")
+              }}</strong
               ><span
                 >{{ entry.directory ? "World folder" : prettySize(entry.size)
                 }}<template v-if="!entry.enabled"> · Disabled</template></span
               >
             </div>
             <div class="instance-inline-actions">
-              <template v-if="sectionView === 'content'"
-                ><button
+              <template v-if="sectionView === 'content'">
+                <button
+                  v-if="updateFor(entry.name)?.latest"
+                  class="button secondary"
+                  :disabled="content.busy || actionBusy"
+                  @click="reviewUpdate(updateFor(entry.name)!)"
+                >
+                  Update
+                </button>
+                <button
                   class="content-switch"
                   role="switch"
                   :aria-checked="entry.enabled"
@@ -915,3 +1154,89 @@ const prettySize = (size: number) =>
     </div>
   </dialog>
 </template>
+
+<style scoped>
+.instance-pack-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  margin: 24px 0;
+  overflow: hidden;
+}
+.pack-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+.pack-summary > div {
+  flex: 1;
+}
+.pack-summary h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+}
+.pack-summary p {
+  margin: 0;
+  font-size: 12px;
+}
+.instance-pack-card footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  padding: 14px 20px;
+  font-size: 12px;
+}
+.instance-pack-card footer button {
+  margin-left: auto;
+}
+.instance-pack-card a {
+  color: var(--text);
+  font-weight: 600;
+}
+.instance-update-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 16px;
+}
+.instance-update-bar h2 {
+  font-size: 18px;
+  margin: 0;
+  flex: 1;
+}
+.instance-update-bar button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.file-project-icon :deep(.content-icon) {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+.content-check-error {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.content-update-dialog {
+  max-width: 620px;
+  max-height: calc(100dvh - 70px);
+  overflow: auto;
+}
+.content-update-dialog p {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.content-update-dialog ul {
+  max-height: 180px;
+  overflow: auto;
+  font-size: 13px;
+}
+</style>

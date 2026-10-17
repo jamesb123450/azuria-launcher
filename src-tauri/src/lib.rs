@@ -326,6 +326,9 @@ pub fn run() {
         })
         .manage(content::ContentState::default())
         .invoke_handler(tauri::generate_handler![
+            content::content_inventory,
+            content::content_update_plan,
+            content::content_project,
             content::content_status,
             content::content_set_curseforge_key,
             content::content_search,

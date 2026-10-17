@@ -1,5 +1,11 @@
 ## Changes
 
+- Added real project artwork and dedicated Description, Versions and Gallery pages using provider metadata, with sanitised rich descriptions and shared installation review.
+- Instance content shows recognised project icons and names. Modpack instances separate pack-managed files from additional content and show the installed pack version.
+- Added compatible stable update checks and missing-pack-file repair. Updates stage verified files, preserve edited configuration, worlds and added content, and back up replaced files. Interrupted publication restores backups; modified archives stop with a conflict.
+- Added batch Modrinth hash identification for local imports and pack files, plus provider metadata for managed CurseForge content. Vanilla instances no longer display or open a Mods section.
+- Refined install notifications with a compact, single-line Cancel install action.
+
 - Connected Discover to live Modrinth and CurseForge search for mods, modpacks, datapacks and resource packs, retaining the right-hand filter sidebar.
 - Added compatible version selection, a review step, required dependencies, cancellable downloads, hash verification and recovery of interrupted content installs. Different existing files are preserved on conflict.
 - Modpacks create new Vanilla/Fabric instances and prepare game files without launching Minecraft. Datapacks install into a selected existing world. Unsupported loaders, external Modrinth pack hosts and restricted provider downloads report clear errors.

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-async function setup(page: Page) {
-  await page.addInitScript(() => {
+async function setup(page: Page, mode = "default") {
+  await page.addInitScript((mode) => {
     let sequence = 0,
       configured = false;
     const callbacks: Record<number, (event: unknown) => void> = {};
@@ -35,7 +35,7 @@ async function setup(page: Page) {
               {
                 id: "fabric",
                 name: "Fabric instance",
-                loader: "fabric",
+                loader: mode === "vanilla" ? "vanilla" : "fabric",
                 loaderVersion: "0.16.10",
                 minecraftVersion: "1.21.1",
                 memoryMb: 4096,
@@ -52,8 +52,98 @@ async function setup(page: Page) {
               hasSavedSession: false,
             };
           if (cmd === "plugin:app|version") return "0.2.100";
-          if (cmd === "plugin:updater|check" || cmd === "content_job")
-            return null;
+          if (cmd === "content_job")
+            return mode === "active"
+              ? {
+                  id: "plan",
+                  stage: "downloading",
+                  message: "Downloading and verifying content",
+                  completed: 100,
+                  total: 1000,
+                }
+              : null;
+          if (cmd === "content_cancel") {
+            emit("content-progress", {
+              id: "plan",
+              stage: "cancelled",
+              message: "Installation cancelled.",
+              completed: 0,
+              total: 1000,
+            });
+            return;
+          }
+          if (cmd === "plugin:updater|check") return null;
+          const project = {
+            id: "project",
+            name: "Test project",
+            description: "Provider fixture",
+            author: "Author",
+            url: "https://modrinth.com/mod/project",
+            downloads: 100,
+            categories: ["optimization"],
+            iconUrl: "https://cdn.modrinth.com/data/project/icon.png",
+          };
+          const addon = { ...project, id: "addon", name: "Extra mod" };
+          if (cmd === "content_project")
+            return {
+              project,
+              body: '# Provider description\n\nThis is **fetched content**. <img src=x onerror="window.badDescription=true"><script>window.badDescription=true</script>',
+              bodyHtml: false,
+              followers: 500,
+              gallery: [
+                {
+                  url: "https://cdn.modrinth.com/data/project/images/gallery.png",
+                  title: "In-game view",
+                  description: "A published gallery image.",
+                },
+              ],
+            };
+          if (cmd === "content_inventory")
+            return mode === "pack"
+              ? {
+                  pack: {
+                    provider: "modrinth",
+                    project,
+                    kind: "modpacks",
+                    version: "old",
+                    versionName: "Pack 1.0",
+                    latest: "new",
+                    missing: 1,
+                    mods: 1,
+                    resourcePacks: 0,
+                    files: ["mods/pack.jar"],
+                  },
+                  projects: [
+                    {
+                      provider: "modrinth",
+                      project: addon,
+                      kind: "mods",
+                      version: "a1",
+                      versionName: "Extra 1.0",
+                      latest: "a2",
+                      missing: 0,
+                      mods: 1,
+                      resourcePacks: 0,
+                      files: ["mods/extra.jar"],
+                    },
+                  ],
+                  files: [
+                    { name: "pack.jar", project },
+                    { name: "extra.jar", project: addon },
+                  ],
+                }
+              : { pack: null, projects: [], files: [] };
+          if (cmd === "content_update_plan")
+            return {
+              id: "update",
+              preview: {
+                files: 3,
+                bytes: 2048,
+                names: ["Pack 2.0", "Required file"],
+                target,
+              },
+            };
+
           if (cmd === "plugin:event|listen") {
             handlers[args.event] = args.handler;
             return sequence;
@@ -89,6 +179,7 @@ async function setup(page: Page) {
                   url: "https://modrinth.com/mod/project",
                   downloads: 100,
                   categories: ["optimization"],
+                  iconUrl: "https://cdn.modrinth.com/data/project/icon.png",
                 },
               ],
             };
@@ -104,7 +195,24 @@ async function setup(page: Page) {
               },
             ];
           if (cmd === "instance_entries")
-            return [{ name: "My World", directory: true, size: 0 }];
+            return mode === "pack"
+              ? [
+                  {
+                    name: "pack.jar",
+                    directory: false,
+                    size: 12,
+                    enabled: true,
+                  },
+                  {
+                    name: "extra.jar",
+                    directory: false,
+                    size: 10,
+                    enabled: true,
+                  },
+                ]
+              : [{ name: "My World", directory: true, size: 0 }];
+          if (cmd === "get_instance_overrides") return {};
+
           if (cmd === "content_plan")
             return {
               id: "plan",
@@ -130,7 +238,17 @@ async function setup(page: Page) {
         },
       },
     });
-  });
+  }, mode);
+  await page.route("https://cdn.modrinth.com/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/5xkAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    }),
+  );
   await page.route("https://piston-meta.mojang.com/**", (route) =>
     route.fulfill({ json: { versions: [] } }),
   );
@@ -238,4 +356,112 @@ test("provider settings stage and reset API key changes before saving", async ({
   await expect(
     dialog.getByLabel("Replacement API key", { exact: true }),
   ).toHaveValue("");
+});
+
+test("project artwork opens description, versions and gallery fetched from provider", async ({
+  page,
+}) => {
+  await setup(page);
+  await expect(page.locator(".discover-project-cover img")).toHaveAttribute(
+    "src",
+    /cdn.modrinth.com/,
+  );
+  await page
+    .getByRole("link", { name: "View Test project", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Provider description", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".project-description strong")).toHaveText(
+    "fetched content",
+  );
+  expect(
+    await page.evaluate(() => (window as any).badDescription),
+  ).toBeUndefined();
+  await expect(page.locator(".project-description script")).toHaveCount(0);
+  await page.getByRole("button", { name: "Gallery", exact: true }).click();
+  await expect(
+    page.getByRole("img", { name: "In-game view", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Versions", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Install Compatible release", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").getByRole("combobox", { name: "Content version" }),
+  ).toBeVisible();
+});
+test("pack instance separates managed and extra content and reviews updates", async ({
+  page,
+}) => {
+  await setup(page, "pack");
+  await page.goto("/#/instances/fabric");
+  await expect(
+    page.getByRole("heading", { name: "Modpack content", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".instance-file-row")).toHaveCount(1);
+  await expect(page.locator(".instance-file-row img")).toHaveAttribute(
+    "src",
+    /cdn.modrinth.com/,
+  );
+  await expect(page.getByText("Extra mod", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "View pack content", exact: true })
+    .click();
+  await expect(page.locator(".instance-file-row")).toHaveCount(2);
+  await page.getByRole("button", { name: "Update pack", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("Pack 2.0", { exact: true })).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Update instance", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as any).contentCalls
+          .filter((c: any) => c.cmd === "content_install")
+          .at(-1).args.planId,
+    ),
+  ).toBe("update");
+  await page.setViewportSize({ width: 900, height: 650 });
+  await page.screenshot({ path: "test-results/pack-instance.png" });
+});
+test("Vanilla instances do not show or open a mods section", async ({
+  page,
+}) => {
+  await setup(page, "vanilla");
+  await page.goto("/#/instances/fabric");
+  await expect(
+    page
+      .getByRole("group", { name: "Content type" })
+      .getByRole("button", { name: "Mods", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(() =>
+      (window as any).contentCalls.some(
+        (c: any) => c.cmd === "instance_entries" && c.args.section === "mods",
+      ),
+    ),
+  ).toBe(false);
+});
+test("installation notification has a compact one-line cancel action", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 900, height: 650 });
+  await setup(page, "active");
+  const button = page.getByRole("button", {
+    name: "Cancel install",
+    exact: true,
+  });
+  await expect(button).toBeVisible();
+  expect(await button.evaluate((e) => getComputedStyle(e).whiteSpace)).toBe(
+    "nowrap",
+  );
+  expect((await button.boundingBox())!.height).toBeLessThan(36);
+  await page.screenshot({ path: "test-results/content-notification.png" });
+  await button.click();
+  await expect(
+    page.getByText("Installation cancelled.", { exact: true }),
+  ).toBeVisible();
 });
