@@ -1,134 +1,526 @@
 <script setup lang="ts">
 import {
-  Monitor,
-  Moon,
-  Sun,
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  X,
   Palette,
-  ShieldCheck,
+  SlidersHorizontal,
+  UserRound,
+  Coffee,
+  Monitor,
   FolderOpen,
+  Download,
+  Wrench,
+  Globe,
+  Code,
+  RefreshCw,
+  ShieldCheck,
+  Users,
 } from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
+import { useUpdates } from "../stores/updates";
+import { api, desktop } from "../api";
+import { instanceApi } from "../instance-api";
+import { defaultLaunchOptions, validateOptions } from "../lib/launch-options";
 import AccountPanel from "../components/AccountPanel.vue";
 import UpdatePanel from "../components/UpdatePanel.vue";
+import LaunchOptionsEditor from "../components/LaunchOptionsEditor.vue";
 import type { Theme } from "../types";
-import { ref } from "vue";
-import { api, desktop } from "../api";
-import LaunchDefaultsPanel from "../components/LaunchDefaultsPanel.vue";
 import "./instance.css";
+import "./settings.css";
+const emit = defineEmits<{ close: [] }>();
 const store = useLauncher();
-const folderError = ref("");
-async function openInstances() {
-  folderError.value = "";
-  try {
-    await api.openInstancesFolder();
-  } catch (cause) {
-    folderError.value = String(cause instanceof Error ? cause.message : cause);
-  }
-}
-const themes: {
-  value: Theme;
-  label: string;
-  icon: typeof Moon;
-  description: string;
-}[] = [
+const updates = useUpdates();
+const route = useRoute();
+const router = useRouter();
+const dialog = ref<HTMLDialogElement>();
+const section = ref(
+  route.hash === "#account"
+    ? "account"
+    : route.hash === "#launch-defaults"
+      ? "java"
+      : "appearance",
+);
+const groups = [
   {
-    value: "system",
+    label: "Display",
+    items: [
+      { id: "appearance", label: "Appearance", icon: Palette },
+      { id: "features", label: "Features", icon: SlidersHorizontal },
+      { id: "behaviour", label: "Behaviour", icon: SlidersHorizontal },
+      { id: "language", label: "Language", icon: Globe },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { id: "account", label: "Profile", icon: UserRound },
+      { id: "social", label: "Social", icon: Users },
+      { id: "privacy", label: "Privacy", icon: ShieldCheck },
+    ],
+  },
+  {
+    label: "Instance defaults",
+    items: [
+      { id: "java", label: "Java & memory", icon: Coffee },
+      { id: "window", label: "Game window", icon: Monitor },
+      { id: "hooks", label: "Launch hooks", icon: Code },
+      { id: "sync", label: "Syncing", icon: RefreshCw },
+    ],
+  },
+  {
     label: "System",
-    icon: Monitor,
-    description: "Follow your device",
-  },
-  {
-    value: "dark",
-    label: "Dark",
-    icon: Moon,
-    description: "Use the dark theme",
-  },
-  {
-    value: "light",
-    label: "Light",
-    icon: Sun,
-    description: "Use the light theme",
+    items: [
+      { id: "storage", label: "Storage", icon: FolderOpen },
+      { id: "updates", label: "Updates", icon: Download },
+      { id: "troubleshooting", label: "Troubleshooting", icon: Wrench },
+    ],
   },
 ];
+const planned: Record<string, { title: string; description: string }[]> = {
+  features: [
+    {
+      title: "Sidebar shortcuts",
+      description:
+        "Choose which skin and screenshot shortcuts appear in the launcher.",
+    },
+    {
+      title: "Instance tabs",
+      description: "Choose which content tabs appear in your instances.",
+    },
+  ],
+  behaviour: [
+    {
+      title: "Minimise when Minecraft starts",
+      description: "Keep the launcher out of the way while playing.",
+    },
+    {
+      title: "Refocus after Minecraft closes",
+      description: "Return to Azuria when your game ends.",
+    },
+    {
+      title: "Sidebar visibility",
+      description: "Choose whether the right sidebar opens by default.",
+    },
+    {
+      title: "Compact library",
+      description: "Display instances in a smaller row layout.",
+    },
+  ],
+  language: [
+    {
+      title: "Launcher language",
+      description:
+        "Additional interface languages. Azuria currently uses English.",
+    },
+  ],
+  social: [
+    {
+      title: "Social features",
+      description:
+        "Account social preferences will appear here when supported.",
+    },
+  ],
+  privacy: [
+    {
+      title: "Privacy preferences",
+      description:
+        "Additional privacy controls will appear here when supported.",
+    },
+  ],
+  hooks: [
+    {
+      title: "Pre-launch command",
+      description: "Run a command before Minecraft starts.",
+    },
+    {
+      title: "Wrapper command",
+      description: "Wrap the Minecraft launch process.",
+    },
+    {
+      title: "Post-exit command",
+      description: "Run a command after the game closes.",
+    },
+  ],
+  sync: [
+    {
+      title: "Sync game options",
+      description: "Share selected game preferences between instances.",
+    },
+    {
+      title: "Sync servers & resource packs",
+      description: "Reuse server lists and resource packs across instances.",
+    },
+    {
+      title: "Sync across devices",
+      description: "Keep launcher preferences across devices.",
+    },
+  ],
+  storage: [
+    {
+      title: "Storage usage & cleanup",
+      description: "Inspect downloads and safely remove unused cached files.",
+    },
+    {
+      title: "Custom data directory",
+      description: "Choose a different location for launcher data.",
+    },
+  ],
+  troubleshooting: [
+    { title: "Clear cache", description: "Rebuild cached launcher content." },
+    {
+      title: "Verify & repair",
+      description: "Check downloaded game files and repair missing content.",
+    },
+    {
+      title: "Export diagnostics",
+      description: "Export launcher logs for troubleshooting.",
+    },
+  ],
+};
+const heading = computed(
+  () =>
+    groups.flatMap((g) => g.items).find((i) => i.id === section.value)?.label ??
+    "Settings",
+);
+const theme = ref<Theme>(store.settings.theme);
+const form = ref(defaultLaunchOptions());
+const savedTheme = ref<Theme>(theme.value);
+const snapshot = ref("");
+const loaded = ref(false);
+const busy = ref(false);
+const error = ref("");
+const notice = ref("");
+const confirmClose = ref(false);
+const dirty = computed(
+  () =>
+    loaded.value &&
+    (theme.value !== savedTheme.value ||
+      JSON.stringify(form.value) !== snapshot.value),
+);
+function reset() {
+  theme.value = savedTheme.value;
+  if (snapshot.value) form.value = JSON.parse(snapshot.value);
+  error.value = "";
+  notice.value = "";
+}
+async function load() {
+  busy.value = true;
+  error.value = "";
+  try {
+    if (!store.settingsReady) await store.init();
+    if (!store.settingsReady)
+      throw new Error(
+        store.settingsError || "Appearance settings could not be loaded.",
+      );
+    form.value = await instanceApi.defaults();
+    theme.value = savedTheme.value = store.settings.theme;
+    snapshot.value = JSON.stringify(form.value);
+    loaded.value = true;
+  } catch (e) {
+    error.value = String(e instanceof Error ? e.message : e);
+  } finally {
+    busy.value = false;
+  }
+}
+async function save() {
+  if (!loaded.value || busy.value) return false;
+  error.value = validateOptions(form.value);
+  notice.value = "";
+  if (error.value) {
+    section.value = /window|resolution/i.test(error.value) ? "window" : "java";
+    return false;
+  }
+  busy.value = true;
+  try {
+    if (JSON.stringify(form.value) !== snapshot.value) {
+      await instanceApi.saveDefaults(form.value);
+      snapshot.value = JSON.stringify(form.value);
+    }
+    if (theme.value !== savedTheme.value) {
+      await store.theme(theme.value);
+      if (store.settingsError) throw new Error(store.settingsError);
+      if (store.settings.theme !== theme.value)
+        throw new Error("Appearance could not be saved. Please retry.");
+      savedTheme.value = theme.value;
+    }
+    notice.value = "Settings saved.";
+    return true;
+  } catch (e) {
+    error.value = `Some settings could not be saved: ${String(e instanceof Error ? e.message : e)}. Your remaining edits are kept; retry Save.`;
+    return false;
+  } finally {
+    busy.value = false;
+  }
+}
+function requestClose() {
+  if (busy.value) return;
+  if (dirty.value) confirmClose.value = true;
+  else emit("close");
+}
+async function saveAndClose() {
+  if (await save()) {
+    confirmClose.value = false;
+    emit("close");
+  }
+}
+function discardAndClose() {
+  reset();
+  confirmClose.value = false;
+  emit("close");
+}
+async function openInstances() {
+  try {
+    await api.openInstancesFolder();
+  } catch (e) {
+    error.value = String(e);
+  }
+}
+function beforeUnload(event: BeforeUnloadEvent) {
+  if (dirty.value) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+}
+const removeGuard = router.beforeEach((to) => {
+  if (to.path !== "/settings" && (busy.value || dirty.value)) {
+    if (!busy.value) confirmClose.value = true;
+    return false;
+  }
+});
+watch(
+  () => route.hash,
+  (hash) => {
+    if (hash === "#account") section.value = "account";
+  },
+);
+const previousFocus = document.activeElement as HTMLElement | null;
+onMounted(async () => {
+  dialog.value?.showModal();
+  await load();
+});
+watch(confirmClose, async () => {
+  await nextTick();
+  dialog.value
+    ?.querySelector<HTMLButtonElement>(
+      confirmClose.value ? "[data-keep-editing]" : ".settings-close",
+    )
+    ?.focus();
+});
+window.addEventListener("beforeunload", beforeUnload);
+onBeforeUnmount(() => {
+  removeGuard();
+  window.removeEventListener("beforeunload", beforeUnload);
+  dialog.value?.close();
+  if (previousFocus?.isConnected) previousFocus.focus();
+});
 </script>
 <template>
-  <section class="page-heading">
-    <div>
-      <h1>Settings</h1>
-      <p class="muted">Account, appearance, game defaults and updates.</p>
-    </div>
-  </section>
-  <AccountPanel />
-  <UpdatePanel />
-  <section class="settings-panel">
-    <div class="settings-title">
-      <Palette :size="22" />
+  <dialog
+    ref="dialog"
+    class="launcher-settings"
+    aria-labelledby="settings-heading"
+    @cancel.prevent="requestClose"
+  >
+    <header class="settings-modal-header">
       <div>
-        <h2>Appearance</h2>
-        <p class="muted">Choose a theme, or follow your system setting.</p>
+        <h1 id="settings-heading">Settings</h1>
+        <p>Your launcher, your way.</p>
+      </div>
+      <button
+        class="icon-button settings-close"
+        aria-label="Close settings"
+        :disabled="busy"
+        @click="requestClose"
+      >
+        <X :size="20" />
+      </button>
+    </header>
+    <div class="settings-modal-body" :inert="confirmClose">
+      <nav class="settings-categories" aria-label="Settings categories">
+        <div
+          v-for="group in groups"
+          :key="group.label"
+          class="settings-category-group"
+        >
+          <p>{{ group.label }}</p>
+          <button
+            v-for="item in group.items"
+            :key="item.id"
+            :aria-current="section === item.id ? 'page' : undefined"
+            :class="{ active: section === item.id }"
+            @click="section = item.id"
+          >
+            <component :is="item.icon" :size="17" />{{ item.label }}
+          </button>
+        </div>
+        <p class="settings-version">
+          Azuria Launcher <span>{{ updates.version }}</span>
+        </p>
+      </nav>
+      <div
+        :key="section"
+        class="settings-modal-content"
+        tabindex="0"
+        :aria-label="heading"
+      >
+        <h2>{{ heading }}</h2>
+        <template v-if="section === 'appearance'"
+          ><p class="muted">
+            Choose the look that feels right for you. Changes apply after
+            saving.
+          </p>
+          <div class="settings-theme-grid">
+            <button
+              v-for="option in ['dark', 'light', 'system'] as const"
+              :key="option"
+              :disabled="!loaded || busy"
+              :aria-pressed="theme === option"
+              :class="[
+                'settings-theme-card',
+                option,
+                { selected: theme === option },
+              ]"
+              @click="theme = option"
+            >
+              <span class="settings-theme-sample" aria-hidden="true"
+                ><i /><span><i /><i /></span></span
+              ><strong>{{
+                option === "system"
+                  ? "System"
+                  : option === "dark"
+                    ? "Dark"
+                    : "Light"
+              }}</strong
+              ><span>{{
+                option === "system"
+                  ? "Follow your device"
+                  : `Use the ${option} theme`
+              }}</span>
+            </button>
+          </div>
+          <div class="settings-planned-row">
+            <div>
+              <h3>OLED theme</h3>
+              <p>A deeper black appearance.</p>
+            </div>
+            <span class="coming-soon">Coming soon</span>
+          </div></template
+        >
+        <AccountPanel v-else-if="section === 'account'" />
+        <UpdatePanel v-else-if="section === 'updates'" />
+        <template v-else-if="section === 'java' || section === 'window'"
+          ><p class="settings-inheritance">
+            Instances inherit these defaults unless an instance override is
+            enabled. Changes apply on the next launch.
+          </p>
+          <LaunchOptionsEditor
+            v-if="loaded"
+            v-model="form"
+            :section="section"
+            :disabled="busy"
+        /></template>
+        <template v-if="section === 'storage'"
+          ><div class="settings-storage-path">
+            <h3>App directory</h3>
+            <p>Your instances and launcher data stay on this computer.</p>
+            <code>%APPDATA%\AzuriaLauncher</code
+            ><button
+              class="button secondary"
+              :disabled="!desktop"
+              @click="openInstances"
+            >
+              <FolderOpen :size="16" />Open instances folder
+            </button>
+          </div></template
+        >
+        <p v-if="section === 'privacy'" class="settings-inheritance">
+          This build does not collect analytics or upload your logs. Microsoft
+          credentials are handled by the desktop account system.
+        </p>
+        <div
+          v-for="item in planned[section] ?? []"
+          :key="item.title"
+          class="settings-planned-row"
+        >
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.description }}</p>
+          </div>
+          <span class="coming-soon">Coming soon</span>
+        </div>
       </div>
     </div>
-    <div v-if="store.settingsError">
-      <p role="alert" class="inline-error">{{ store.settingsError }}</p>
+    <footer class="settings-modal-footer" :inert="confirmClose">
+      <div class="settings-save-status">
+        <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
+        <p v-else role="status">
+          {{
+            busy
+              ? loaded
+                ? "Saving…"
+                : "Loading settings…"
+              : notice ||
+                (dirty ? "You have unsaved changes." : "All changes saved.")
+          }}
+        </p>
+        <button v-if="!loaded && !busy" class="text-link" @click="load">
+          Retry loading settings
+        </button>
+      </div>
       <button
         class="button secondary"
-        :disabled="store.loading || store.busy"
-        @click="store.init"
+        :disabled="busy || !dirty"
+        @click="reset"
       >
-        Retry appearance settings
+        Reset</button
+      ><button class="button primary" :disabled="busy || !dirty" @click="save">
+        Save
       </button>
-    </div>
-    <div class="theme-options">
-      <button
-        v-for="theme in themes"
-        :key="theme.value"
-        :class="[
-          'theme-card',
-          { active: store.settings.theme === theme.value },
-        ]"
-        :aria-pressed="store.settings.theme === theme.value"
-        :disabled="store.loading || store.busy || !store.settingsReady"
-        @click="store.theme(theme.value)"
+    </footer>
+    <div v-if="confirmClose" class="settings-discard-layer">
+      <section
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="settings-discard-title"
+        class="settings-discard-card"
       >
-        <span :class="['theme-preview', theme.value]" aria-hidden="true"
-          ><span class="preview-line" /></span
-        ><component :is="theme.icon" :size="18" /><strong>{{
-          theme.label
-        }}</strong
-        ><span>{{ theme.description }}</span>
-      </button>
-    </div>
-  </section>
-  <LaunchDefaultsPanel />
-  <section class="settings-panel">
-    <div class="settings-title">
-      <ShieldCheck :size="22" />
-      <div>
-        <h2>Storage & privacy</h2>
-        <p class="muted">
-          Your desktop library and preferences stay on your computer.
+        <h2 id="settings-discard-title">Save your changes?</h2>
+        <p>
+          You have unsaved settings. Save them before closing, or discard your
+          edits.
         </p>
-      </div>
+        <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
+        <div>
+          <button
+            data-keep-editing
+            class="button secondary"
+            :disabled="busy"
+            @click="confirmClose = false"
+          >
+            Keep editing</button
+          ><button
+            class="button secondary"
+            :disabled="busy"
+            @click="discardAndClose"
+          >
+            Discard</button
+          ><button
+            class="button primary"
+            :disabled="busy"
+            @click="saveAndClose"
+          >
+            Save & close
+          </button>
+        </div>
+      </section>
     </div>
-    <template v-if="desktop">
-      <p class="muted">
-        Windows data is stored in <code>%APPDATA%\AzuriaLauncher</code>. Each
-        instance has a name-based folder inside <code>instances</code>.
-      </p>
-      <button class="button secondary" @click="openInstances">
-        <FolderOpen :size="17" /> Open instances folder
-      </button>
-      <p v-if="folderError" class="inline-error" role="alert">
-        {{ folderError }}
-      </p>
-    </template>
-    <p class="muted">
-      Vanilla game downloads and Java preparation are available through Play.
-      Live content-provider integrations remain in development. This build does
-      not collect analytics or upload logs.
-    </p>
-    <RouterLink class="text-link" to="/roadmap"
-      >View development status</RouterLink
-    >
-  </section>
+  </dialog>
 </template>

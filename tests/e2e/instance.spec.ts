@@ -76,10 +76,12 @@ test("instance navigation, general settings, defaults and overrides persist", as
     .getByRole("link", { name: "Launcher defaults", exact: true })
     .click();
   await page.getByLabel("Memory allocation in MB").fill("6144");
-  await page.getByRole("button", { name: "Save game defaults" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "Launcher defaults saved",
-  );
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "Settings", exact: true })
+      .getByRole("status"),
+  ).toContainText("Settings saved");
   await page.goto(`/#/instances/${id}/settings/overrides`);
   await expect(
     page.getByText("Using launcher default: 6144 MB", { exact: true }),

@@ -142,6 +142,7 @@ test("themes persist and modal cancellation restores focus", async ({
 }) => {
   await page.goto("/#/settings");
   await page.getByRole("button", { name: "Light", exact: false }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -150,6 +151,8 @@ test("themes persist and modal cancellation restores focus", async ({
     fullPage: true,
   });
   await page.getByRole("button", { name: "Dark", exact: false }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Close settings" }).click();
   await page.getByRole("link", { name: /Library/ }).click();
   await page
     .getByRole("button", { name: "Create instance", exact: true })
@@ -236,6 +239,7 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
 
 test("browser preview does not offer desktop updates", async ({ page }) => {
   await page.goto("/#/settings");
+  await page.getByRole("button", { name: "Updates", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Always moving forward" }),
   ).toBeVisible();
@@ -283,7 +287,8 @@ test("library grouping and collapsed sections remain usable", async ({
   await expect(page.locator(".instance-card")).toHaveCount(2);
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Light", exact: false }).click();
-  await page.getByRole("link", { name: "Library", exact: true }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Close settings" }).click();
   const icon = await page.locator(".tile-art svg").first().boundingBox();
   expect(icon!.width).toBeGreaterThan(30);
   expect(icon!.height).toBeGreaterThan(30);
@@ -432,7 +437,8 @@ test("icon uploads, manual versions and minimum-height light layout work", async
 }) => {
   await page.goto("/#/settings");
   await page.getByRole("button", { name: "Light", exact: false }).click();
-  await page.getByRole("link", { name: "Library", exact: true }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Close settings" }).click();
   await page.setViewportSize({ width: 900, height: 650 });
   await page
     .getByRole("button", { name: "Create instance", exact: true })
@@ -681,7 +687,9 @@ test("account navigation explains Windows-only sign-in in browser preview", asyn
     .getByRole("link", { name: "Minecraft account", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Minecraft account", exact: true }),
+    page
+      .getByRole("dialog", { name: "Settings", exact: true })
+      .getByRole("heading", { name: "Minecraft account", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText(

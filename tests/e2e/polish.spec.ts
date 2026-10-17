@@ -39,6 +39,7 @@ test("polished screens retain their layout at minimum size", async ({
         exact: true,
       })
       .click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await page.locator("#main-content").evaluate((el) => {
       el.scrollTop = 0;
@@ -48,7 +49,9 @@ test("polished screens retain their layout at minimum size", async ({
       path: `/tmp/azuria-polish-settings-${theme}.png`,
       animations: "disabled",
     });
-    await page.getByRole("link", { name: "Library", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Close settings", exact: true })
+      .click();
     await expect(
       page.getByText("Appearance saved.", { exact: true }),
     ).toHaveCount(0);

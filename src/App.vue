@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
+import { useRoute, useRouter, type RouteLocationNormalized } from "vue-router";
 import {
   Play,
   Settings,
@@ -15,6 +15,8 @@ import {
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import RouteSurface from "./components/RouteSurface.vue";
+import SettingsView from "./views/SettingsView.vue";
 import SkinHead from "./components/SkinHead.vue";
 import StartupUpdate from "./components/StartupUpdate.vue";
 import StorageMigration from "./components/StorageMigration.vue";
@@ -31,6 +33,31 @@ function focusMain() {
 const updates = useUpdates();
 const store = useLauncher();
 const route = useRoute();
+const router = useRouter();
+function resolveBackground(path: string): RouteLocationNormalized {
+  const resolved = router.resolve(path);
+  return { ...resolved, name: resolved.name ?? undefined };
+}
+const backgroundRoute = shallowRef(resolveBackground("/"));
+const instanceSettingsRevision = ref(0);
+watch(
+  () => route.fullPath,
+  (_, previous) => {
+    if (previous?.startsWith("/settings") && route.name === "instance")
+      instanceSettingsRevision.value++;
+    if (!route.path.startsWith("/settings"))
+      backgroundRoute.value = resolveBackground(route.fullPath);
+    else if (previous && !previous.startsWith("/settings"))
+      backgroundRoute.value = resolveBackground(previous);
+  },
+  { immediate: true },
+);
+const displayedRoute = computed(() =>
+  route.path === "/settings" ? backgroundRoute.value : route,
+);
+function closeSettings() {
+  void router.push(backgroundRoute.value.fullPath);
+}
 const page = computed(() =>
   route.path === "/settings"
     ? "Settings"
@@ -78,11 +105,16 @@ function storagePrepared() {
 <template>
   <StorageMigration v-if="!storageReady" @ready="storagePrepared" />
   <div v-else class="app-shell">
+    <SettingsView v-if="route.path === '/settings'" @close="closeSettings" />
     <StartupUpdate v-if="desktop" />
     <a class="skip-link" href="#main-content" @click.prevent="focusMain"
       >Skip to content</a
     >
-    <header class="topbar" data-tauri-drag-region>
+    <header
+      class="topbar"
+      :inert="route.path === '/settings'"
+      data-tauri-drag-region
+    >
       <div class="topbar-brand" data-tauri-drag-region>
         <RouterLink to="/" class="header-home" aria-label="Azuria home"
           ><img
@@ -110,7 +142,7 @@ function storagePrepared() {
       </div>
       <WindowControls />
     </header>
-    <aside class="sidebar">
+    <aside class="sidebar" :inert="route.path === '/settings'">
       <nav aria-label="Main navigation">
         <RouterLink
           to="/"
@@ -203,13 +235,13 @@ function storagePrepared() {
         </RouterLink>
       </div>
     </aside>
-    <div class="main-shell">
+    <div class="main-shell" :inert="route.path === '/settings'">
       <main
         id="main-content"
         tabindex="-1"
         :class="{ 'is-library': route.path === '/' }"
       >
-        <RouterView />
+        <RouteSurface :key="instanceSettingsRevision" :route="displayedRoute" />
       </main>
       <div v-if="game.error" class="alert error" role="alert">
         {{ game.error
