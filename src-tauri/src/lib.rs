@@ -160,8 +160,21 @@ fn list_instances(state: State<'_, AppState>) -> Result<Vec<Instance>, String> {
     with_store(&state, |store| store.list())
 }
 #[tauri::command]
-fn create_instance(state: State<'_, AppState>, input: InstanceInput) -> Result<Instance, String> {
-    with_store(&state, |store| store.create(input))
+fn create_instance(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    input: InstanceInput,
+) -> Result<Instance, String> {
+    let instance = with_store(&state, |store| store.create(input))?;
+    if matches!(
+        instance.loader,
+        azuria_core::Loader::Vanilla | azuria_core::Loader::Fabric
+    ) {
+        if let Err(error) = game::prepare_instance(app.clone(), instance.id.clone()) {
+            game::preparation_failed(&app, &instance.id, &error);
+        }
+    }
+    Ok(instance)
 }
 #[tauri::command]
 fn update_instance(
@@ -321,6 +334,7 @@ pub fn run() {
             media::screenshot_image,
             media::screenshot_export,
             game::launch_instance,
+            game::prepare_instance,
             game::cancel_launch,
             game::game_launches,
             instances::get_launch_defaults,

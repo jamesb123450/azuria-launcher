@@ -15,6 +15,53 @@ fn identifier(value: &str) -> Result<(), String> {
     }
     Ok(())
 }
+fn select_version(catalogue: &Value, requested: &str) -> Result<String, String> {
+    let entries = catalogue
+        .as_array()
+        .filter(|a| a.len() <= 4096)
+        .ok_or("Invalid Fabric version catalogue.")?;
+    for entry in entries {
+        if requested == "stable" && entry["loader"]["stable"].as_bool() != Some(true) {
+            continue;
+        }
+        if let Some(version) = entry["loader"]["version"].as_str() {
+            identifier(version)?;
+            if !matches!(version, "stable" | "latest") {
+                return Ok(version.into());
+            }
+        }
+    }
+    Err(format!("No {requested} Fabric loader is available for this Minecraft version. Choose a compatible version in instance settings."))
+}
+/// Resolve historical Stable/Latest preferences before constructing a profile URL.
+/// Callers persist the returned concrete version so subsequent launches stay pinned.
+pub fn resolve_version(
+    game: &str,
+    requested: &str,
+    progress: Reporter,
+    cancel: Arc<AtomicBool>,
+) -> Result<String, String> {
+    cancelled(&cancel)?;
+    identifier(game)?;
+    identifier(requested)?;
+    if !matches!(requested, "stable" | "latest") {
+        return Ok(requested.into());
+    }
+    report(
+        &progress,
+        "loader",
+        "Selecting a compatible Fabric loader version",
+        0,
+        0,
+    );
+    let downloader = Downloader::new(progress, cancel.clone())?;
+    let catalogue = downloader.json(
+        &format!("https://meta.fabricmc.net/v2/versions/loader/{game}"),
+        16 * 1024 * 1024,
+    )?;
+    cancelled(&cancel)?;
+    select_version(&catalogue, requested)
+}
 fn coordinate(name: &str) -> Result<(String, String), String> {
     let parts = name.split(':').collect::<Vec<_>>();
     if parts.len() != 3 {
@@ -119,14 +166,19 @@ fn validate(profile: &Value, game: &str, loader: &str, hashes: bool) -> Result<(
             return Err("Fabric library is missing its verification checksum.".into());
         }
     }
-    for required in [
-        format!("net.fabricmc:fabric-loader:{loader}"),
-        format!("net.fabricmc:intermediary:{game}"),
-    ] {
-        if !libraries
-            .iter()
-            .any(|l| l["name"].as_str() == Some(&required))
-        {
+    let mut required = vec![format!("net.fabricmc:fabric-loader:{loader}")];
+    // Minecraft 26.1+ ships unobfuscated names; official Fabric profiles no longer
+    // include intermediary. Older releases still require the selected mappings.
+    let unobfuscated = game
+        .split('.')
+        .next()
+        .and_then(|s| s.parse::<u32>().ok())
+        .is_some_and(|year| year >= 26);
+    if !unobfuscated {
+        required.push(format!("net.fabricmc:intermediary:{game}"));
+    }
+    for name in required {
+        if !libraries.iter().any(|l| l["name"].as_str() == Some(&name)) {
             return Err(
                 "Fabric profile is missing the selected loader or Minecraft mappings.".into(),
             );
@@ -265,6 +317,36 @@ mod tests {
         p
     }
     #[test]
+    fn stable_and_latest_are_resolved_to_catalogue_versions() {
+        let data = json!([{"loader":{"version":"0.20.0","stable":false}}, {"loader":{"version":"0.19.5","stable":true}}]);
+        assert_eq!(select_version(&data, "stable").unwrap(), "0.19.5");
+        assert_eq!(select_version(&data, "latest").unwrap(), "0.20.0");
+        assert!(select_version(&json!([]), "stable").is_err());
+        assert!(select_version(
+            &json!([{"loader":{"version":"0.20.0","stable":false}}]),
+            "stable"
+        )
+        .is_err());
+    }
+    #[test]
+    fn official_26_1_profile_does_not_require_obsolete_mappings() {
+        let mut profile: Value =
+            serde_json::from_str(include_str!("../tests/fixtures/fabric-26.1-0.19.5.json"))
+                .unwrap();
+        for lib in profile["libraries"].as_array_mut().unwrap() {
+            if lib["sha256"].is_null() && lib["sha1"].is_null() {
+                lib["sha1"] = "0".repeat(40).into();
+            }
+        }
+        assert!(validate(&profile, "26.1", "0.19.5", true).is_ok());
+        let mut old = profile_fixture();
+        old["libraries"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|l| !l["name"].as_str().unwrap().contains(":intermediary:"));
+        assert!(validate(&old, "1.21.1", "0.16.10", true).is_err());
+    }
+    #[test]
     fn merge_preserves_mojang_assets_java_and_arguments_and_replaces_conflicts() {
         let mut base: Value =
             serde_json::from_str(include_str!("../tests/fixtures/mojang-1.21.1.json")).unwrap();
@@ -377,6 +459,23 @@ mod tests {
         assert!(profile(d.path(), "1.21.1", "0.16.10", &downloader, &cancel).is_err());
         assert!(profile(d.path(), "1.21.1", "0.16.9", &downloader, &cancel).is_err());
         assert!(profile(d.path(), "../escape", "0.16.10", &downloader, &cancel).is_err());
+    }
+    #[test]
+    #[ignore = "downloads official Fabric metadata and libraries; run explicitly"]
+    fn official_26_1_stable_smoke() {
+        let d = tempfile::tempdir().unwrap();
+        let cancel = Arc::new(AtomicBool::new(false));
+        let version = resolve_version("26.1", "stable", Arc::new(|_| {}), cancel.clone()).unwrap();
+        assert!(!matches!(version.as_str(), "stable" | "latest"));
+        let downloader = Downloader::new(Arc::new(|_| {}), cancel.clone()).unwrap();
+        let p = profile(d.path(), "26.1", &version, &downloader, &cancel).unwrap();
+        for library in p["libraries"].as_array().unwrap() {
+            let meta = artifact(library).unwrap();
+            let path = safe_join(d.path(), meta["path"].as_str().unwrap()).unwrap();
+            downloader
+                .artifact(&meta, &path, 256 * 1024 * 1024)
+                .unwrap();
+        }
     }
     #[test]
     #[ignore = "downloads official Fabric metadata and libraries; run explicitly"]

@@ -40,17 +40,27 @@ async function setup(page: Page, denied = false, loader = "vanilla") {
         favorite: false,
         createdAt: 1,
       };
+      const items = [item];
       const emit = (
         stage: string,
         message: string,
         completed = 0,
         total = 0,
         exitCode: number | null = null,
+        prepareOnly = false,
       ) =>
         callbacks[handlers["game-progress"]!]?.({
           event: "game-progress",
           id: 1,
-          payload: { id, stage, message, completed, total, exitCode },
+          payload: {
+            id,
+            stage,
+            message,
+            completed,
+            total,
+            exitCode,
+            prepareOnly,
+          },
         });
       Object.assign(window, {
         isTauri: true,
@@ -76,7 +86,35 @@ async function setup(page: Page, denied = false, loader = "vanilla") {
                 instancesPath: "C:\\AzuriaLauncher\\instances",
                 migratedInstances: 0,
               };
-            if (cmd === "list_instances") return [item];
+            if (cmd === "list_instances") return items;
+            if (cmd === "loader_metadata")
+              return JSON.stringify([
+                { loader: { version: "0.20.0", stable: false } },
+                { loader: { version: "0.19.5", stable: true } },
+              ]);
+            if (cmd === "create_instance") {
+              const created = {
+                ...item,
+                ...(args?.input as typeof item),
+                id: "created-instance",
+              };
+              items.push(created);
+              callbacks[handlers["game-progress"]!]?.({
+                event: "game-progress",
+                id: 1,
+                payload: {
+                  id: created.id,
+                  stage: "queued",
+                  prepareOnly: true,
+                  message: "Queued to download Minecraft files",
+                  completed: 0,
+                  total: 0,
+                  exitCode: null,
+                },
+              });
+              Object.assign(window, { createdInput: args?.input });
+              return created;
+            }
             if (cmd === "get_settings") return { theme: "dark" };
             if (cmd === "account_status")
               return {
@@ -98,6 +136,7 @@ async function setup(page: Page, denied = false, loader = "vanilla") {
                 throw "Minecraft Services denied access. Sign in again after app approval.";
               return;
             }
+            if (cmd === "prepare_instance") return;
             if (cmd === "cancel_launch") {
               emit(
                 "cancelled",
@@ -557,4 +596,95 @@ test("Fabric uses Play/Stop and cancellation during loader preparation", async (
   await expect(
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
+});
+
+test("download-only tasks can stop, resume and become ready without starting Minecraft", async ({
+  page,
+}) => {
+  await setup(page, false, "fabric");
+  await page.goto("/");
+  const progress = (stage: string, message: string) =>
+    page.evaluate(
+      ({ stage, message }) =>
+        (
+          window as unknown as { emitGame: (...args: unknown[]) => void }
+        ).emitGame(stage, message, 1, 3, null, true),
+      { stage, message },
+    );
+  await progress("libraries", "Downloading Minecraft files");
+  await expect(
+    page.getByRole("progressbar", { name: "Instance download progress" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
+  await progress("cancelled", "Download cancelled");
+  await page
+    .getByRole("button", { name: "Resume download", exact: true })
+    .click();
+  expect(
+    await page.evaluate(() =>
+      (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+        "prepare_instance",
+      ),
+    ),
+  ).toBe(true);
+  await progress(
+    "prepared",
+    "Minecraft files are ready. Press Play to start the game.",
+  );
+  await expect(
+    page.getByRole("button", { name: "Play", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(() =>
+      (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+        "launch_instance",
+      ),
+    ),
+  ).toBe(false);
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  expect(
+    await page.evaluate(() =>
+      (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+        "launch_instance",
+      ),
+    ),
+  ).toBe(true);
+});
+
+test("creating Fabric pins Stable and starts download-only preparation", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.route("https://piston-meta.mojang.com/**", (route) =>
+    route.fulfill({ json: { versions: [{ id: "26.1", type: "release" }] } }),
+  );
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await page.getByRole("button", { name: /Custom setup/ }).click();
+  await page.getByLabel("Instance name", { exact: true }).fill("New Fabric");
+  await page.getByRole("button", { name: "Fabric", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { createdInput: { loaderVersion: string } })
+          .createdInput.loaderVersion,
+    ),
+  ).toBe("0.19.5");
+  expect(
+    await page.evaluate(() =>
+      (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+        "launch_instance",
+      ),
+    ),
+  ).toBe(false);
 });

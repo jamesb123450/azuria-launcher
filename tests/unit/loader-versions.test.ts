@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   loaderEndpoint,
   parseLoaderVersions,
+  resolveLoaderVersion,
 } from "../../src/lib/loader-versions";
 const xml = (versions: string[]) =>
   `<metadata><versioning><versions>${versions.map((version) => `<version>${version}</version>`).join("")}</versions></versioning></metadata>`;
@@ -74,4 +75,34 @@ describe("loader catalogues", () => {
     expect(() => loaderEndpoint("fabric", "../escape")).toThrow();
     expect(() => loaderEndpoint("vanilla", "1.21.1")).toThrow();
   });
+});
+
+it("keeps explicit loader versions pinned without requesting metadata", async () => {
+  expect(await resolveLoaderVersion("fabric", "26.1", "0.19.5")).toBe("0.19.5");
+  await expect(
+    resolveLoaderVersion("fabric", "26.1", "../bad"),
+  ).rejects.toThrow();
+});
+
+it("resolves stable and latest to concrete catalogue versions", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          { loader: { version: "0.20.0", stable: false } },
+          { loader: { version: "0.19.5", stable: true } },
+        ]),
+      ),
+    );
+  try {
+    expect(await resolveLoaderVersion("fabric", "26.1", "stable")).toBe(
+      "0.19.5",
+    );
+    expect(await resolveLoaderVersion("fabric", "26.1", "latest")).toBe(
+      "0.20.0",
+    );
+  } finally {
+    fetch.mockRestore();
+  }
 });
