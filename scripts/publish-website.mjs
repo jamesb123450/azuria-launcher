@@ -2,6 +2,7 @@ import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
+import { publicationError } from "./publish-errors.mjs";
 import { publicRepository } from "./release-host.mjs";
 const token = process.env.AZURIA_RELEASES_TOKEN;
 if (!token)
@@ -19,7 +20,15 @@ const env = {
     "AUTHORIZATION: basic " +
     Buffer.from("x-access-token:" + token).toString("base64"),
 };
+let stage = "initialization";
 function git(args) {
+  stage = args.includes("clone")
+    ? "clone"
+    : args.includes("push")
+      ? "push"
+      : args.includes("commit")
+        ? "commit"
+        : args[0];
   return execFileSync("git", args, {
     cwd,
     env,
@@ -57,10 +66,8 @@ try {
     ]);
     git(["push", "origin", "HEAD:main"]);
   }
-} catch {
-  console.error(
-    "Website publication failed. Check destination permissions and retry after concurrent changes finish.",
-  );
+} catch (error) {
+  console.error(publicationError(stage, error));
   process.exitCode = 1;
 } finally {
   rmSync(cwd, { recursive: true, force: true });
