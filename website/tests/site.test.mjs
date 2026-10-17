@@ -4,7 +4,12 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render, releaseNotes, safeReleaseURL } from "../src/pages.mjs";
-import { parseRelease, releaseSummary } from "../src/release-data.mjs";
+import {
+  parseRelease,
+  releaseSummary,
+  releaseRepository,
+  legacyRepository,
+} from "../src/release-data.mjs";
 import { affectsLauncher } from "../../.github/scripts/release-scope.mjs";
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const base = "/azuria-releases/";
@@ -65,12 +70,48 @@ test("all built pages have metadata, navigation and resolvable local links and f
 
 test("downloads resolve the latest release rather than a stale versioned installer", async () => {
   const html = await readFile(resolve(root, "downloads/index.html"), "utf8");
-  assert.match(
-    html,
-    /href="https:\/\/github.com\/jamesb123450\/azuria-launcher\/releases\/latest"/,
+  const releases = JSON.parse(
+    await readFile(new URL("../data/releases.json", import.meta.url), "utf8"),
+  );
+  const host = releases[0]?.url?.startsWith(`${legacyRepository}/releases/`)
+    ? legacyRepository
+    : releaseRepository;
+  assert.ok(
+    html.includes(`href="${host}/releases/latest"`),
+    "Download must resolve latest on the active public release host",
   );
   assert.match(html, /Vanilla and Fabric launching/);
   assert.match(html, /not Authenticode signed/);
+});
+
+test("downloads follow the public release host and retain the legacy transition fallback", () => {
+  for (const host of [releaseRepository, legacyRepository]) {
+    const html = render("downloads", {
+      siteURL: "https://example.test/azuria-releases/",
+      base,
+      releases: [
+        {
+          tag: "v0.2.140",
+          version: "0.2.140",
+          url: `${host}/releases/tag/v0.2.140`,
+          published: "2026-10-17T20:00:00Z",
+          notes: "- Update",
+          installer: `${host}/releases/download/v0.2.140/Azuria-Launcher_0.2.140_x64-setup.exe`,
+          size: 1024,
+        },
+      ],
+    });
+    assert.ok(html.includes(`href="${host}/releases/latest"`));
+    assert.ok(
+      !html.includes('href="' + host + "/releases/download/"),
+      "Primary download links must not pin an old installer",
+    );
+    if (host === releaseRepository)
+      assert.ok(
+        !html.includes(`href="${legacyRepository}/releases/latest"`),
+        "Public releases must not send downloads to the source repository",
+      );
+  }
 });
 
 test("raw release HTML is escaped and unexpected download origins are rejected", () => {
