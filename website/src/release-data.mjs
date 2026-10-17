@@ -1,9 +1,12 @@
 // Shared by the build refresh and browser refresh. Only this repository's public releases qualify.
 export const releaseRepository =
-  "https://github.com/jamesb123450/azuria-launcher";
+  "https://github.com/jamesb123450/azuria-releases";
 export const latestReleaseAPI =
-  "https://api.github.com/repos/jamesb123450/azuria-launcher/releases/latest";
-export function parseRelease(value) {
+  "https://api.github.com/repos/jamesb123450/azuria-releases/releases/latest";
+export const legacyRepository =
+  "https://github.com/jamesb123450/azuria-launcher";
+export function parseRelease(value, host = releaseRepository) {
+  if (![releaseRepository, legacyRepository].includes(host)) return null;
   if (
     !value ||
     value.draft ||
@@ -12,7 +15,7 @@ export function parseRelease(value) {
   )
     return null;
   if (
-    value.html_url !== `${releaseRepository}/releases/tag/${value.tag_name}` ||
+    value.html_url !== `${host}/releases/tag/${value.tag_name}` ||
     !Number.isFinite(Date.parse(value.published_at))
   )
     return null;
@@ -22,7 +25,7 @@ export function parseRelease(value) {
       item.name ===
         `Azuria-Launcher_${value.tag_name.slice(1)}_x64-setup.exe` &&
       item.browser_download_url ===
-        `${releaseRepository}/releases/download/${value.tag_name}/${item.name}`,
+        `${host}/releases/download/${value.tag_name}/${item.name}`,
   );
   return {
     tag: value.tag_name,

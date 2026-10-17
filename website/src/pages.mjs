@@ -5,7 +5,7 @@ const html = (parts, ...values) =>
     (result, part, index) => result + part + (values[index] ?? ""),
     "",
   );
-const repository = "https://github.com/jamesb123450/azuria-launcher";
+const repository = "https://github.com/jamesb123450/azuria-releases";
 export const escapeHTML = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -43,7 +43,9 @@ export function safeReleaseURL(value, asset = false) {
       !url.username &&
       !url.password &&
       url.hostname === "github.com" &&
-      url.pathname.startsWith("/jamesb123450/azuria-launcher/releases/") &&
+      ["azuria-launcher", "azuria-releases"].some((repo) =>
+        url.pathname.startsWith(`/jamesb123450/${repo}/releases/`),
+      ) &&
       (!asset || url.pathname.endsWith(".exe"))
     );
   } catch {
@@ -74,9 +76,14 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
   const link = (path) => `${base}${path}`;
   const asset = (name) => link(`assets/${name}`);
   const latest = releases[0];
-  const releaseURL = `${repository}/releases/latest`;
+  const downloadRepository = latest?.url?.startsWith(
+    "https://github.com/jamesb123450/azuria-launcher/releases/",
+  )
+    ? "https://github.com/jamesb123450/azuria-launcher"
+    : repository;
+  const releaseURL = `${downloadRepository}/releases/latest`;
   // GitHub resolves this stable URL at click time, including when the static build is older.
-  const installer = `${repository}/releases/latest`;
+  const installer = `${downloadRepository}/releases/latest`;
 
   const titles = {
     home: "Azuria Launcher — Minecraft instances, organised",
@@ -786,9 +793,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
               >Report an issue ${icon("external", 15)}</a
             >
             <p class="small-note">
-              A public repository does not imply Microsoft or Mojang
-              endorsement. Project source and development notes are available on
-              GitHub.
+              Public installers, release notes and support issues are available
+              on GitHub. Launcher source is maintained separately.
             </p>
           </section>
         </div>

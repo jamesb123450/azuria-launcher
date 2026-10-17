@@ -6,7 +6,7 @@ const root = new URL("../", import.meta.url);
 const dist = new URL("dist/", root);
 const siteURL =
   process.env.AZURIA_SITE_URL ||
-  "https://jamesb123450.github.io/azuria-launcher/";
+  "https://jamesb123450.github.io/azuria-releases/";
 const url = new URL(siteURL);
 if (
   url.protocol !== "https:" ||

@@ -213,7 +213,7 @@ function storagePrepared() {
           ><CircleHelp :size="20" /></RouterLink
         ><a
           class="rail-link"
-          href="https://github.com/jamesb123450/azuria-launcher"
+          href="https://github.com/jamesb123450/azuria-releases"
           @click.prevent="store.openProject"
           aria-label="Project on GitHub"
           title="Project on GitHub"

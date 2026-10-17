@@ -46,7 +46,7 @@ export const api = {
   openProject: async (): Promise<void> => {
     if (desktop) return invoke("open_project_page");
     window.open(
-      "https://github.com/jamesb123450/azuria-launcher",
+      "https://github.com/jamesb123450/azuria-releases",
       "_blank",
       "noopener,noreferrer",
     );

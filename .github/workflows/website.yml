@@ -4,11 +4,15 @@ on:
     branches: [main, "feat/**"]
     paths:
       - "website/**"
+      - "scripts/publish-website.mjs"
+      - "scripts/release-host.mjs"
       - ".github/workflows/website.yml"
       - ".github/scripts/release-scope.mjs"
   pull_request:
     paths:
       - "website/**"
+      - "scripts/publish-website.mjs"
+      - "scripts/release-host.mjs"
       - ".github/workflows/website.yml"
       - ".github/scripts/release-scope.mjs"
   schedule:
@@ -22,6 +26,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      AZURIA_SITE_URL: https://jamesb123450.github.io/azuria-releases/
+      AZURIA_ADSENSE_ENABLED: ${{ vars.AZURIA_ADSENSE_ENABLED }}
+      AZURIA_ADSENSE_CMP_READY: ${{ vars.AZURIA_ADSENSE_CMP_READY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,12 +37,7 @@ jobs:
           node-version: 24
       - name: Refresh public release metadata
         run: npm --prefix website run refresh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm --prefix website run build
-        env:
-          AZURIA_ADSENSE_ENABLED: ${{ vars.AZURIA_ADSENSE_ENABLED }}
-          AZURIA_ADSENSE_CMP_READY: ${{ vars.AZURIA_ADSENSE_CMP_READY }}
       - run: npm --prefix website test
       - name: Save reviewable website artifact
         uses: actions/upload-artifact@v4
@@ -43,25 +46,8 @@ jobs:
           path: website/dist/
           include-hidden-files: true
           if-no-files-found: error
-      - name: Upload GitHub Pages artifact
+      - name: Publish built website to public distribution repository
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: website/dist/
-  deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Deploy website
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: node scripts/publish-website.mjs
+        env:
+          AZURIA_RELEASES_TOKEN: ${{ secrets.AZURIA_RELEASES_TOKEN }}

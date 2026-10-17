@@ -7,7 +7,7 @@ import { render, releaseNotes, safeReleaseURL } from "../src/pages.mjs";
 import { parseRelease, releaseSummary } from "../src/release-data.mjs";
 import { affectsLauncher } from "../../.github/scripts/release-scope.mjs";
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
-const base = "/azuria-launcher/";
+const base = "/azuria-releases/";
 const files = [
   "index.html",
   "downloads/index.html",
@@ -149,7 +149,7 @@ test("release metadata accepts only published releases and assets from this repo
   const release = {
     tag_name: "v0.2.100",
     html_url:
-      "https://github.com/jamesb123450/azuria-launcher/releases/tag/v0.2.100",
+      "https://github.com/jamesb123450/azuria-releases/releases/tag/v0.2.100",
     published_at: "2026-10-16T12:00:00Z",
     body: "## Changes\n\n- Real release information",
     assets: [
@@ -162,7 +162,7 @@ test("release metadata accepts only published releases and assets from this repo
   assert.equal(parseRelease(release).tag, "v0.2.100");
   assert.equal(parseRelease(release).installer, null);
   const installer =
-    "https://github.com/jamesb123450/azuria-launcher/releases/download/v0.2.100/Azuria-Launcher_0.2.100_x64-setup.exe";
+    "https://github.com/jamesb123450/azuria-releases/releases/download/v0.2.100/Azuria-Launcher_0.2.100_x64-setup.exe";
   assert.equal(
     parseRelease({
       ...release,
@@ -221,7 +221,7 @@ test("panorama assets are packaged and unsupported WebGL keeps the static fallba
   const html = await readFile(resolve(root, "index.html"), "utf8");
   assert.match(
     html,
-    /data-panorama-base="\/azuria-launcher\/assets\/panorama-"/,
+    /data-panorama-base="\/azuria-releases\/assets\/panorama-"/,
   );
   assert.doesNotMatch(html, /explore-sidebar/);
   assert.ok(

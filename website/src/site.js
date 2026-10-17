@@ -43,7 +43,7 @@ function updateDownloadLinks(installer) {
   for (const anchor of document.querySelectorAll("[data-download-link]")) {
     anchor.href =
       installer ||
-      "https://github.com/jamesb123450/azuria-launcher/releases/latest";
+      "https://github.com/jamesb123450/azuria-releases/releases/latest";
     const label = anchor.querySelector("[data-download-label]");
     if (label)
       label.textContent = installer
