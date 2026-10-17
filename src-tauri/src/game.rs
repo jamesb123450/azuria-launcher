@@ -110,9 +110,6 @@ pub fn cancel_launch(games: State<'_, Games>, id: String) -> Result<(), String> 
         .lock()
         .map_err(|_| "Game state is unavailable.")?;
     if let Some(entry) = entries.get(&id) {
-        if entry.view.stage == "running" {
-            return Err("Close Minecraft from its game menu to save your world safely.".into());
-        }
         entry.cancel.store(true, Ordering::Relaxed);
     }
     Ok(())
@@ -236,9 +233,9 @@ pub async fn launch_instance(app: tauri::AppHandle, id: String) -> Result<(), St
                     0,
                 );
                 drop(preparation);
-                running.wait()
+                running.wait_with_cancel(cancel.clone())
             })();
-            match result {Ok(Some(0))=>games.finish(&app,&id,"exited","Minecraft closed normally",Some(0)),Ok(code)=>games.finish(&app,&id,"crashed","Minecraft exited unexpectedly. Open Logs to inspect azuria-launch.log and the game’s crash reports.",code),Err(error)=>{let stage=if cancel.load(Ordering::Relaxed){"cancelled"}else{"error"};games.finish(&app,&id,stage,&error,None);}}
+            match result {Ok(code) if cancel.load(Ordering::Relaxed)=>games.finish(&app,&id,"cancelled","Minecraft stopped",code),Ok(Some(0))=>games.finish(&app,&id,"exited","Minecraft closed normally",Some(0)),Ok(code)=>games.finish(&app,&id,"crashed","Minecraft exited unexpectedly. Open Logs to inspect azuria-launch.log and the game’s crash reports.",code),Err(error)=>{let stage=if cancel.load(Ordering::Relaxed){"cancelled"}else{"error"};games.finish(&app,&id,stage,&error,None);}}
         });
         Ok(())
     }

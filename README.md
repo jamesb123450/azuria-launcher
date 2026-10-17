@@ -4,7 +4,7 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 
 [Website](https://jamesb123450.github.io/azuria-launcher/) · [Download for Windows](https://github.com/jamesb123450/azuria-launcher/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-launcher/releases) · [Report an issue](https://github.com/jamesb123450/azuria-launcher/issues)
 
-> **Early development:** Azuria currently manages instance settings. Vanilla launching is implemented for Windows x64, including verified game downloads and automatic Java preparation. Other mod loaders cannot launch yet. Minecraft Services access for Microsoft sign-in is pending review. Download a development build to explore the interface and follow progress.
+> **Early development:** Azuria currently manages instance settings. Vanilla launching is implemented for Windows x64, including verified game downloads and automatic Java preparation. Other mod loaders cannot launch yet. Download a development build to explore the interface and follow progress.
 
 ## What is available
 
@@ -15,7 +15,9 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 - **Local content:** import `.jar` mods and `.zip` packs, enable or disable them, retain removed files in local trash, open world folders and read existing game logs. Local actions are available in the installed desktop app.
 - **Account controls:** Microsoft browser sign-in, reconnect, switch and sign-out controls on Windows. Full Minecraft account verification remains dependent on Azuria receiving Minecraft Services access.
 - **Local storage and recovery:** SQLite-backed desktop settings, instance files retained in local trash after removal, and recovery of interrupted removals at startup.
-- **Vanilla launching:** Play prepares Mojang game files, libraries, native dependencies and assets, plus a matching Mojang Java runtime or a validated custom Java executable. Track preparation, cancellation, running state and exit/crash feedback from the Library or instance page.
+- **Skins and capes:** Preview and upload Classic/Slim PNG skins, reset your skin, and equip owned capes. Your account displays your skin head.
+- **Screenshots and logs:** Browse instance screenshots, preview/export PNGs, move unwanted images to Azuria’s trash, and follow live log output with pause controls.
+- **Vanilla launching:** Play prepares Mojang game files, libraries, native dependencies and assets, plus a matching Mojang Java runtime or a validated custom Java executable. Use Play/Stop and track running state and exit/crash feedback from the Library or instance page.
 - **In-app updates:** published Windows builds automatically check and download signed updates at startup, with progress, release notes and a restart countdown.
 - **Discover preview:** browse the proposed modpack, mod, datapack and resource-pack interface, including search, sorting and a separate filter sidebar on the right.
 
@@ -47,7 +49,7 @@ Create or select a **Vanilla** instance, sign in with an account that owns Minec
 
 Shared downloads and managed Java runtimes live in `%APPDATA%\AzuriaLauncher\game-cache`. Worlds, mods and configuration stay inside each named instance folder. JVM arguments are passed directly to Java without a shell. Tokens stay in native memory and never pass through frontend commands or launch-status events. Captured output in `logs/azuria-launch.log` is bounded and redacts the current access token and configured environment values; review game-created logs and crash reports before sharing them.
 
-Keep Azuria open while Minecraft runs. This initial implementation blocks normal launcher closure, instance rename/removal and updater installation during an active game or preparation. Close Minecraft through its game menu to save normally; preparation can be cancelled. Forced process termination cannot provide the same protection. Fabric, Forge, NeoForge and Quilt launching are not included. Versions that require unsupported metadata or platform rules report an error instead of guessing launch arguments.
+Keep Azuria open while Minecraft runs. This initial implementation blocks normal launcher closure, instance rename/removal and updater installation during an active game or preparation. Close Minecraft through its game menu to save normally; Stop cancels preparation or terminates Minecraft after a warning about unsaved changes. Forced process termination cannot provide the same protection. Fabric, Forge, NeoForge and Quilt launching are not included. Versions that require unsupported metadata or platform rules report an error instead of guessing launch arguments.
 
 ## Development direction
 

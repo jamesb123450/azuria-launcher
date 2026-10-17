@@ -33,6 +33,7 @@ import {
   type OverrideFlags,
 } from "../lib/launch-options";
 import { loaderName } from "../types";
+import LiveLogs from "../components/LiveLogs.vue";
 import LaunchControl from "../components/LaunchControl.vue";
 import IconPicker from "../components/IconPicker.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
@@ -77,6 +78,7 @@ watch(
     if (tab === "logs") sectionView.value = "logs";
   },
 );
+const showLiveLogs = computed(() => sectionView.value === "logs");
 const search = ref("");
 const entries = ref<FileEntry[]>([]);
 const filesBusy = ref(false);
@@ -618,197 +620,207 @@ const prettySize = (size: number) =>
         >
           <component :is="view.icon" :size="17" />{{ view.label }}
         </button>
+        <RouterLink class="text-link" :to="`/screenshots?instance=${id}`"
+          >Screenshots</RouterLink
+        >
       </nav>
-      <div class="instance-content-toolbar">
-        <label class="search-box"
-          ><Search :size="17" /><input
-            v-model="search"
-            :aria-label="
-              sectionView === 'content'
-                ? 'Search instance content'
-                : sectionView === 'worlds'
-                  ? 'Search worlds'
-                  : 'Search logs'
-            "
-            :placeholder="`Search ${sectionView}`" /></label
-        ><button
-          v-if="sectionView === 'content'"
-          class="button secondary"
-          :disabled="!desktop || actionBusy || filesBusy"
-          @click="importContent()"
-        >
-          <Upload :size="16" />Import file</button
-        ><button
-          class="button secondary"
-          :disabled="!desktop || actionBusy"
-          @click="openFolder()"
-        >
-          <FolderOpen :size="16" />Open
-          {{
-            sectionView === "worlds"
-              ? "worlds"
-              : sectionView === "logs"
-                ? "logs"
-                : "content"
-          }}
-          folder</button
-        ><button
-          class="icon-button"
-          aria-label="Refresh instance files"
-          :disabled="actionBusy || filesBusy"
-          @click="refresh"
-        >
-          <RefreshCw :size="17" />
-        </button>
-      </div>
-      <div
-        v-if="sectionView === 'content'"
-        class="instance-content-types"
-        role="group"
-        aria-label="Content type"
-      >
-        <button
-          v-for="category in [
-            { id: 'mods', label: 'Mods' },
-            { id: 'resourcePacks', label: 'Resource packs' },
-            { id: 'shaderPacks', label: 'Shader packs' },
-          ]"
-          :key="category.id"
-          :aria-pressed="tab === category.id"
-          @click="tab = category.id as Section"
-        >
-          {{ category.label }}
-        </button>
-      </div>
-      <p v-if="!desktop" class="instance-notice">
-        Local files are available in the installed desktop app. This browser
-        preview does not access your computer’s instance folders.
-      </p>
-      <p v-if="filesBusy" class="muted" role="status">
-        Reading instance files…
-      </p>
-      <div v-else-if="error" class="instance-files-empty">
-        <h2>Files could not be refreshed</h2>
-        <p class="muted">Check the message below, then retry.</p>
-        <button
-          class="button secondary"
-          :disabled="actionBusy"
-          @click="refresh"
-        >
-          Retry files
-        </button>
-      </div>
-      <div v-else-if="!visible.length" class="instance-files-empty">
-        <component
-          :is="
-            sectionView === 'worlds'
-              ? Globe
-              : sectionView === 'logs'
-                ? ScrollText
-                : Boxes
-          "
-          :size="28"
-        />
-        <h2>
-          {{
-            search
-              ? "No matching files"
-              : sectionView === "worlds"
-                ? "No worlds yet"
+      <LiveLogs v-if="showLiveLogs" :id="id" />
+      <template v-else>
+        <div class="instance-content-toolbar">
+          <label class="search-box"
+            ><Search :size="17" /><input
+              v-model="search"
+              :aria-label="
+                sectionView === 'content'
+                  ? 'Search instance content'
+                  : sectionView === 'worlds'
+                    ? 'Search worlds'
+                    : 'Search logs'
+              "
+              :placeholder="`Search ${sectionView}`" /></label
+          ><button
+            v-if="sectionView === 'content'"
+            class="button secondary"
+            :disabled="!desktop || actionBusy || filesBusy"
+            @click="importContent()"
+          >
+            <Upload :size="16" />Import file</button
+          ><button
+            class="button secondary"
+            :disabled="!desktop || actionBusy"
+            @click="openFolder()"
+          >
+            <FolderOpen :size="16" />Open
+            {{
+              sectionView === "worlds"
+                ? "worlds"
                 : sectionView === "logs"
-                  ? "No game logs yet"
-                  : "No content added yet"
-          }}
-        </h2>
-        <p class="muted">
-          {{
-            search
-              ? "Try another filename."
-              : sectionView === "worlds"
-                ? "Worlds saved in this instance will appear here."
-                : sectionView === "logs"
-                  ? "Existing .log files in the instance logs folder will appear here."
-                  : "Import a local mod or pack, or open its folder to add files."
-          }}
-        </p>
-      </div>
-      <div v-else class="instance-file-list">
-        <div class="instance-file-list-heading">
-          <span>{{
-            sectionView === "worlds"
-              ? "World"
-              : sectionView === "logs"
-                ? "Log file"
-                : "File"
-          }}</span
-          ><span>Actions</span>
+                  ? "logs"
+                  : "content"
+            }}
+            folder</button
+          ><button
+            class="icon-button"
+            aria-label="Refresh instance files"
+            :disabled="actionBusy || filesBusy"
+            @click="refresh"
+          >
+            <RefreshCw :size="17" />
+          </button>
         </div>
-        <article
-          v-for="entry in visible"
-          :key="entry.name"
-          class="instance-file-row"
+        <div
+          v-if="sectionView === 'content'"
+          class="instance-content-types"
+          role="group"
+          aria-label="Content type"
         >
-          <span class="file-symbol"
-            ><component
-              :is="
-                entry.directory
-                  ? Globe
-                  : sectionView === 'logs'
-                    ? ScrollText
-                    : Boxes
-              "
-              :size="21"
-          /></span>
-          <div class="file-identity">
-            <strong>{{ entry.name.replace(/\.disabled$/, "") }}</strong
-            ><span
-              >{{ entry.directory ? "World folder" : prettySize(entry.size)
-              }}<template v-if="!entry.enabled"> · Disabled</template></span
-            >
-          </div>
-          <div class="instance-inline-actions">
-            <template v-if="sectionView === 'content'"
-              ><button
-                class="content-switch"
-                role="switch"
-                :aria-checked="entry.enabled"
-                :aria-label="'Enable ' + entry.name.replace(/\.disabled$/, '')"
-                :disabled="actionBusy"
-                @click="toggleContent(entry.name)"
-              >
-                <span /></button
-              ><button
-                class="icon-button danger"
-                :aria-label="'Remove ' + entry.name"
-                :disabled="actionBusy"
-                @click="ask('remove-file', entry.name)"
-              >
-                <Trash2 :size="17" /></button></template
-            ><button
-              v-else
-              class="button secondary"
-              :disabled="actionBusy"
-              @click="
-                sectionView === 'worlds'
-                  ? openFolder(entry.name)
-                  : readLog(entry.name)
-              "
-            >
-              {{ sectionView === "worlds" ? "Open world folder" : "View log" }}
-            </button>
-          </div>
-        </article>
-      </div>
-      <section v-if="logName" class="instance-log">
-        <h2>{{ logName }}</h2>
-        <p class="muted">
-          Showing the last 64 KB. Common credential lines are hidden. Review
-          logs before sharing.
+          <button
+            v-for="category in [
+              { id: 'mods', label: 'Mods' },
+              { id: 'resourcePacks', label: 'Resource packs' },
+              { id: 'shaderPacks', label: 'Shader packs' },
+            ]"
+            :key="category.id"
+            :aria-pressed="tab === category.id"
+            @click="tab = category.id as Section"
+          >
+            {{ category.label }}
+          </button>
+        </div>
+        <p v-if="!desktop" class="instance-notice">
+          Local files are available in the installed desktop app. This browser
+          preview does not access your computer’s instance folders.
         </p>
-        <pre tabindex="0" aria-label="Game log output">{{
-          log || "This log is empty."
-        }}</pre>
-      </section>
+        <p v-if="filesBusy" class="muted" role="status">
+          Reading instance files…
+        </p>
+        <div v-else-if="error" class="instance-files-empty">
+          <h2>Files could not be refreshed</h2>
+          <p class="muted">Check the message below, then retry.</p>
+          <button
+            class="button secondary"
+            :disabled="actionBusy"
+            @click="refresh"
+          >
+            Retry files
+          </button>
+        </div>
+        <div v-else-if="!visible.length" class="instance-files-empty">
+          <component
+            :is="
+              sectionView === 'worlds'
+                ? Globe
+                : sectionView === 'logs'
+                  ? ScrollText
+                  : Boxes
+            "
+            :size="28"
+          />
+          <h2>
+            {{
+              search
+                ? "No matching files"
+                : sectionView === "worlds"
+                  ? "No worlds yet"
+                  : sectionView === "logs"
+                    ? "No game logs yet"
+                    : "No content added yet"
+            }}
+          </h2>
+          <p class="muted">
+            {{
+              search
+                ? "Try another filename."
+                : sectionView === "worlds"
+                  ? "Worlds saved in this instance will appear here."
+                  : sectionView === "logs"
+                    ? "Existing .log files in the instance logs folder will appear here."
+                    : "Import a local mod or pack, or open its folder to add files."
+            }}
+          </p>
+        </div>
+        <div v-else class="instance-file-list">
+          <div class="instance-file-list-heading">
+            <span>{{
+              sectionView === "worlds"
+                ? "World"
+                : sectionView === "logs"
+                  ? "Log file"
+                  : "File"
+            }}</span
+            ><span>Actions</span>
+          </div>
+          <article
+            v-for="entry in visible"
+            :key="entry.name"
+            class="instance-file-row"
+          >
+            <span class="file-symbol"
+              ><component
+                :is="
+                  entry.directory
+                    ? Globe
+                    : sectionView === 'logs'
+                      ? ScrollText
+                      : Boxes
+                "
+                :size="21"
+            /></span>
+            <div class="file-identity">
+              <strong>{{ entry.name.replace(/\.disabled$/, "") }}</strong
+              ><span
+                >{{ entry.directory ? "World folder" : prettySize(entry.size)
+                }}<template v-if="!entry.enabled"> · Disabled</template></span
+              >
+            </div>
+            <div class="instance-inline-actions">
+              <template v-if="sectionView === 'content'"
+                ><button
+                  class="content-switch"
+                  role="switch"
+                  :aria-checked="entry.enabled"
+                  :aria-label="
+                    'Enable ' + entry.name.replace(/\.disabled$/, '')
+                  "
+                  :disabled="actionBusy"
+                  @click="toggleContent(entry.name)"
+                >
+                  <span /></button
+                ><button
+                  class="icon-button danger"
+                  :aria-label="'Remove ' + entry.name"
+                  :disabled="actionBusy"
+                  @click="ask('remove-file', entry.name)"
+                >
+                  <Trash2 :size="17" /></button></template
+              ><button
+                v-else
+                class="button secondary"
+                :disabled="actionBusy"
+                @click="
+                  sectionView === 'worlds'
+                    ? openFolder(entry.name)
+                    : readLog(entry.name)
+                "
+              >
+                {{
+                  sectionView === "worlds" ? "Open world folder" : "View log"
+                }}
+              </button>
+            </div>
+          </article>
+        </div>
+        <section v-if="logName" class="instance-log">
+          <h2>{{ logName }}</h2>
+          <p class="muted">
+            Showing the last 64 KB. Common credential lines are hidden. Review
+            logs before sharing.
+          </p>
+          <pre tabindex="0" aria-label="Game log output">{{
+            log || "This log is empty."
+          }}</pre>
+        </section>
+      </template>
     </template>
     <p
       v-if="error && !settings"

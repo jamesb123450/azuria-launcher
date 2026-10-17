@@ -49,6 +49,12 @@ const steps: Record<AuthStage, string> = {
       <p v-if="account.error" role="alert" class="inline-error">
         {{ account.error }}
       </p>
+      <RouterLink
+        v-if="account.view.verified"
+        class="button secondary"
+        to="/wardrobe"
+        >Manage skins & capes</RouterLink
+      >
       <div class="update-actions">
         <button
           class="button primary"

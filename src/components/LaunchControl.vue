@@ -20,37 +20,44 @@ const supported = computed(
 const label = computed(() =>
   !supported.value
     ? "Launch unavailable"
-    : launch.value?.stage === "running"
-      ? "Running"
-      : active.value
-        ? "Preparing…"
-        : launch.value?.stage === "error" || launch.value?.stage === "crashed"
-          ? "Retry launch"
-          : "Play",
+    : active.value
+      ? game.stopping[props.instance.id]
+        ? "Stopping…"
+        : "Stop"
+      : launch.value?.stage === "error" || launch.value?.stage === "crashed"
+        ? "Retry launch"
+        : "Play",
 );
-const percent = computed(() =>
-  launch.value?.total
-    ? Math.min(
-        100,
-        Math.round((launch.value.completed / launch.value.total) * 100),
+function toggle() {
+  if (active.value) {
+    if (
+      launch.value?.stage === "running" &&
+      !window.confirm(
+        "Stop Minecraft? Unsaved world changes may be lost. Use the game menu to save safely.",
       )
-    : undefined,
-);
+    )
+      return;
+    void game.cancel(props.instance.id);
+  } else void game.launch(props.instance.id);
+}
 </script>
 <template>
   <div class="launch-control">
     <button
       class="button primary"
       :disabled="
-        !supported || !game.ready || !!active || account.busy || updates.busy
+        !supported ||
+        !game.ready ||
+        !!game.stopping[instance.id] ||
+        (!active && (account.busy || updates.busy))
       "
-      @click="game.launch(instance.id)"
+      @click="toggle"
     >
       <LoaderCircle
-        v-if="active && launch?.stage !== 'running'"
+        v-if="game.stopping[instance.id]"
         :size="16"
         class="launch-spin"
-      /><Square v-else-if="launch?.stage === 'running'" :size="15" /><RotateCcw
+      /><Square v-else-if="active" :size="15" /><RotateCcw
         v-else-if="label === 'Retry launch'"
         :size="16"
       /><Play v-else :size="16" />{{ label }}
@@ -63,8 +70,17 @@ const percent = computed(() =>
       }}
     </p>
     <template v-else
-      ><div
-        v-if="launch"
+      ><p v-if="active" class="launch-hint">
+        {{
+          game.stopping[instance.id]
+            ? "Stopping Minecraft…"
+            : launch?.stage === "running"
+              ? "Minecraft running"
+              : "Preparing Minecraft…"
+        }}
+      </p>
+      <div
+        v-if="launch && !active"
         :role="['error', 'crashed'].includes(launch.stage) ? 'alert' : 'status'"
         :class="[
           'launch-status',
@@ -76,17 +92,7 @@ const percent = computed(() =>
           }}<template v-if="launch.exitCode !== null && launch.exitCode !== 0">
             (exit {{ launch.exitCode }})</template
           ></span
-        ><progress
-          v-if="active && launch.stage !== 'running'"
-          :value="percent"
-          max="100"
-          aria-label="Minecraft preparation progress"
-        />
-        <div v-if="active && launch.stage !== 'running'" class="launch-actions">
-          <button class="text-link" @click="game.cancel(instance.id)">
-            Cancel preparation
-          </button>
-        </div>
+        >
         <RouterLink
           v-if="launch.stage === 'error' || launch.stage === 'crashed'"
           class="text-link"

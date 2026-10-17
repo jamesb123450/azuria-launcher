@@ -9,7 +9,13 @@ import {
   type LaunchOverrides,
 } from "./lib/launch-options";
 export type Section =
-  "mods" | "resourcePacks" | "shaderPacks" | "worlds" | "logs" | "root";
+  | "mods"
+  | "resourcePacks"
+  | "shaderPacks"
+  | "worlds"
+  | "logs"
+  | "screenshots"
+  | "root";
 export interface FileEntry {
   name: string;
   size: number;

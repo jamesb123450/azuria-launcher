@@ -84,7 +84,55 @@ async function setup(page: Page, denied = false) {
                 window: { fullscreen: false, width: 1280, height: 720 },
               };
             if (cmd === "get_instance_overrides") return {};
-            if (cmd === "instance_entries") return [];
+            if (cmd === "wardrobe_profile")
+              return {
+                skin: null,
+                variant: "CLASSIC",
+                capes: [
+                  {
+                    id: "cape-one",
+                    alias: "Test cape",
+                    active: false,
+                    image: null,
+                  },
+                ],
+              };
+            if (cmd === "wardrobe_change") {
+              calls.push(String(args?.action));
+              return true;
+            }
+            if (cmd === "instance_entries")
+              return args?.section === "screenshots"
+                ? [
+                    {
+                      name: "2026-10-17.png",
+                      size: 100,
+                      enabled: true,
+                      directory: false,
+                    },
+                  ]
+                : args?.section === "logs"
+                  ? [
+                      {
+                        name: "latest.log",
+                        size: 100,
+                        enabled: true,
+                        directory: false,
+                      },
+                    ]
+                  : [];
+            if (cmd === "instance_log")
+              return `Live line ${calls.filter((c) => c === "instance_log").length}`;
+            if (cmd === "screenshot_image")
+              return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jBz0AAAAASUVORK5CYII=";
+            if (
+              [
+                "screenshot_export",
+                "remove_instance_content",
+                "open_instance_directory",
+              ].includes(cmd)
+            )
+              return true;
             throw Error(`Unexpected command: ${cmd}`);
           },
         },
@@ -103,8 +151,8 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
   ).toBeEnabled();
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Preparing…", exact: true }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeEnabled();
   await page.evaluate(() =>
     (
       window as unknown as {
@@ -119,11 +167,13 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
   );
   await expect(
     page.getByRole("progressbar", { name: "Minecraft preparation progress" }),
-  ).toHaveAttribute("value", "50");
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Open Vanilla test", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("Preparing game assets");
+  await expect(
+    page.getByText("Preparing Minecraft…", { exact: true }),
+  ).toBeVisible();
   await page.evaluate(() =>
     (
       window as unknown as {
@@ -132,8 +182,8 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     ).emitGame("running", "Minecraft is running"),
   );
   await expect(
-    page.getByRole("button", { name: "Running", exact: true }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeEnabled();
   expect(
     await page.evaluate(
       () =>
@@ -162,9 +212,7 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Play", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Cancel preparation", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Preparation cancelled");
 });
 test("account failure stays actionable and does not invent a running process", async ({
@@ -183,4 +231,69 @@ test("account failure stays actionable and does not invent a running process", a
   await expect(
     page.getByRole("heading", { name: "No game logs yet" }),
   ).toBeVisible();
+});
+
+test("wardrobe applies an owned cape and supports hiding it", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/wardrobe");
+  await expect(
+    page.getByRole("heading", { name: "Skins & capes" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Test cape" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+          "selectCape",
+        ),
+      ),
+    )
+    .toBe(true);
+  await page.getByRole("button", { name: "No cape" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+          "hideCape",
+        ),
+      ),
+    )
+    .toBe(true);
+});
+test("screenshots preview and export through native commands", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/screenshots");
+  await page
+    .getByRole("button", { name: "2026-10-17.png Vanilla test" })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Screenshot preview" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Export PNG" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as unknown as { gameCalls: string[] }).gameCalls.includes(
+          "screenshot_export",
+        ),
+      ),
+    )
+    .toBe(true);
+  await page.getByRole("button", { name: "Close screenshot" }).click();
+});
+test("live log updates can be paused and resumed", async ({ page }) => {
+  await setup(page);
+  await page.goto(`/instances/${id}?tab=logs`);
+  const output = page.getByLabel("Live game log output");
+  await expect(output).toContainText("Live line");
+  await page.getByLabel("Pause", { exact: true }).check();
+  const text = await output.textContent();
+  await page.waitForTimeout(1200);
+  await expect(output).toHaveText(text!);
+  await page.getByLabel("Pause", { exact: true }).uncheck();
+  await expect(output).not.toHaveText(text!);
 });

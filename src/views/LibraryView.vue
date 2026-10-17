@@ -23,6 +23,7 @@ import {
   X,
   Folder,
 } from "@lucide/vue";
+import SkinHead from "../components/SkinHead.vue";
 import LaunchControl from "../components/LaunchControl.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import VersionPicker from "../components/VersionPicker.vue";
@@ -554,8 +555,8 @@ onBeforeUnmount(closeDelete);
     >
       <section class="account-panel">
         <h2>Minecraft account</h2>
-        <RouterLink class="account-identity" to="/settings#account"
-          ><span class="account-portrait"><UserRound :size="22" /></span>
+        <RouterLink class="account-identity" to="/wardrobe"
+          ><span class="account-portrait"><SkinHead /></span>
           <div>
             <strong>{{ account.label }}</strong
             ><span>{{

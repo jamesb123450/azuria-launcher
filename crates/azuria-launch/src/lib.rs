@@ -249,11 +249,29 @@ pub struct Running {
     readers: Vec<std::thread::JoinHandle<()>>,
 }
 impl Running {
-    pub fn wait(mut self) -> Result<Option<i32>, String> {
-        let status = self
-            .child
-            .wait()
-            .map_err(|_| "Could not read the game exit status.")?;
+    pub fn wait(self) -> Result<Option<i32>, String> {
+        self.wait_with_cancel(Arc::new(AtomicBool::new(false)))
+    }
+    pub fn wait_with_cancel(mut self, cancel: Arc<AtomicBool>) -> Result<Option<i32>, String> {
+        let status = loop {
+            if let Some(status) = self
+                .child
+                .try_wait()
+                .map_err(|_| "Could not read the game exit status.")?
+            {
+                break status;
+            }
+            if cancel.load(Ordering::Relaxed) {
+                self.child
+                    .kill()
+                    .map_err(|_| "Could not stop Minecraft. Close it from the game window.")?;
+                break self
+                    .child
+                    .wait()
+                    .map_err(|_| "Could not wait for Minecraft to stop.")?;
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        };
         for reader in self.readers {
             let _ = reader.join();
         }

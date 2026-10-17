@@ -15,6 +15,7 @@ export const terminalStages = ["exited", "crashed", "error", "cancelled"];
 export const useGame = defineStore("game", () => {
   const launches = ref<Record<string, GameLaunch>>({});
   const error = ref("");
+  const stopping = ref<Record<string, boolean>>({});
   const ready = ref(false);
   let initialized = false;
   const active = computed(() =>
@@ -24,6 +25,7 @@ export const useGame = defineStore("game", () => {
   );
   function update(value: GameLaunch) {
     launches.value = { ...launches.value, [value.id]: value };
+    if (terminalStages.includes(value.stage)) stopping.value[value.id] = false;
   }
   async function init() {
     if (!desktop || initialized) return;
@@ -83,11 +85,13 @@ export const useGame = defineStore("game", () => {
     }
   }
   async function cancel(id: string) {
+    stopping.value[id] = true;
     try {
       await invoke("cancel_launch", { id });
     } catch (e) {
+      stopping.value[id] = false;
       error.value = String(e);
     }
   }
-  return { launches, active, ready, error, init, launch, cancel };
+  return { launches, active, ready, error, stopping, init, launch, cancel };
 });
