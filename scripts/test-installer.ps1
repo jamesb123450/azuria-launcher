@@ -79,29 +79,56 @@ try {
   Assert (-not (Test-Path $run.Marker)) 'Cancelling installed files.'
   Assert (-not (Test-Path $key)) 'Cancelling recorded acceptance.'
 
-  New-Item $key -Force | Out-Null
-  New-ItemProperty $key -Name AcceptedPolicy -Value 'older-policy' -Force | Out-Null
-  $run = Start-Fixture '/S /UPDATE'
-  Wait-Finished $run
-  Assert ($run.Process.ExitCode -eq 2) 'A silent changed-policy update was accepted.'
-  Assert (-not (Test-Path $run.Marker)) 'Changed-policy silent update wrote files.'
+  # Updates from legacy versions work without a record and never invent one.
+  foreach ($mode in @('/S /UPDATE', '/P /UPDATE')) {
+    $run = Start-Fixture $mode
+    Wait-Finished $run
+    Assert ($run.Process.ExitCode -eq 0) 'Legacy automatic update was blocked.'
+    Assert (Test-Path $run.Marker) 'Legacy update did not install.'
+    Assert (-not (Test-Path $key)) 'Update invented privacy acceptance.'
+  }
 
-  $run = Start-Fixture '/P /UPDATE'
+  # First installation must still request real, unchecked acceptance.
+  $run = Start-Fixture '/P'
   $window = Wait-Window $run
-  Assert (-not [AzuriaInstallerWindow]::IsWindowEnabled($window.Next)) 'Changed-policy update had acceptance preselected.'
+  Assert (-not [AzuriaInstallerWindow]::IsWindowEnabled($window.Next)) 'First install had acceptance preselected.'
   [AzuriaInstallerWindow]::Click($window.Checkbox)
   for ($i=0; $i -lt 50 -and -not [AzuriaInstallerWindow]::IsWindowEnabled($window.Next); $i++) { Start-Sleep -Milliseconds 100 }
   Assert ([AzuriaInstallerWindow]::IsWindowEnabled($window.Next)) 'Accepting did not enable Next.'
   [AzuriaInstallerWindow]::Click($window.Next)
   Wait-Finished $run
   Assert (Test-Path $run.Marker) 'Accepted install did not reach its install section.'
-  Assert ((Get-ItemProperty $key).AcceptedPolicy -eq $version) 'Successful install did not store the current policy fingerprint.'
+  Assert ((Get-ItemProperty $key).AcceptedPolicy -eq $version) 'First installation did not record acknowledgement.'
 
-  $run = Start-Fixture '/S /UPDATE'
+  # A changed policy never blocks updates or a manual upgrade/reinstall.
+  Set-ItemProperty $key -Name AcceptedPolicy -Value 'older-policy'
+  foreach ($mode in @('/S /UPDATE', '/P /UPDATE', '/S')) {
+    $run = Start-Fixture $mode
+    Wait-Finished $run
+    Assert ($run.Process.ExitCode -eq 0) 'An existing installation was asked to accept again.'
+    Assert (Test-Path $run.Marker) 'Existing installation did not update.'
+    Assert ((Get-ItemProperty $key).AcceptedPolicy -eq 'older-policy') 'Upgrade overwrote the original acknowledgement.'
+  }
+
+  # A manual upgrade of a legacy installation is recognised by its app file.
+  Remove-Item $key -Recurse -Force
+  $legacy = Join-Path $work 'legacy'
+  New-Item $legacy -ItemType Directory | Out-Null
+  Set-Content (Join-Path $legacy 'azuria-test.exe') 'fixture only'
+  New-Item "$key\Install" -Force | Out-Null
+  Set-Item "$key\Install" -Value $legacy
+  $run = Start-Fixture '/S'
   Wait-Finished $run
-  Assert ($run.Process.ExitCode -eq 0) 'An unchanged accepted policy could not update silently.'
-  Assert (Test-Path $run.Marker) 'Accepted silent update did not install.'
-  Write-Output 'Installer privacy checks passed: unchecked, cancelled, changed-policy and accepted update paths.'
+  Assert ($run.Process.ExitCode -eq 0) 'Legacy manual upgrade required acceptance.'
+  Assert (Test-Path $run.Marker) 'Legacy manual upgrade did not install.'
+  Assert (-not (Get-ItemProperty $key -Name AcceptedPolicy -ErrorAction SilentlyContinue)) 'Legacy upgrade invented acceptance.'
+  Remove-Item (Join-Path $legacy 'azuria-test.exe')
+  $run = Start-Fixture '/S'
+  Wait-Finished $run
+  Assert ($run.Process.ExitCode -eq 2) 'Stale install registration bypassed first-install acceptance.'
+  Assert (-not (Test-Path $run.Marker)) 'Stale installation registration wrote files.'
+  Write-Output 'Installer privacy checks passed: first-install gate, cancellation, legacy and changed-policy automatic/manual upgrades.'
+
 } finally {
   foreach ($p in $children) { if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue } }
   Remove-Item $key -Recurse -Force -ErrorAction SilentlyContinue

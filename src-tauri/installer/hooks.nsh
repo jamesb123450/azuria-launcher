@@ -11,26 +11,40 @@ Var AzuriaPrivacyAccepted
 ; assistive technology and retain the Windows theme/high-contrast colours.
 !define MUI_HEADERIMAGE_RIGHT
 !define MUI_WELCOMEPAGE_TITLE "Welcome to Azuria Launcher"
-!define MUI_WELCOMEPAGE_TEXT "A home for your Minecraft instances.$\r$\n$\r$\nSetup will install Azuria for your Windows account. Your instances stay in your AzuriaLauncher AppData folder.$\r$\n$\r$\nBefore installation, you will review and accept the privacy policy. Microsoft sign-in takes place later in the launcher."
+!define MUI_WELCOMEPAGE_TEXT "A home for your Minecraft instances.$\r$\n$\r$\nSetup will install Azuria for your Windows account. Your instances stay in your AzuriaLauncher AppData folder.$\r$\n$\r$\nOn first installation, you will review and accept the privacy policy. Microsoft sign-in takes place later in the launcher."
 !define MUI_FINISHPAGE_TITLE "Azuria is ready"
 !define MUI_FINISHPAGE_TEXT "Your launcher is installed.$\r$\n$\r$\nOpen Azuria to manage instances, connect your Minecraft account and choose what to play."
 
 !macro AZURIA_PRIVACY_FUNCTIONS
 Function AzuriaPrivacyInit
   StrCpy $AzuriaPrivacyAccepted 0
-  ReadRegStr $R0 HKCU "${AZURIA_PRIVACY_KEY}" "AcceptedPolicy"
-  ${If} $R0 == "${AZURIA_PRIVACY_VERSION}"
+  ; The signed Tauri updater invokes /UPDATE. It is a separate flow and
+  ; must never request or manufacture first-install acknowledgement.
+  ${If} $UpdateMode == 1
     StrCpy $AzuriaPrivacyAccepted 1
-  ${Else}
-    ; /S has no opportunity to request acceptance. Never invent agreement.
-    IfSilent 0 azuria_interactive
-    SetErrorLevel 2
-    Quit
-    azuria_interactive:
-    ; Old releases invoke /P /UPDATE. A changed policy promotes that update
-    ; to interactive setup so the policy cannot be silently skipped.
-    StrCpy $PassiveMode 0
+    Return
   ${EndIf}
+  ReadRegStr $R0 HKCU "${AZURIA_PRIVACY_KEY}" "AcceptedPolicy"
+  ${If} $R0 != ""
+    ; Acceptance is once per installation, not once per policy revision.
+    StrCpy $AzuriaPrivacyAccepted 1
+    Return
+  ${EndIf}
+  ; Existing releases predate acceptance records. An installed executable
+  ; makes a manual upgrade an existing installation too.
+  ReadRegStr $R0 SHCTX "${MANUPRODUCTKEY}" ""
+  ${If} $R0 != ""
+    IfFileExists "$R0\${MAINBINARYNAME}.exe" 0 azuria_first_install
+    StrCpy $AzuriaPrivacyAccepted 1
+    Return
+  ${EndIf}
+  azuria_first_install:
+  ; /S cannot ask for first-install acknowledgement; /P becomes interactive.
+  IfSilent 0 azuria_interactive
+  SetErrorLevel 2
+  Quit
+  azuria_interactive:
+  StrCpy $PassiveMode 0
 FunctionEnd
 
 Function AzuriaPrivacyPre
@@ -48,22 +62,24 @@ Function AzuriaPrivacyLeave
   ${If} $R3 != ${BST_CHECKED}
     Abort
   ${EndIf}
-  StrCpy $AzuriaPrivacyAccepted 1
+  StrCpy $AzuriaPrivacyAccepted 2
 FunctionEnd
 
 !macroend
 
 !macro NSIS_HOOK_PREINSTALL
-  ${If} $AzuriaPrivacyAccepted != 1
+  ${If} $AzuriaPrivacyAccepted == 0
     SetErrorLevel 2
     Abort "Accept the Privacy Policy before installing Azuria."
   ${EndIf}
 !macroend
 
 !macro NSIS_HOOK_POSTINSTALL
-  ; Save locally only after installation succeeds. Cancelling does not record
-  ; acceptance. Store a policy fingerprint, never account IDs or credentials.
-  WriteRegStr HKCU "${AZURIA_PRIVACY_KEY}" "AcceptedPolicy" "${AZURIA_PRIVACY_VERSION}"
+  ; Only actual first-install acceptance creates a record. Updates never
+  ; create or overwrite it, even when the bundled policy changes.
+  ${If} $AzuriaPrivacyAccepted == 2
+    WriteRegStr HKCU "${AZURIA_PRIVACY_KEY}" "AcceptedPolicy" "${AZURIA_PRIVACY_VERSION}"
+  ${EndIf}
 !macroend
 !macro NSIS_HOOK_POSTUNINSTALL
   ${If} $UpdateMode != 1

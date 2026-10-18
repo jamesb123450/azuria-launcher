@@ -79,7 +79,7 @@ Var NoShortcutMode
 Var WixMode
 Var OldMainBinaryName
 
-; AZURIA: expand after upstream declares PassiveMode.
+; AZURIA: expand after upstream declares PassiveMode and UpdateMode.
 !insertmacro AZURIA_PRIVACY_FUNCTIONS
 
 Name "${PRODUCTNAME}"

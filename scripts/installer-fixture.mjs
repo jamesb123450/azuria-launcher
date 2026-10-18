@@ -15,6 +15,9 @@ const source = `Unicode true
 !include MUI2.nsh
 !include FileFunc.nsh
 Var PassiveMode
+Var UpdateMode
+!define MANUPRODUCTKEY "Software\\AzuriaLauncher\\InstallerTests\\Install"
+!define MAINBINARYNAME "azuria-test"
 !define AZURIA_PRIVACY_KEY "Software\\AzuriaLauncher\\InstallerTests"
 !include "${quote(resolve(root, "hooks.nsh"))}"
 !insertmacro AZURIA_PRIVACY_FUNCTIONS
@@ -28,10 +31,15 @@ AutoCloseWindow true
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 Function .onInit
+  SetShellVarContext current
   \${GetParameters} $CMDLINE
   \${GetOptions} $CMDLINE "/P" $PassiveMode
   \${IfNot} \${Errors}
     StrCpy $PassiveMode 1
+  \${EndIf}
+  \${GetOptions} $CMDLINE "/UPDATE" $UpdateMode
+  \${IfNot} \${Errors}
+    StrCpy $UpdateMode 1
   \${EndIf}
   Call AzuriaPrivacyInit
 FunctionEnd
