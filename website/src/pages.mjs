@@ -179,7 +179,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
       <a href="${repository}">View the project ${icon("external", 13)}</a>
     </div>
     <div class="footer-bottom">
-      <span>An independent Minecraft Java launcher.</span>
+      <span>Developed and maintained by Azuria Studios.</span>
       <div>
         <a href="${link("privacy/")}">Privacy policy</a
         ><a href="${link("terms/")}">Terms of service</a
@@ -822,12 +822,12 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
             <h2>1. About this policy</h2>
             <p>
               Azuria Launcher is an independent Minecraft Java launcher
-              maintained by
-              <a href="https://github.com/jamesb123450"
+              developed and maintained by Azuria Studios. Azuria Studios is the
+              trading name used by the project’s maintainer (<a
+                href="https://github.com/jamesb123450"
                 >jamesb123450 on GitHub</a
-              >. In this policy, “Azuria”, “we” and “our” refer to the project
-              and its maintainer. Azuria is not affiliated with Microsoft or
-              Mojang.
+              >). In this policy, “Azuria”, “we” and “our” refer to that
+              operator. Azuria is not affiliated with Microsoft or Mojang.
             </p>
             <p>
               This policy covers the Azuria website, launcher and
@@ -1012,12 +1012,14 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
             <h2>1. About these terms</h2>
             <p>
               These terms cover the Azuria website, launcher and
-              project-operated content service, maintained by
-              <a href="https://github.com/jamesb123450">jamesb123450</a>. By
-              using these services, you agree to these terms. If you do not
-              agree, stop using them. Our
-              <a href="${link("privacy/")}">privacy policy</a> separately
-              explains how information is handled.
+              project-operated content service, developed and maintained by
+              Azuria Studios, the trading name used by the project’s maintainer
+              (<a href="https://github.com/jamesb123450"
+                >jamesb123450 on GitHub</a
+              >). By using these services, you agree to these terms. If you do
+              not agree, stop using them. Our
+              <a href="${link("privacy/")}">privacy policy</a>
+              separately explains how information is handled.
             </p>
             <p>
               Azuria is an independent project, not an official Minecraft
@@ -1159,7 +1161,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
           <span class="contact-icon">${icon("external", 28)}</span>
           <h2>Project enquiries</h2>
           <p>
-            Contact the maintainer through the public project on GitHub. There
+            Contact Azuria Studios through the public project on GitHub. There
             is no promised response time.
           </p>
           <a class="button secondary" href="${repository}/issues"
@@ -1172,7 +1174,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
         <p>
           GitHub issues are public. Do not include passwords, access tokens or
           sensitive personal information. For a privacy or security concern, ask
-          the maintainer for a suitable private contact route without posting
+          Azuria Studios for a suitable private contact route without posting
           the details publicly.
         </p>
         <p>

@@ -1,3 +1,8 @@
+# Azuria Studios branding
+
+- Identify Azuria Studios as the developer and maintainer on the website, in setup and in the README.
+- Update the website terms and both privacy-policy copies to describe Azuria Studios as the project operator’s trading name.
+
 # First-install privacy and automatic updates
 
 - Keep automatic updates passive or silent without requesting privacy acceptance, including legacy installations without an acknowledgement record.

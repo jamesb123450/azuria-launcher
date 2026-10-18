@@ -1,5 +1,7 @@
 # Azuria Launcher
 
+Developed and maintained by **Azuria Studios**.
+
 A Windows-first launcher for Minecraft: Java Edition, built around a local instance library and a charcoal, pink and blue interface. Azuria supports dark, OLED, light and system appearance, with separate configurations for different Minecraft versions and mod loaders.
 
 [Website](https://jamesb123450.github.io/azuria-releases/) · [Download for Windows](https://github.com/jamesb123450/azuria-releases/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-releases/releases) · [Report an issue](https://github.com/jamesb123450/azuria-releases/issues)
