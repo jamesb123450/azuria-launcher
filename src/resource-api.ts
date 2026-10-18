@@ -25,8 +25,8 @@ export function resourceValidation(options: ResourceOptions) {
     options.unusedDownloadGib > 100 ||
     !Number.isInteger(options.concurrentDownloads) ||
     options.concurrentDownloads < 1 ||
-    options.concurrentDownloads > 16
-    ? "Keep 0–100 GiB of unused downloads and use 1–16 concurrent downloads."
+    options.concurrentDownloads > 10
+    ? "Keep 0–100 GiB of unused downloads and use 1–10 concurrent downloads."
     : "";
 }
 const previewKey = "azuria-resources-v1";
@@ -34,7 +34,9 @@ export const resourceApi = {
   options: async (): Promise<ResourceOptions> => {
     if (desktop) return invoke("resource_options");
     const raw = localStorage.getItem(previewKey);
-    return raw ? JSON.parse(raw) : defaultResources();
+    const value = raw ? JSON.parse(raw) : defaultResources();
+    value.concurrentDownloads = Math.min(value.concurrentDownloads, 10);
+    return value;
   },
   save: async (options: ResourceOptions) => {
     const error = resourceValidation(options);

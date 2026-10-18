@@ -190,12 +190,28 @@ fn trusted(url: &reqwest::Url) -> bool {
             )
         )
 }
+/// Only a public HTTPS Worker origin ending in /v1 is accepted; no credentials or query.
+pub fn valid_proxy(value: &str) -> bool {
+    reqwest::Url::parse(value).is_ok_and(|url| {
+        url.scheme() == "https"
+            && url.host_str().is_some_and(|h| h.ends_with(".workers.dev"))
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.port().is_none()
+            && url.query().is_none()
+            && url.fragment().is_none()
+            && url.path().trim_end_matches('/') == "/v1"
+    })
+}
 pub struct Client {
     http: reqwest::blocking::Client,
-    key: Option<String>,
+    proxy: Option<String>,
 }
 impl Client {
-    pub fn new(key: Option<String>) -> Result<Self, String> {
+    pub fn new(proxy: Option<String>) -> Result<Self, String> {
+        if proxy.as_deref().is_some_and(|url| !valid_proxy(url)) {
+            return Err("CurseForge service URL is invalid.".into());
+        }
         let _ = rustls::crypto::ring::default_provider().install_default();
         Ok(Self {
             http: reqwest::blocking::Client::builder()
@@ -206,7 +222,7 @@ impl Client {
                 .user_agent("Azuria-Launcher/0.2.1 (github.com/jamesb123450/azuria-launcher)")
                 .build()
                 .map_err(|_| "Could not initialise content downloads.")?,
-            key,
+            proxy,
         })
     }
     fn response(&self, url: &str) -> Result<reqwest::blocking::Response, String> {
@@ -215,14 +231,7 @@ impl Client {
             if !trusted(&url) {
                 return Err("This content uses an unsupported download host.".into());
             }
-            let cf = matches!(
-                url.host_str(),
-                Some("api.curseforge.com" | "edge.forgecdn.net" | "mediafilez.forgecdn.net")
-            );
-            let mut req = self.http.get(url.clone());
-            if cf {
-                req=req.header("x-api-key",self.key.as_deref().ok_or("CurseForge API access is not configured. Open Settings → Content providers.")?);
-            }
+            let req = self.http.get(url.clone());
             let response = req.send().map_err(|_| {
                 "Could not reach the content provider. Check your connection and retry."
             })?;
@@ -258,12 +267,37 @@ impl Client {
         self.json(url.as_str())
     }
     fn cf(&self, path: &str, params: &[(&str, String)]) -> Result<Value, String> {
-        let mut url = reqwest::Url::parse(&format!("https://api.curseforge.com/v1/{path}"))
+        let base = self.proxy.as_deref().ok_or("CurseForge is not available in this build. The publisher must configure its content service.")?;
+        let mut url = reqwest::Url::parse(&format!("{}/{path}", base.trim_end_matches('/')))
             .map_err(|_| fail())?;
         url.query_pairs_mut()
             .extend_pairs(params.iter().map(|(k, v)| (*k, v.as_str())));
-        self.json(url.as_str())
+        // Proxy access is restricted to this one build-time origin. Never forward credentials.
+        let response = self
+            .http
+            .get(url)
+            .send()
+            .map_err(|_| "Could not reach Azuria’s CurseForge service.")?;
+        if response.status().as_u16() == 429 {
+            return Err("The content service rate limit was reached. Retry shortly.".into());
+        }
+        if !response.status().is_success() {
+            return Err(format!(
+                "The CurseForge service returned HTTP {}. Retry later.",
+                response.status().as_u16()
+            ));
+        }
+        let mut bytes = Vec::new();
+        response
+            .take(16 * 1024 * 1024 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| fail())?;
+        if bytes.len() > 16 * 1024 * 1024 {
+            return Err("Provider metadata exceeded its size limit.".into());
+        }
+        serde_json::from_slice(&bytes).map_err(|_| fail())
     }
+
     pub fn search(&self, q: &Search) -> Result<Results, String> {
         if q.query.len() > 256
             || q.category.len() > 80

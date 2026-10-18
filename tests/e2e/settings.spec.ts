@@ -72,5 +72,5 @@ test("failed settings saves retain edits for retry", async ({ page }) => {
   await expect(popup.getByRole("status")).toHaveText("Settings saved.");
   await expect(
     popup.getByRole("button", { name: "Reset", exact: true }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
 });

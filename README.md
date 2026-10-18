@@ -1,6 +1,6 @@
 # Azuria Launcher
 
-A Windows-first launcher for Minecraft: Java Edition, built around a local instance library and a charcoal, pink and blue interface. Azuria supports dark, light and system appearance, with separate configurations for different Minecraft versions and mod loaders.
+A Windows-first launcher for Minecraft: Java Edition, built around a local instance library and a charcoal, pink and blue interface. Azuria supports dark, OLED, light and system appearance, with separate configurations for different Minecraft versions and mod loaders.
 
 [Website](https://jamesb123450.github.io/azuria-releases/) · [Download for Windows](https://github.com/jamesb123450/azuria-releases/releases/latest) · [Release history](https://github.com/jamesb123450/azuria-releases/releases) · [Report an issue](https://github.com/jamesb123450/azuria-releases/issues)
 
@@ -11,7 +11,7 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 - **Instance library:** create, edit, favourite, search, sort and group configurations. Open an instance to manage its content, worlds, logs and settings, or switch between compact grid and list views.
 - **Custom setup:** save Vanilla, Fabric, Forge, NeoForge and Quilt configurations. Browse Minecraft and loader version lists, with manual Minecraft version entry available when needed. Vanilla and Fabric configurations can launch. Quilt, Forge and NeoForge remain setup preferences; their installers are planned.
 - **Instance settings:** General, Installation and Overrides tabs in a settings popup for names, icons, version preferences and per-instance configuration. Duplicate settings into an empty instance, or include verified copies of all local files.
-- **Launcher settings:** a centred popup with category navigation, persistent Save and Reset controls, and an unsaved-change prompt. Reset returns pending edits to the last saved values; planned features are labelled Coming soon.
+- **Launcher settings:** a centred popup with category navigation, persistent Save and Reset controls, and an unsaved-change prompt. Save and Reset appear only while edits are pending, in a detached action bar. Reset restores the last saved values; planned features are labelled Coming soon.
 - **Game defaults:** save memory, Java executable, JVM arguments, environment variables and window preferences in Settings. Instances inherit defaults unless a custom override is enabled. These preferences apply to Vanilla and Fabric launches.
 - **Local content:** import `.jar` mods and `.zip` packs, enable or disable them, retain removed files in local trash, open world folders and read existing game logs. Local actions are available in the installed desktop app.
 - **Account controls:** Microsoft browser sign-in, reconnect, switch and sign-out controls on Windows. Full Minecraft account verification remains dependent on Azuria receiving Minecraft Services access.
@@ -22,11 +22,21 @@ A Windows-first launcher for Minecraft: Java Edition, built around a local insta
 - **In-app updates:** published Windows builds automatically check and download signed updates at startup, with progress, release notes and a restart countdown.
 - **Discover:** search live Modrinth and CurseForge catalogues for mods, modpacks, datapacks and resource packs, with compatible version selection, required dependencies and verified downloads. Real project artwork opens a detail page with the provider description, versions and gallery. Filters remain in a separate sidebar on the right.
 
-Modrinth works without an API key. CurseForge requires approved API access configured in **Settings → Content providers**; the key is stored in Windows Credential Manager and sent only to CurseForge API/download hosts. It is never stored in the repository or instance database. Author download restrictions are respected.
+Modrinth works without an API key. CurseForge uses Azuria’s publisher-operated Cloudflare service; users do not enter API keys in the app. The key is held in the private source repository’s Actions secrets and deployed as a Worker secret, never bundled in installers or public releases. Setup and rotation instructions are in [the private service guide](services/curseforge/README.md). Builds without a configured service URL explain that CurseForge is unavailable. Author download restrictions are respected.
 
 Choose an instance and a compatible content version, then review the download before installing. Datapacks require an existing world. Modpacks create new Vanilla or Fabric instances and start game-file preparation without launching Minecraft. Other pack loaders remain unsupported. Required dependencies are included; optional client files are skipped. Modrinth packs with files hosted outside Modrinth’s CDN currently report an unsupported-host error.
 
 Modpack instances keep additional content on the instance page. **View content** opens the pack’s searchable file popup; **Switch version** lists compatible releases, beta and alpha versions with provider names, dates and changelogs. Changes require review before installation. Content installs preserve different existing files and stop on conflicts. Instance pages check for compatible stable releases and missing pack files. Review Update or Repair before applying changes. Replaced files are retained under `.azuria/backups` inside the instance; edited configuration, worlds and additional files are preserved. Modified mod or pack archives stop the update for manual conflict resolution. Pack updates keep the current Minecraft version and loader family; install a separate instance to move between them. Downloads stage separately, verify hashes, and record a recovery journal before publication. Provider search and downloads contact the selected service; search errors do not display sample results. Browser previews support public Modrinth search, but installation and CurseForge configuration require the desktop app.
+
+## Privacy, settings and window behaviour
+
+Settings → Privacy controls automatic account reconnection, hiding your account name and skin head in the launcher, and Discord activity sharing. Discord is the same saved preference in Privacy and Behaviour. Azuria has no analytics or automatic log-upload service; authentication, update checks and content requests still contact their providers. Hiding account details does not conceal information inside Minecraft or the skin editor.
+
+Memory controls detect the computer’s physical RAM and use it as the allocation ceiling, including computers above 64 GiB. Allocations use 256 MiB steps; leave memory for Windows and other applications. Storage download concurrency ranges from 1 to 10; existing larger saved limits are reduced to 10. Browser previews use an approximate memory estimate; the installed Windows app reads and validates physical memory natively.
+
+A startup screen remains visible while local storage and the library open. Migration acknowledgement is still required only when migration actually needs it. Closing the Windows window keeps Azuria in the system tray, including while Minecraft runs. Click the tray icon or choose Open Azuria to return. Quit Azuria exits when games and downloads are idle; active tasks keep the launcher available for monitoring. If tray creation fails, the window is never hidden without a way to reopen it.
+
+The topbar shows each running instance by name, with Stop and Open logs controls. Preparation is not shown as a running game.
 
 ## Behaviour and Discord activity
 
@@ -151,11 +161,9 @@ In this repository, open **Settings → Secrets and variables → Actions → Va
 
 Keep a retrievable original in an encrypted password-manager vault belonging only to you. Create separate entries for each service/environment, enable MFA on the vault account, and retain its recovery information securely. Do not paste keys into issues, PRs, snippets or frontend configuration.
 
-For this PC, enter the CurseForge key in **Azuria Settings → Content providers** and press **Save**. It is stored natively in Windows Credential Manager for the current Windows user. The frontend cannot read the saved value; use your vault when you need to retrieve or replace it.
+For publisher CurseForge access, use the **private source repository → Settings → Secrets and variables → Actions → Secrets**. Store `CURSEFORGE_API_KEY` there with a separate vault copy. The manual [CurseForge service deployment](services/curseforge/README.md) transfers it to a Cloudflare Worker secret. Users cannot enter or retrieve keys through launcher settings.
 
-For CI-only credentials, use this repository’s **Settings → Secrets and variables → Actions → Secrets → New repository secret**, with a separate vault copy. Never print them or substitute them into Vue/Vite source, website output or distributed installers. A build-time secret becomes extractable if bundled into a client binary.
-
-To let public users access a service through your developer key, keep it in a private backend’s environment/secret manager and expose only the specific validated service operations, with authentication, quotas and rate limits. The client must never receive the key or an arbitrary forwarding endpoint. A hosted provider proxy is not included in this launcher; the existing CurseForge configuration remains local to each user.
+Never print credentials or substitute them into Vue/Vite source, website output or distributed installers. The launcher only receives the service’s public URL; validated routes, bounded requests and rate limits protect access. GitHub secrets do not provide a way to read the stored value back, so keep your vault copy for personal access.
 
 ## Public distribution setup
 

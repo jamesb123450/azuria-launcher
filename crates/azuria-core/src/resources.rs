@@ -24,9 +24,9 @@ impl Default for ResourceOptions {
 }
 impl ResourceOptions {
     pub fn validate(&self) -> Result<(), String> {
-        if self.unused_download_gib > 100 || !(1..=16).contains(&self.concurrent_downloads) {
+        if self.unused_download_gib > 100 || !(1..=10).contains(&self.concurrent_downloads) {
             return Err(
-                "Keep 0–100 GiB of unused downloads and use 1–16 concurrent downloads.".into(),
+                "Keep 0–100 GiB of unused downloads and use 1–10 concurrent downloads.".into(),
             );
         }
         Ok(())
@@ -44,10 +44,11 @@ impl Store {
             )
             .optional()
             .map_err(error)?;
-        let value: ResourceOptions = raw
+        let mut value: ResourceOptions = raw
             .map(|s| serde_json::from_str(&s).map_err(error))
             .transpose()?
             .unwrap_or_default();
+        value.concurrent_downloads = value.concurrent_downloads.min(10);
         value.validate()?;
         Ok(value)
     }

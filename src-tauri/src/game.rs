@@ -236,6 +236,9 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     .ok_or("Invalid instance storage.")?
                     .join("game-cache");
                 let options = s.launch_overrides(&id)?.effective(&s.launch_defaults()?);
+                if !prepare_only {
+                    azuria_core::memory::validate(options.memory_mb)?;
+                }
                 Ok((game, root, instance, options, s.resource_options()?))
             })?;
             entries.insert(

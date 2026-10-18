@@ -14,6 +14,7 @@ pub fn save_launch_defaults(
     state: State<'_, AppState>,
     options: LaunchOptions,
 ) -> Result<(), String> {
+    azuria_core::memory::validate(options.memory_mb)?;
     with_store(&state, |s| s.save_launch_defaults(options))
 }
 #[tauri::command]
@@ -29,7 +30,10 @@ pub fn save_instance_overrides(
     id: String,
     options: LaunchOverrides,
 ) -> Result<(), String> {
-    with_store(&state, |s| s.save_launch_overrides(&id, options))
+    with_store(&state, |s| {
+        azuria_core::memory::validate(options.effective(&s.launch_defaults()?).memory_mb)?;
+        s.save_launch_overrides(&id, options)
+    })
 }
 #[tauri::command]
 pub fn instance_entries(

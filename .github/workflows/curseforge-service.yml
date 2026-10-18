@@ -1,0 +1,32 @@
+name: Deploy private CurseForge service
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: azuria-curseforge-service
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate private deployment configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" && test -n "$CURSEFORGE_API_KEY" || { echo 'Add the three deployment secrets in the private source repository first.'; exit 1; }
+      - name: Deploy Worker and its secret
+        working-directory: services/curseforge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+        run: |
+          npx --yes wrangler@4 deploy
+          printf '%s' "$CURSEFORGE_API_KEY" | npx --yes wrangler@4 secret put CURSEFORGE_API_KEY

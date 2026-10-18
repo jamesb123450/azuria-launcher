@@ -1,4 +1,4 @@
-export type Theme = "system" | "dark" | "light";
+export type Theme = "system" | "dark" | "light" | "oled";
 export const LOADERS = [
   { id: "vanilla", name: "Vanilla" },
   { id: "fabric", name: "Fabric" },

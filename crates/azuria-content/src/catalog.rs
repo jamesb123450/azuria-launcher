@@ -160,19 +160,18 @@ fn summary(p: &Value) -> Result<Project, String> {
 }
 impl Client {
     fn cf_post(&self, path: &str, body: &Value) -> Result<Value, String> {
-        let key = self
-            .key
+        let base = self
+            .proxy
             .as_deref()
-            .ok_or("CurseForge API access is not configured. Open Settings → Content providers.")?;
+            .ok_or("CurseForge is unavailable in this build.")?;
         let mut response = self
             .http
-            .post(format!("https://api.curseforge.com/v1/{path}"))
-            .header("x-api-key", key)
+            .post(format!("{}/{path}", base.trim_end_matches('/')))
             .json(body)
             .send()
             .map_err(|_| "Could not check CurseForge content.")?;
         if !response.status().is_success() {
-            return Err("CurseForge denied the content check. Verify API access and retry.".into());
+            return Err("The CurseForge service could not check this content. Retry later.".into());
         }
         let mut bytes = vec![];
         response

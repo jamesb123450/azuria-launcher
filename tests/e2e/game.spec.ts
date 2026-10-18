@@ -116,6 +116,8 @@ async function setup(page: Page, denied = false, loader = "vanilla") {
               return created;
             }
             if (cmd === "get_settings") return { theme: "dark" };
+            if (cmd === "get_privacy")
+              return { restoreAccount: true, hideAccount: false };
             if (cmd === "account_status")
               return {
                 supported: false,
@@ -278,8 +280,12 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     ),
   ).toBe(1);
   await expect(page.locator(".topbar").getByRole("status")).toHaveText(
-    "1 instance running",
+    "Vanilla test",
   );
+  await page
+    .getByRole("link", { name: "Open logs for Vanilla test", exact: true })
+    .click();
+  await expect(page).toHaveURL(/tab=logs/);
   await page.screenshot({
     path: test.info().outputPath("vanilla-running.png"),
   });
@@ -719,4 +725,23 @@ test("creating Fabric pins Stable and starts download-only preparation", async (
       ),
     ),
   ).toBe(false);
+});
+
+test("topbar Stop reaches the native cancellation command", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await page.evaluate(() =>
+    (window as any).emitGame("running", "Minecraft running"),
+  );
+  await page
+    .getByRole("button", { name: "Stop Vanilla test", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as any).gameCalls.includes("cancel_launch")),
+    )
+    .toBe(true);
 });

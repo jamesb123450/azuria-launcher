@@ -14,12 +14,16 @@ test("storage preferences save and reset inside the settings popup", async ({
     exact: true,
   });
   await expect(limit).toHaveValue("8");
-  await limit.fill("2");
+  await limit.focus();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     dialog.getByText("Settings saved.", { exact: true }),
   ).toBeVisible();
-  await limit.fill("4");
+  await limit.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
   await dialog.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(limit).toHaveValue("2");
   await page.reload();

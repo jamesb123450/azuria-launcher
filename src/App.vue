@@ -4,6 +4,8 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter, type RouteLocationNormalized } from "vue-router";
 import {
   Play,
+  Square,
+  Terminal,
   Settings,
   Compass,
   GitBranch,
@@ -49,6 +51,9 @@ watch(
       typeof router.options.history.state.forward === "string";
   },
   { immediate: true, flush: "post" },
+);
+const runningInstances = computed(() =>
+  Object.values(game.launches).filter((l) => l.stage === "running"),
 );
 const runningCount = computed(
   () =>
@@ -127,10 +132,12 @@ watch(
 );
 onBeforeUnmount(() => clearTimeout(noticeTimer));
 const storageReady = ref(false);
-function storagePrepared() {
+const booting = ref(true);
+async function storagePrepared() {
   storageReady.value = true;
   void behaviour.load();
-  void store.init();
+  await store.init();
+  booting.value = false;
   void game.init();
   void content.init();
   void account.init();
@@ -138,8 +145,19 @@ function storagePrepared() {
 }
 </script>
 <template>
+  <div
+    v-if="booting"
+    class="app-startup"
+    role="status"
+    aria-label="Starting Azuria"
+  >
+    <img src="/branding/app-icon.png" alt="" />
+    <h1>Azuria Launcher</h1>
+    <div class="startup-line" aria-hidden="true" />
+    <p>Opening your library…</p>
+  </div>
   <StorageMigration v-if="!storageReady" @ready="storagePrepared" />
-  <div v-else class="app-shell">
+  <div v-if="storageReady && !booting" class="app-shell">
     <SettingsView v-if="route.path === '/settings'" @close="closeSettings" />
     <StartupUpdate v-if="desktop" />
     <a class="skip-link" href="#main-content" @click.prevent="focusMain"
@@ -191,16 +209,47 @@ function storagePrepared() {
           ><Download :size="13" /> Update available</RouterLink
         >
         <span
+          v-if="!runningCount"
           class="game-status"
-          :class="{ 'is-running': runningCount > 0 }"
           role="status"
           aria-live="polite"
-          ><span class="game-status-dot" aria-hidden="true" />{{
-            runningCount
-              ? `${runningCount} instance${runningCount === 1 ? "" : "s"} running`
-              : "No instances running"
-          }}</span
+          ><span class="game-status-dot" aria-hidden="true" />No instances
+          running</span
         >
+        <div v-else class="running-instances" aria-label="Running instances">
+          <div
+            v-for="launch in runningInstances"
+            :key="launch.id"
+            class="running-instance"
+          >
+            <i class="game-status-dot" aria-hidden="true" />
+            <span
+              role="status"
+              :title="
+                store.instances.find((i) => i.id === launch.id)?.name ??
+                'Minecraft'
+              "
+              >{{
+                store.instances.find((i) => i.id === launch.id)?.name ??
+                "Minecraft"
+              }}</span
+            >
+            <button
+              :aria-label="`Stop ${store.instances.find((i) => i.id === launch.id)?.name ?? 'Minecraft'}`"
+              title="Stop Minecraft"
+              :disabled="game.stopping[launch.id]"
+              @click="game.cancel(launch.id)"
+            >
+              <Square :size="12" />
+            </button>
+            <RouterLink
+              :to="{ path: `/instances/${launch.id}`, query: { tab: 'logs' } }"
+              :aria-label="`Open logs for ${store.instances.find((i) => i.id === launch.id)?.name ?? 'Minecraft'}`"
+              title="Open logs"
+              ><Terminal :size="15"
+            /></RouterLink>
+          </div>
+        </div>
       </div>
       <WindowControls />
     </header>

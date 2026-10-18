@@ -1,3 +1,12 @@
+# Settings, privacy and desktop behaviour
+
+- Add functional privacy preferences, OLED appearance, a pinned version footer and readable settings rows. Save and Reset appear only for pending edits in a floating action bar.
+- Detect physical RAM for Minecraft allocation, including systems above 64 GiB. Limit concurrent asset downloads to a 1–10 slider, preserving older preferences with a reduced cap.
+- Show running instance names with Stop and Open logs actions, and display a startup loading screen while the library opens.
+- Keep the Windows launcher in the system tray when the window closes, retaining live game monitoring and safe explicit quitting.
+- Display measured storage in a segmented bar with a compact horizontal legend.
+- Move CurseForge API credentials out of app settings into a private, publisher-deployed Cloudflare Worker. Deployment and repository-secret setup are required before CurseForge is available in new builds.
+
 # Behaviour settings and Discord activity
 
 - Enable saved Behaviour preferences for minimising after Minecraft starts, refocusing after the last game closes, hiding the right sidebar and compact library defaults, with Save and Reset.

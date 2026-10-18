@@ -85,6 +85,9 @@ onMounted(() => void scan());
         <HardDrive :size="17" />
         <h3>Storage usage</h3>
       </div>
+      <strong v-if="report" class="storage-total"
+        >{{ fileSize(report.usage.totalBytes) }} stored</strong
+      >
       <button
         class="icon-button"
         aria-label="Refresh storage usage"
@@ -102,9 +105,6 @@ onMounted(() => void scan());
       {{ cleaning ? "Cleaning storage…" : "Measuring storage…" }}
     </p>
     <template v-if="report">
-      <strong class="storage-total">{{
-        fileSize(report.usage.totalBytes)
-      }}</strong>
       <p class="storage-caption">
         Unique file bytes in Azuria · hard links counted once
       </p>
@@ -125,15 +125,19 @@ onMounted(() => void scan());
           }"
         />
       </div>
-      <ul class="storage-breakdown">
-        <li v-for="(category, index) in categories" :key="category.name">
+      <div class="storage-breakdown" aria-label="Storage categories">
+        <span
+          v-for="(category, index) in categories"
+          :key="category.name"
+          class="storage-category"
+        >
           <span
             ><i :style="{ background: palette[index % palette.length] }" />{{
               category.name
             }}</span
           ><strong>{{ fileSize(category.bytes) }}</strong>
-        </li>
-      </ul>
+        </span>
+      </div>
       <p v-if="report.usage.skipped" class="muted">
         {{ report.usage.skipped }} linked, unreadable or changing entries were
         skipped. Totals are incomplete; refresh when downloads finish.
@@ -220,26 +224,25 @@ onMounted(() => void scan());
   justify-content: space-between;
 }
 .storage-overview h3 {
-  font-size: 13px;
+  font-size: 14px;
   margin: 0;
   font-weight: 550;
 }
 .storage-total {
   display: block;
-  font-size: 28px;
-  letter-spacing: -1px;
-  margin-top: 10px;
+  font-size: 15px;
+  margin-left: auto;
   font-weight: 550;
 }
 .storage-caption {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   line-height: 1.6;
 }
 .storage-bar {
   display: flex;
-  height: 12px;
-  gap: 3px;
+  height: 14px;
+  gap: 1px;
   border-radius: 4px;
   overflow: hidden;
   background: var(--input);
@@ -252,18 +255,19 @@ onMounted(() => void scan());
   list-style: none;
   padding: 0;
   margin: 0 0 16px;
-  max-height: 250px;
-  overflow: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
 }
-.storage-breakdown li {
+.storage-category {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  padding: 7px 0;
-  font-size: 12px;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 14px;
 }
-.storage-breakdown li > span {
+.storage-category > span {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -290,13 +294,13 @@ onMounted(() => void scan());
 .storage-cleanup p,
 .storage-directory p,
 .storage-confirm p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.6;
 }
 .storage-directory code {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   overflow-wrap: anywhere;
   margin: 12px 0;
 }

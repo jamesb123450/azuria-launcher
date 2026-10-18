@@ -20,7 +20,7 @@ function read(): Preview {
   const value = JSON.parse(raw) as Preview;
   if (
     !Array.isArray(value.instances) ||
-    !["system", "dark", "light"].includes(value.settings?.theme)
+    !["system", "dark", "light", "oled"].includes(value.settings?.theme)
   )
     throw new Error(
       "Preview storage is invalid. Clear this site’s storage to reset it.",

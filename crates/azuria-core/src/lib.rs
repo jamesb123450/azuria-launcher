@@ -2,8 +2,10 @@ pub mod behaviour;
 pub mod discord_presence;
 mod folders;
 pub mod instance_files;
+pub mod memory;
 pub mod migration;
 pub mod preferences;
+pub mod privacy;
 pub mod resources;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -112,6 +114,7 @@ pub struct Instance {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Theme {
+    Oled,
     System,
     Dark,
     Light,
@@ -457,6 +460,7 @@ impl Store {
             "system" => Theme::System,
             "dark" => Theme::Dark,
             "light" => Theme::Light,
+            "oled" => Theme::Oled,
             _ => return Err("Invalid stored appearance setting.".into()),
         };
         Ok(Settings { theme })
@@ -466,6 +470,7 @@ impl Store {
             Theme::System => "system",
             Theme::Dark => "dark",
             Theme::Light => "light",
+            Theme::Oled => "oled",
         };
         self.conn
             .execute("UPDATE settings SET value=?1 WHERE key='theme'", [theme])

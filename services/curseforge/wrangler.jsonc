@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "azuria-curseforge",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-18",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "ratelimits": [
+    {
+      "name": "CONTENT_LIMIT",
+      "namespace_id": "18432001",
+      "simple": { "limit": 120, "period": 60 },
+    },
+  ],
+}
