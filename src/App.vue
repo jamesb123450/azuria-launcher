@@ -11,6 +11,7 @@ import {
   Camera,
   Shirt,
   ChevronRight,
+  ChevronLeft,
   CircleHelp,
   Download,
 } from "@lucide/vue";
@@ -38,6 +39,34 @@ const store = useLauncher();
 const behaviour = useBehaviour();
 const route = useRoute();
 const router = useRouter();
+const canGoBack = ref(false);
+const canGoForward = ref(false);
+watch(
+  () => route.fullPath,
+  () => {
+    canGoBack.value = typeof router.options.history.state.back === "string";
+    canGoForward.value =
+      typeof router.options.history.state.forward === "string";
+  },
+  { immediate: true, flush: "post" },
+);
+const runningCount = computed(
+  () =>
+    Object.values(game.launches).filter((launch) => launch.stage === "running")
+      .length,
+);
+const pageIcon = computed(() =>
+  route.path.startsWith("/discover")
+    ? Compass
+    : route.path === "/wardrobe"
+      ? Shirt
+      : route.path === "/screenshots"
+        ? Camera
+        : route.path.startsWith("/settings")
+          ? Settings
+          : Play,
+);
+
 function resolveBackground(path: string): RouteLocationNormalized {
   const resolved = router.resolve(path);
   return { ...resolved, name: resolved.name ?? undefined };
@@ -129,9 +158,29 @@ function storagePrepared() {
             alt=""
             aria-hidden="true"
           />azuria<span class="brand-caption">Launcher</span></RouterLink
-        ><span class="breadcrumb-divider" /><ChevronRight :size="13" /><span
-          class="breadcrumb"
-          >{{ page }}</span
+        >
+        <nav class="history-controls" aria-label="Page history">
+          <button
+            aria-label="Go back"
+            title="Go back"
+            :disabled="!canGoBack"
+            @click="router.back()"
+          >
+            <ChevronLeft :size="16" />
+          </button>
+          <button
+            aria-label="Go forward"
+            title="Go forward"
+            :disabled="!canGoForward"
+            @click="router.forward()"
+          >
+            <ChevronRight :size="16" />
+          </button>
+        </nav>
+        <span class="current-page" data-tauri-drag-region
+          ><component :is="pageIcon" :size="17" /><span class="breadcrumb">{{
+            page
+          }}</span></span
         >
       </div>
       <div class="topbar-right">
@@ -141,9 +190,16 @@ function storagePrepared() {
           class="text-link update-chip"
           ><Download :size="13" /> Update available</RouterLink
         >
-        <span v-if="!desktop" class="preview-label">Browser preview</span
-        ><span class="build-pill"
-          >Early access <span>{{ updates.version }}</span></span
+        <span
+          class="game-status"
+          :class="{ 'is-running': runningCount > 0 }"
+          role="status"
+          aria-live="polite"
+          ><span class="game-status-dot" aria-hidden="true" />{{
+            runningCount
+              ? `${runningCount} instance${runningCount === 1 ? "" : "s"} running`
+              : "No instances running"
+          }}</span
         >
       </div>
       <WindowControls />
