@@ -3,7 +3,7 @@ name = "azuria-launcher"
 version = "0.2.1"
 description = "Azuria Minecraft Java launcher"
 edition = "2021"
-rust-version = "1.89"
+rust-version = "1.90"
 publish = false
 
 [lib]
@@ -30,6 +30,7 @@ tempfile = "3"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"
+tauri-plugin-single-instance = "2.5.4"
 
 [target.'cfg(windows)'.dependencies]
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }

@@ -287,6 +287,11 @@ fn open_project_page() -> Result<(), String> {
 
 pub fn run() {
     tauri::Builder::default()
+        // Register first: secondary processes must exit before storage setup,
+        // migration, accounts or game monitoring can start a second time.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            tray::show(app);
+        }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             content::remove_legacy_key();
