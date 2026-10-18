@@ -1,8 +1,14 @@
+# First-install privacy and automatic updates
+
+- Keep automatic updates passive or silent without requesting privacy acceptance, including legacy installations without an acknowledgement record.
+- Require the offline privacy checkbox only on first installation; existing manual upgrades and reinstalls do not ask again when a prior acknowledgement or installed application is present.
+- Simplify the privacy policy around information, purposes, providers, retention and user rights. Remove setup implementation details and clarify that acknowledgement does not enable tracking.
+
 # Branded Windows setup and privacy acknowledgement
 
 - Add Azuria artwork, installer icons and clearer native welcome/finish pages to Windows setup.
 - Include an offline privacy policy with an unchecked mandatory acceptance box before installation can continue.
-- Record the accepted policy fingerprint locally only after successful installation. Require acknowledgement for new policies, including updates; reject silent installation without prior matching acceptance.
+- Record the accepted policy fingerprint locally only after successful installation. Require acknowledgement on first installation; reject a silent first installation without acknowledgement.
 - Preserve signed update packaging and upstream installation/uninstallation handling, with native Windows acceptance checks in CI.
 
 # Settings, privacy and desktop behaviour

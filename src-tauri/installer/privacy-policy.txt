@@ -1,42 +1,36 @@
 AZURIA LAUNCHER — PRIVACY POLICY
 Last updated: 18 October 2026
 
-ABOUT AZURIA
-Azuria Launcher is an independent Minecraft Java launcher maintained by jamesb123450 on GitHub. It is not operated by Microsoft or Mojang.
-Contact and privacy requests: https://launcher.azuriasmp.org/contact/
-Public support: https://github.com/jamesb123450/azuria-releases/issues
-Do not post passwords, tokens or private personal information in public issues.
+ABOUT THIS POLICY
+Azuria Launcher is an independent Minecraft Java launcher maintained by jamesb123450 on GitHub. This policy explains how personal information is used when you use the launcher. Azuria is not affiliated with Microsoft or Mojang.
+For questions or privacy requests, visit https://launcher.azuriasmp.org/contact/. Do not include private information in public support issues.
 
-WHAT STAYS ON YOUR COMPUTER
-Azuria stores instance configurations, launcher preferences, account profile information, skin-library files, screenshots, downloads and game logs locally. Active instances and launcher data are stored in %APPDATA%\AzuriaLauncher. Saved Microsoft refresh credentials use Windows Credential Manager; authentication tokens are handled by the native launcher rather than exposed to its web interface.
-Azuria does not include analytics collection or automatically upload your logs to the maintainer.
+INFORMATION AND HOW IT IS USED
+Azuria stores your preferences, Minecraft profile, instances, downloaded content, skins, screenshots and game logs on your computer to provide the launcher’s features. Saved sign-in credentials are protected using Windows Credential Manager. Azuria does not receive or store your Microsoft password.
+When you sign in, Microsoft, Xbox and Minecraft Services process your account details to authenticate you, verify game ownership and provide your profile, skins and capes.
+Requests for updates, game files and community content include connection information, such as your IP address, and relevant searches, version or content identifiers. These requests are used to deliver updates, search results and downloads, and to protect the services against abuse.
+If you contact the project, the maintainer receives the information you provide, such as your username, message and attachments, to respond and investigate the issue. Public GitHub issues can be viewed by others.
+Azuria does not include launcher analytics or automatically upload your game logs to the maintainer. It does not sell personal information or include targeted advertising in the launcher.
 
-MICROSOFT AND MINECRAFT
-Choosing sign-in connects to Microsoft, Xbox and Minecraft Services to authenticate your account, check Java Edition access and retrieve your profile, skins and capes. Your default browser handles Microsoft sign-in; Azuria does not ask you to enter your Microsoft password into its own form. These services receive the information required to perform those requests.
-Microsoft privacy statement: https://privacy.microsoft.com/privacystatement
+THIRD-PARTY SERVICES
+Azuria connects to Microsoft/Mojang, GitHub, selected mod-loader services, Modrinth, CurseForge and their download providers as needed. CurseForge catalogue requests may pass through an Azuria service hosted by Cloudflare. These providers process request information under their own privacy policies and may process it outside your country.
+Optional Discord activity shares a generic Playing Minecraft status and start time with your local Discord client. It does not include your account, instance, world or server name. You can disable it in the launcher or Discord.
+Provider privacy policies:
+Microsoft: https://privacy.microsoft.com/privacystatement
+GitHub: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
+Modrinth: https://modrinth.com/legal/privacy
+CurseForge: https://www.curseforge.com/legal/privacy-policy
+Cloudflare: https://www.cloudflare.com/privacypolicy/
+Discord: https://discord.com/privacy
 
-UPDATES, GAME FILES AND CONTENT
-Azuria checks GitHub for launcher updates and downloads signed packages. Game preparation and version selectors contact Mojang/Microsoft and the selected loader metadata/download services. Discover, content details and downloads contact Modrinth or CurseForge and approved download hosts. Providers receive normal request information, including your IP address, and the requested search terms, versions or content identifiers.
-Configured CurseForge builds use an Azuria Cloudflare-hosted service to forward catalogue and project/file metadata requests. The publisher's API credential remains on that service. It receives no Microsoft tokens, game logs or account identifiers. Cloudflare processes ordinary request metadata and applies rate limits. Content files download from approved provider hosts; author download restrictions are respected.
-Provider privacy information:
-https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
-https://modrinth.com/legal/privacy
-https://www.curseforge.com/legal/privacy-policy
-https://www.cloudflare.com/privacypolicy/
+RETENTION AND YOUR CHOICES
+Local files remain on your computer until you remove them. Signing out removes Azuria’s saved sign-in credentials. Uninstalling the launcher does not automatically delete instances, worlds, screenshots, logs, local trash or backups.
+Support information is retained while needed to resolve enquiries, maintain the project or meet legal obligations. Public issue history may remain available through GitHub. Other providers set their own retention periods.
+Privacy settings let you control account reconnection, visible account details and optional activity sharing. The installer saves a local acknowledgement after first installation. Automatic updates do not request acceptance again. This acknowledgement is not consent to advertising, analytics or unrelated data collection.
 
-OPTIONAL DISCORD ACTIVITY
-Configured builds can send generic Playing Minecraft activity and its start time to your local Discord client while Minecraft runs. This does not include your account, instance, world or server names. It does not require a Discord sign-in inside Azuria. Control this in Settings > Privacy or Behaviour, or through Discord's own activity controls.
-Discord privacy policy: https://discord.com/privacy
+YOUR RIGHTS
+Where applicable, processing to respond to support requests and protect Azuria’s services is based on legitimate interests in supporting users and maintaining secure services. Other providers explain their own legal bases in their policies.
+Depending on applicable law, you may request access, correction, deletion, restriction or a copy of personal information held by the project, or object to its processing. Use the contact page to arrange a suitable private route. Requests relating to Microsoft or another provider should be directed to that provider. You can also complain to your data protection authority; in the UK, visit https://ico.org.uk/make-a-complaint/.
 
-YOUR CHOICES AND RETENTION
-Settings > Privacy controls automatic account reconnection and hiding your account name/skin head in the launcher. Hiding details does not hide them inside Minecraft or the skin editor.
-Sign out in Profile to remove Azuria's saved Microsoft credentials. Local preferences, game files, screenshots and logs remain until you remove them. Removed instances/files may be retained in local trash; replaced content may be retained in instance backups. Uninstalling the launcher does not automatically erase these retained files. Back up any worlds or files you want to keep before deleting local data.
-
-SUPPORT AND YOUR RIGHTS
-If you choose to submit a GitHub issue, the maintainer receives your GitHub username and the information you include. Issues and their history are public and may remain available through GitHub; copies may exist outside the project's control. Support information is used to respond to requests, investigate problems and maintain Azuria.
-Depending on applicable law, you may have rights to access, correct, delete or restrict personal information, or object to processing. For information held by a provider, use that provider's privacy process; provider retention and international processing are described in its own policy. For information shared with the maintainer, use the contact page to arrange a suitable private route. UK users can contact the Information Commissioner's Office at https://ico.org.uk/make-a-complaint/.
-
-INSTALLER ACKNOWLEDGEMENT
-The acceptance checkbox acknowledges this policy. It does not turn on optional features, subscribe you to marketing or authorise additional tracking. The installer records only this policy's version fingerprint in your Windows user registry after a successful installation. A changed policy requires a new acknowledgement; cancelling setup does not record it. Updates can reuse a previously accepted, unchanged policy. A silent install without acceptance stops instead of assuming agreement.
-
-This offline copy describes the launcher. The website's separate policy is available at https://launcher.azuriasmp.org/privacy/.
+POLICY UPDATES
+The latest policy is available at https://launcher.azuriasmp.org/privacy/. Material changes to how Azuria uses personal information will be communicated before the new processing starts. Website hosting and any website advertising are described separately on that page. Terms of service are available at https://launcher.azuriasmp.org/terms/.

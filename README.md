@@ -63,7 +63,7 @@ Update packages are verified with the public signing key bundled in Azuria. This
 
 ## Windows setup
 
-The Windows installer uses Azuria artwork and native, keyboard-accessible setup controls. First installation requires reading and accepting the included offline privacy policy before continuing. Cancel exits setup. A local policy fingerprint is saved only after successful installation; a changed policy requires acceptance again. Unattended updates can reuse an unchanged accepted policy, while an unaccepted policy opens an interactive step or stops a silent installation. No optional preferences are enabled by accepting the policy.
+The Windows installer uses Azuria artwork and native, keyboard-accessible setup controls. Only first installation requires accepting the included offline privacy policy before continuing. Cancel exits setup. Automatic updates use a separate update flow without an acceptance page, including updates from older releases. Manual upgrades and reinstalls of an existing installation do not ask again. Acceptance does not enable optional features or tracking.
 
 Installer sources, policy maintenance and validation are documented in [the installer guide](src-tauri/installer/README.md).
 

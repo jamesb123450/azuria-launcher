@@ -856,41 +856,55 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
           <section id="launcher-data">
             <h2>When you use the launcher</h2>
             <p>
-              The launcher stores instance settings, preferences and account
-              profile information locally on your computer. Microsoft refresh
-              credentials are saved through Windows Credential Manager.
-              Authentication tokens are handled by the native launcher rather
-              than collected by this website.
+              Azuria stores preferences, Minecraft profiles, instances, skins,
+              screenshots and game logs on your computer to provide its
+              features. Saved sign-in credentials are protected using Windows
+              Credential Manager. Azuria does not receive or store your
+              Microsoft password.
             </p>
             <p>
-              Choosing Microsoft sign-in connects to Microsoft, Xbox and
-              Minecraft Services for authentication, entitlement checks and
-              profile information. Azuria does not ask you to enter your
-              Microsoft password on this website. Microsoft processes those
-              requests under its
-              <a href="https://privacy.microsoft.com/en-gb/privacystatement"
-                >Privacy Statement</a
+              Microsoft, Xbox and Minecraft Services authenticate your account,
+              verify game ownership and provide your profile, skins and capes.
+              Their processing is described in the
+              <a href="https://privacy.microsoft.com/privacystatement"
+                >Microsoft Privacy Statement</a
               >.
             </p>
             <p>
-              The current launcher checks GitHub for updates and contacts
-              version-metadata services when you use relevant version selectors.
-              CurseForge catalogue requests use Azuria’s Cloudflare-hosted
-              content service, which receives search terms and project/file
-              identifiers to forward to CurseForge. The publisher’s API
-              credential remains server-side. Cloudflare processes normal
-              request metadata and applies rate limits; Microsoft tokens and
-              game logs are not sent to that service. Those providers receive
-              normal network request information. The current app does not
-              include analytics collection or automatically upload your logs to
-              the project maintainer.
+              Updates, game files and community content connect to GitHub,
+              Microsoft/Mojang, selected mod-loader services,
+              <a href="https://modrinth.com/legal/privacy">Modrinth</a>,
+              <a href="https://www.curseforge.com/legal/privacy-policy"
+                >CurseForge</a
+              >
+              and their download providers. Requests include connection
+              information, such as your IP address, and relevant search terms,
+              versions or content identifiers to deliver results and downloads.
+              CurseForge catalogue requests may pass through Azuria’s
+              <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a
+              >-hosted service, which processes request information to forward
+              requests and protect against abuse. These providers apply their
+              own privacy policies and may process information outside your
+              country.
             </p>
             <p>
-              Configured Windows builds support optional Discord Rich Presence.
-              While Minecraft runs, Azuria sends generic Playing Minecraft
-              activity and its start time to the local Discord client. Account,
-              instance, world and server names are not included. Disable this in
-              Settings → Behaviour or through Discord’s activity controls.
+              Azuria does not include launcher analytics, automatically upload
+              game logs, sell personal information or include targeted
+              advertising in the launcher. Optional
+              <a href="https://discord.com/privacy">Discord</a> activity shares
+              only a generic Playing Minecraft status and start time with your
+              local Discord client. Disable it in Settings → Privacy or
+              Behaviour, or through Discord’s activity controls.
+            </p>
+            <p>
+              Local files remain until you remove them. Sign out in Profile to
+              remove saved sign-in credentials. Uninstalling does not
+              automatically delete instances, worlds, screenshots, logs, local
+              trash or backups. Privacy preferences control account reconnection
+              and visible account details. Only first installation asks you to
+              acknowledge the policy; automatic updates do not ask again.
+              Acknowledgement does not enable analytics, advertising or
+              unrelated collection.
             </p>
           </section>
           <section id="support-data">
@@ -903,19 +917,19 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
             </p>
             <p>
               Support information is used to answer requests, investigate faults
-              and maintain the project. The project’s interest in providing
-              support is the reason for this processing. Public issues and their
-              history can remain available until removed through GitHub’s
-              controls; copies may exist outside the project’s control. The
-              contact page has no active message form and does not collect or
-              send form entries.
+              and maintain the project. The project relies on legitimate
+              interests in supporting users and maintaining secure services for
+              this processing. Public issues and their history can remain
+              available until removed through GitHub’s controls; copies may
+              exist outside the project’s control. The contact page has no
+              active message form and does not collect or send form entries.
             </p>
           </section>
           <section id="your-choices">
             <h2>Your choices and rights</h2>
             <p>
               You can use the website without signing in. To remove saved
-              launcher account credentials, sign out in Settings. Local
+              launcher account credentials, sign out in Profile. Local
               preferences and instance files remain on your device until you
               remove them; deleting an instance may retain files in local trash.
               See the
@@ -939,8 +953,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
             </p>
             <p>
               Changes to this policy will be published here with a revised date.
-              New collection or integrations will be described before they are
-              introduced.
+              Material changes to how personal information is used will be
+              communicated before the new processing starts.
             </p>
           </section>
         </article>
