@@ -45,6 +45,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: node scripts/installer-policy.mjs --check
       - run: npm run build
       - run: npm test
       - run: npx playwright install --with-deps chromium
@@ -86,6 +87,8 @@ jobs:
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - run: npm run desktop:build -- --debug
+      - name: Check installer privacy acceptance
+        run: pwsh -File scripts/test-installer.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: azuria-windows-development-installer

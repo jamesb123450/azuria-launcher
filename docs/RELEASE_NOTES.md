@@ -1,3 +1,10 @@
+# Branded Windows setup and privacy acknowledgement
+
+- Add Azuria artwork, installer icons and clearer native welcome/finish pages to Windows setup.
+- Include an offline privacy policy with an unchecked mandatory acceptance box before installation can continue.
+- Record the accepted policy fingerprint locally only after successful installation. Require acknowledgement for new policies, including updates; reject silent installation without prior matching acceptance.
+- Preserve signed update packaging and upstream installation/uninstallation handling, with native Windows acceptance checks in CI.
+
 # Settings, privacy and desktop behaviour
 
 - Add functional privacy preferences, OLED appearance, a pinned version footer and readable settings rows. Save and Reset appear only for pending edits in a floating action bar.

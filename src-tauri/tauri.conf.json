@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "node scripts/installer-policy.mjs --check && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -33,7 +33,21 @@
     "icon": ["icons/icon.ico"],
     "shortDescription": "Your next adventure, beautifully organised.",
     "category": "Game",
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": false,
+    "homepage": "https://launcher.azuriasmp.org/",
+    "licenseFile": "installer/privacy-policy.rtf",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "template": "installer/installer.nsi",
+        "installerHooks": "installer/hooks.nsh",
+        "installerIcon": "installer/icon.ico",
+        "sidebarImage": "installer/sidebar.bmp",
+        "headerImage": "installer/header.bmp",
+        "languages": ["English"],
+        "displayLanguageSelector": false
+      }
+    }
   },
   "plugins": {
     "updater": {
