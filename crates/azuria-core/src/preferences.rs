@@ -71,8 +71,8 @@ impl LaunchOverrides {
 }
 impl LaunchOptions {
     pub fn validate(&self) -> Result<(), String> {
-        if !(512..=65536).contains(&self.memory_mb) || !self.memory_mb.is_multiple_of(256) {
-            return Err("Memory must be 512–65536 MB in increments of 256 MB.".into());
+        if self.memory_mb < 512 || !self.memory_mb.is_multiple_of(256) {
+            return Err("Memory must be at least 512 MB in increments of 256 MB.".into());
         }
         if let Some(path) = &self.java_path {
             if path.trim().is_empty() || path.len() > 4096 || path.chars().any(char::is_control) {

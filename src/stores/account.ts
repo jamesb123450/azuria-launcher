@@ -6,6 +6,7 @@ import {
   emptyAccount,
   type AuthStage,
 } from "../auth";
+import { usePrivacy } from "./privacy";
 export const useAccount = defineStore("account", () => {
   const view = ref(emptyAccount());
   const busy = ref(false);
@@ -14,7 +15,12 @@ export const useAccount = defineStore("account", () => {
   const error = ref("");
   const ready = ref(false);
   let generation = 0;
-  const label = computed(() => view.value.account?.username ?? "Not signed in");
+  const privacy = usePrivacy();
+  const label = computed(() =>
+    privacy.options.hideAccount
+      ? "Minecraft account"
+      : (view.value.account?.username ?? "Not signed in"),
+  );
   async function operate(action: "restore" | "signIn" | "signOut") {
     if (busy.value || !view.value.supported) return;
     const current = ++generation;
@@ -55,6 +61,7 @@ export const useAccount = defineStore("account", () => {
     if (ready.value || busy.value) return;
     busy.value = true;
     try {
+      await privacy.load();
       view.value = await accountApi.status();
     } catch (cause) {
       error.value = accountError(cause);
@@ -62,7 +69,9 @@ export const useAccount = defineStore("account", () => {
       busy.value = false;
       ready.value = true;
     }
-    if (view.value.supported) await operate("restore");
+    await privacy.load();
+    if (view.value.supported && privacy.ready && privacy.options.restoreAccount)
+      await operate("restore");
   }
   async function cancel() {
     if (!busy.value || cancelling.value) return;

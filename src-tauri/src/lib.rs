@@ -6,8 +6,10 @@ mod discord;
 mod game;
 mod instances;
 mod media;
+mod privacy;
 mod resources;
 mod skin_library;
+mod tray;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
 use std::sync::Mutex;
@@ -287,6 +289,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            content::remove_legacy_key();
             let legacy = app.path().app_local_data_dir()?;
             #[cfg(windows)]
             let root = std::path::PathBuf::from(std::env::var_os("APPDATA").ok_or_else(|| {
@@ -307,6 +310,11 @@ pub fn run() {
                 WebProvider::new().map_err(|error| std::io::Error::other(error.message))?,
                 NativeVault,
             ));
+            // If tray creation fails, never hide the only accessible window.
+            let available = tray::setup(app.handle()).is_ok();
+            app.manage(tray::TrayAvailable(std::sync::atomic::AtomicBool::new(
+                available,
+            )));
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -321,6 +329,13 @@ pub fn run() {
                     .unwrap_or(true);
                 if blocked {
                     api.prevent_close();
+                } else if window
+                    .state::<tray::TrayAvailable>()
+                    .0
+                    .load(std::sync::atomic::Ordering::Relaxed)
+                {
+                    api.prevent_close();
+                    let _ = window.hide();
                 } else if window.state::<game::Games>().has_active() {
                     api.prevent_close();
                     let _ = window.emit("game-close-blocked", ());
@@ -331,6 +346,9 @@ pub fn run() {
         .manage(content::ContentState::default())
         .manage(resources::Resources::default())
         .invoke_handler(tauri::generate_handler![
+            privacy::get_privacy,
+            privacy::save_privacy,
+            privacy::physical_memory_limit,
             behaviour::get_behaviour,
             behaviour::save_behaviour,
             behaviour::discord_presence_configured,
@@ -344,7 +362,6 @@ pub fn run() {
             content::content_version,
             content::content_project,
             content::content_status,
-            content::content_set_curseforge_key,
             content::content_search,
             content::content_versions,
             content::content_plan,

@@ -48,9 +48,9 @@ test("real search UI applies filters and pagination without fictional fallback",
     page.getByRole("heading", { name: "No projects found" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "CurseForge", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("API access");
+  await expect(page.getByRole("alert")).toContainText("publisher-configured");
   await expect(
-    page.getByRole("link", { name: "Set up CurseForge access" }),
+    page.getByRole("link", { name: "CurseForge availability" }),
   ).toBeVisible();
 });
 test("provider errors can retry without showing sample projects", async ({

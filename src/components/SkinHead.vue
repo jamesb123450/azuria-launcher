@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { usePrivacy } from "../stores/privacy";
 import { ref, watch, nextTick, onBeforeUnmount } from "vue";
 import { UserRound } from "@lucide/vue";
 import { useAccount } from "../stores/account";
 import { useWardrobe } from "../stores/wardrobe";
 const account = useAccount();
+const privacy = usePrivacy();
 const wardrobe = useWardrobe();
 const canvas = ref<HTMLCanvasElement>();
 const drawn = ref(false);
@@ -23,7 +25,7 @@ watch(
   { immediate: true },
 );
 watch(
-  () => wardrobe.profile?.skin,
+  () => (privacy.options.hideAccount ? undefined : wardrobe.profile?.skin),
   async (skin) => {
     const ticket = ++generation;
     drawn.value = false;

@@ -22,7 +22,7 @@ async function themedField(field: Locator) {
   expect(style.radius).toBeGreaterThanOrEqual(6);
 }
 for (const theme of ["dark", "light"] as const) {
-  test(`${theme} popup fields retain the app theme, including disabled passwords and multiline arguments`, async ({
+  test(`${theme} popup fields retain the app theme, including numeric and multiline arguments`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: theme });
@@ -34,7 +34,8 @@ for (const theme of ["dark", "light"] as const) {
     const downloads = popup.getByLabel("Maximum concurrent downloads", {
       exact: true,
     });
-    await themedField(downloads);
+    await expect(downloads).toHaveAttribute("type", "range");
+    await expect(downloads).toHaveAttribute("max", "10");
     await themedField(
       popup.getByLabel("Keep unused downloads (GiB)", { exact: true }),
     );
@@ -46,9 +47,7 @@ for (const theme of ["dark", "light"] as const) {
     await popup
       .getByRole("button", { name: "Content providers", exact: true })
       .click();
-    const key = popup.getByLabel("API key", { exact: true });
-    await expect(key).toBeDisabled();
-    await themedField(key);
+    await expect(popup.getByLabel("API key", { exact: true })).toHaveCount(0);
     await popup
       .getByRole("button", { name: "Java & memory", exact: true })
       .click();

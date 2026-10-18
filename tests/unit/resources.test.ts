@@ -13,7 +13,7 @@ it("validates resource limits before saving", () => {
     expect(
       resourceValidation({ unusedDownloadGib: value, concurrentDownloads: 8 }),
     ).not.toBe("");
-  for (const value of [0, 17, Infinity, 1.5])
+  for (const value of [0, 11, Infinity, 1.5])
     expect(
       resourceValidation({ unusedDownloadGib: 5, concurrentDownloads: value }),
     ).not.toBe("");

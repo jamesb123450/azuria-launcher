@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { FolderOpen, Search, Plus, Trash2 } from "@lucide/vue";
 import VersionPicker from "./VersionPicker.vue";
 import { desktop } from "../api";
@@ -9,6 +9,8 @@ import {
   type LaunchOptions,
   type OverrideFlags,
 } from "../lib/launch-options";
+import { memoryLimit, memoryError, loadMemory } from "../system-memory";
+onMounted(() => void loadMemory());
 const props = defineProps<{
   inheritance?: boolean;
   section?: "java" | "window";
@@ -26,6 +28,7 @@ const flags = defineModel<OverrideFlags>("enabled", {
   }),
 });
 const error = ref("");
+
 const javaBusy = ref(false);
 const candidates = ref<string[]>([]);
 const active = (key: keyof LaunchOptions) =>
@@ -113,7 +116,8 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
           v-model.number="form.memoryMb"
           type="range"
           min="512"
-          max="65536"
+          :max="memoryLimit"
+          :disabled="!memoryLimit"
           step="256"
           aria-label="Memory allocation slider"
         /><label
@@ -121,7 +125,8 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
             v-model.number="form.memoryMb"
             type="number"
             min="512"
-            max="65536"
+            :max="memoryLimit"
+            :disabled="!memoryLimit"
             step="256"
             aria-label="Memory allocation in MB"
           />
@@ -130,6 +135,18 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
       </div>
       <p v-else class="inherited-value">
         Using launcher default: {{ inherited.memoryMb }} MB
+      </p>
+      <p v-if="memoryError" class="inline-error" role="alert">
+        {{ memoryError }}
+        <button type="button" class="text-link" @click="loadMemory">
+          Retry memory detection
+        </button>
+      </p>
+      <p v-else class="muted">
+        {{
+          desktop ? "Physical memory limit" : "Browser preview memory estimate"
+        }}: {{ memoryLimit ? `${memoryLimit} MB` : "Detecting…" }}. Leave room
+        for Windows and other apps.
       </p>
     </section>
     <section v-if="section !== 'window'" class="option-section">

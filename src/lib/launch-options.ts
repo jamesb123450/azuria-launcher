@@ -1,3 +1,4 @@
+import { memoryLimit } from "../system-memory";
 export interface LaunchOptions {
   memoryMb: number;
   javaPath: string | null;
@@ -46,10 +47,10 @@ export function validateOptions(value: LaunchOptions): string {
   if (
     !Number.isInteger(value.memoryMb) ||
     value.memoryMb < 512 ||
-    value.memoryMb > 65536 ||
+    (memoryLimit.value !== undefined && value.memoryMb > memoryLimit.value) ||
     value.memoryMb % 256 !== 0
   )
-    return "Memory must be 512–65536 MB in increments of 256 MB.";
+    return `Memory must be at least 512 MB, in increments of 256 MB, and within your computer’s ${memoryLimit.value ?? "physical"} MB memory limit.`;
   if (
     value.javaPath !== null &&
     (!value.javaPath.trim() ||

@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
             v-if="source === 'curseforge'"
             class="text-link"
             to="/settings#content-providers"
-            >Set up CurseForge access</RouterLink
+            >CurseForge availability</RouterLink
           >
         </div>
         <div v-else-if="loading" class="discover-empty" role="status">

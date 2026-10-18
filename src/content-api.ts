@@ -199,8 +199,6 @@ export const contentApi = {
     desktop
       ? invoke("content_status")
       : Promise.resolve({ curseforgeConfigured: false }),
-  setKey: (key: string | null): Promise<void> =>
-    invoke("content_set_curseforge_key", { key }),
   search: async (
     query: Search,
     signal?: AbortSignal,
@@ -208,7 +206,7 @@ export const contentApi = {
     if (desktop) return invoke("content_search", { query });
     if (query.provider === "curseforge")
       throw Error(
-        "CurseForge search requires API access configured in the Windows app.",
+        "CurseForge search requires a publisher-configured Windows build.",
       );
     const type =
       query.kind === "resourcepacks"

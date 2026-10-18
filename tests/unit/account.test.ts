@@ -12,6 +12,13 @@ vi.mock("../../src/auth", async (original) => ({
   ...(await original<typeof import("../../src/auth")>()),
   accountApi: api,
 }));
+vi.mock("../../src/privacy-api", () => ({
+  defaultPrivacy: () => ({ restoreAccount: true, hideAccount: false }),
+  privacyApi: {
+    get: async () => ({ restoreAccount: true, hideAccount: false }),
+  },
+}));
+import { usePrivacy } from "../../src/stores/privacy";
 import { useAccount } from "../../src/stores/account";
 const blank = {
   supported: true,
@@ -96,4 +103,24 @@ it("never displays raw unexpected IPC errors", async () => {
   await store.init();
   await store.signIn();
   expect(store.error).not.toContain("private-token");
+});
+
+it("privacy can disable automatic reconnect without disabling explicit reconnect", async () => {
+  const privacy = usePrivacy();
+  await privacy.load();
+  privacy.options.restoreAccount = false;
+  const store = useAccount();
+  await store.init();
+  expect(api.restore).not.toHaveBeenCalled();
+  await store.restore();
+  expect(api.restore).toHaveBeenCalledTimes(1);
+});
+it("hides the account label when the saved privacy option is enabled", async () => {
+  const privacy = usePrivacy();
+  await privacy.load();
+  privacy.options.hideAccount = true;
+  api.status.mockResolvedValue(signed);
+  const store = useAccount();
+  await store.init();
+  expect(store.label).toBe("Minecraft account");
 });

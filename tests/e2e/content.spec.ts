@@ -395,15 +395,19 @@ test("modpacks create a new instance and datapacks select a world", async ({
     ),
   ).toBe(false);
 });
-test("provider settings stage and reset API key changes before saving", async ({
+test("provider settings never accept or save a client-side API key", async ({
   page,
 }) => {
   await setup(page);
   await page.goto("/#/settings#content-providers");
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("API key", { exact: true }).fill("test-fixture-key");
-  await dialog.getByRole("button", { name: "Reset", exact: true }).click();
-  await expect(dialog.getByLabel("API key", { exact: true })).toHaveValue("");
+  await expect(
+    dialog.getByRole("heading", { name: "CurseForge", exact: true }),
+  ).toBeVisible();
+  await expect(dialog.getByLabel("API key", { exact: true })).toHaveCount(0);
+  await expect(
+    dialog.getByRole("button", { name: "Save", exact: true }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(() =>
       (window as any).contentCalls.some(
@@ -411,16 +415,6 @@ test("provider settings stage and reset API key changes before saving", async ({
       ),
     ),
   ).toBe(false);
-  await dialog.getByLabel("API key", { exact: true }).fill("test-fixture-key");
-  await dialog.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(
-    dialog.getByText(
-      "A key is stored in Windows Credential Manager on this PC.",
-    ),
-  ).toBeVisible();
-  await expect(
-    dialog.getByLabel("Replacement API key", { exact: true }),
-  ).toHaveValue("");
 });
 
 test("project artwork opens description, versions and gallery fetched from provider", async ({

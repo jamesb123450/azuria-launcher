@@ -46,56 +46,22 @@ pub struct PlanResponse {
     id: String,
     preview: Preview,
 }
-#[cfg(windows)]
-fn vault() -> Result<keyring::Entry, String> {
-    keyring::Entry::new("com.azuria.launcher.curseforge", "api")
-        .map_err(|_| "Windows Credential Manager is unavailable.".into())
-}
-fn key() -> Result<Option<String>, String> {
-    #[cfg(windows)]
-    {
-        match vault()?.get_password() {
-            Ok(v) => Ok(Some(v)),
-            Err(keyring::Error::NoEntry) => Ok(None),
-            Err(_) => {
-                Err("Could not read CurseForge access from Windows Credential Manager.".into())
-            }
-        }
-    }
-    #[cfg(not(windows))]
-    {
-        Ok(None)
-    }
+fn proxy() -> Option<String> {
+    option_env!("AZURIA_CURSEFORGE_PROXY_URL")
+        .filter(|v| azuria_content::valid_proxy(v))
+        .map(str::to_owned)
 }
 #[tauri::command]
 pub fn content_status() -> Result<ProviderStatus, String> {
     Ok(ProviderStatus {
-        curseforge_configured: key()?.is_some(),
+        curseforge_configured: proxy().as_deref().is_some_and(azuria_content::valid_proxy),
     })
 }
-#[tauri::command]
-pub fn content_set_curseforge_key(key: Option<String>) -> Result<(), String> {
+/// Remove credentials saved by older builds. No new client-side keys are accepted.
+pub fn remove_legacy_key() {
     #[cfg(windows)]
-    {
-        if let Some(key) = key {
-            let key = key.trim();
-            if key.len() < 8 || key.len() > 4096 || !key.bytes().all(|b| b.is_ascii_graphic()) {
-                return Err("Enter a valid CurseForge API key.".into());
-            }
-            vault()?
-                .set_password(key)
-                .map_err(|_| "Could not save the key in Windows Credential Manager.".into())
-        } else {
-            match vault()?.delete_credential() {
-                Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-                Err(_) => Err("Could not remove the saved CurseForge key.".into()),
-            }
-        }
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = key;
-        Err("CurseForge key storage is available in the Windows desktop app.".into())
+    if let Ok(entry) = keyring::Entry::new("com.azuria.launcher.curseforge", "api") {
+        let _ = entry.delete_credential();
     }
 }
 fn instance(
@@ -129,7 +95,7 @@ fn target(item: &azuria_core::Instance) -> Target {
 pub async fn content_search(query: Search) -> Result<Results, String> {
     tauri::async_runtime::spawn_blocking(move || {
         Client::new(if query.provider == Provider::Curseforge {
-            key()?
+            proxy()
         } else {
             None
         })?
@@ -152,7 +118,7 @@ pub async fn content_versions(
         .transpose()?;
     tauri::async_runtime::spawn_blocking(move || {
         Client::new(if provider == Provider::Curseforge {
-            key()?
+            proxy()
         } else {
             None
         })?
@@ -196,7 +162,7 @@ pub async fn content_plan(
     tauri::async_runtime::spawn_blocking(move || {
         let expected_target = t.clone();
         let plan = Client::new(if provider == Provider::Curseforge {
-            key()?
+            proxy()
         } else {
             None
         })?
@@ -321,7 +287,7 @@ pub fn content_install(app: tauri::AppHandle, plan_id: String) -> Result<(), Str
                     .join("game-cache/content-staging"))
             })?;
             let staged = Client::new(if saved.plan.provider == Provider::Curseforge {
-                key()?
+                proxy()
             } else {
                 None
             })?
@@ -479,7 +445,7 @@ pub async fn content_project(
 ) -> Result<azuria_content::ProjectDetails, String> {
     tauri::async_runtime::spawn_blocking(move || {
         Client::new(if provider == Provider::Curseforge {
-            key()?
+            proxy()
         } else {
             None
         })?
@@ -496,7 +462,7 @@ pub async fn content_inventory(
 ) -> Result<azuria_content::Inventory, String> {
     let (item, root) = instance(&app, &id)?;
     tauri::async_runtime::spawn_blocking(move || {
-        Client::new(key()?)?.inventory(&root, &target(&item))
+        Client::new(proxy())?.inventory(&root, &target(&item))
     })
     .await
     .map_err(|_| "Content update check stopped unexpectedly.")?
@@ -511,7 +477,7 @@ pub async fn content_update_plan(
 ) -> Result<PlanResponse, String> {
     let (item, root) = instance(&app, &id)?;
     tauri::async_runtime::spawn_blocking(move || {
-        let client = Client::new(key()?)?;
+        let client = Client::new(proxy())?;
         let inventory = client.inventory(&root, &target(&item))?;
         let installed = inventory.pack.iter().chain(inventory.projects.iter())
             .find(|p| p.provider == provider && p.project.id == project)
@@ -551,7 +517,7 @@ pub async fn content_version(
 ) -> Result<azuria_content::VersionDetails, String> {
     tauri::async_runtime::spawn_blocking(move || {
         Client::new(if provider == Provider::Curseforge {
-            key()?
+            proxy()
         } else {
             None
         })?

@@ -24,6 +24,9 @@ import {
   ShieldCheck,
   Users,
 } from "@lucide/vue";
+import { usePrivacy } from "../stores/privacy";
+import { defaultPrivacy } from "../privacy-api";
+import { loadMemory, memoryLimit } from "../system-memory";
 import { useBehaviour } from "../stores/behaviour";
 import { behaviourApi, defaultBehaviour } from "../behaviour-api";
 import { useLauncher } from "../stores/launcher";
@@ -47,6 +50,25 @@ import "./settings.css";
 const emit = defineEmits<{ close: [] }>();
 const store = useLauncher();
 const behaviourStore = useBehaviour();
+const privacyStore = usePrivacy();
+const privacyForm = ref(defaultPrivacy());
+const privacySnapshot = ref(JSON.stringify(privacyForm.value));
+const privacyLoaded = ref(false);
+const privacyError = ref("");
+const privacyChanged = computed(
+  () =>
+    privacyLoaded.value &&
+    JSON.stringify(privacyForm.value) !== privacySnapshot.value,
+);
+async function loadPrivacy() {
+  await privacyStore.load();
+  privacyError.value = privacyStore.error;
+  if (privacyStore.ready) {
+    privacyForm.value = { ...privacyStore.options };
+    privacySnapshot.value = JSON.stringify(privacyForm.value);
+    privacyLoaded.value = true;
+  }
+}
 const updates = useUpdates();
 const route = useRoute();
 const router = useRouter();
@@ -125,13 +147,6 @@ const planned: Record<string, { title: string; description: string }[]> = {
         "Account social preferences will appear here when supported.",
     },
   ],
-  privacy: [
-    {
-      title: "Privacy preferences",
-      description:
-        "Additional privacy controls will appear here when supported.",
-    },
-  ],
   hooks: [
     {
       title: "Pre-launch command",
@@ -186,13 +201,8 @@ const busy = ref(false);
 const error = ref("");
 const notice = ref("");
 const confirmClose = ref(false);
-const curseforgeKey = ref("");
-const removeCurseforgeKey = ref(false);
 const curseforgeConfigured = ref(false);
 const providerError = ref("");
-const keyChanged = computed(
-  () => !!curseforgeKey.value.trim() || removeCurseforgeKey.value,
-);
 watch(
   section,
   async (value) => {
@@ -297,7 +307,12 @@ async function loadBehaviour() {
 watch(
   section,
   (value) => {
-    if (value === "behaviour" && !behaviourLoaded.value) void loadBehaviour();
+    if (
+      (value === "behaviour" || value === "privacy") &&
+      !behaviourLoaded.value
+    )
+      void loadBehaviour();
+    if (value === "privacy" && !privacyLoaded.value) void loadPrivacy();
   },
   { immediate: true },
 );
@@ -306,15 +321,14 @@ const dirty = computed(
     loaded.value &&
     (behaviourChanged.value ||
       resourceChanged.value ||
-      keyChanged.value ||
+      privacyChanged.value ||
       theme.value !== savedTheme.value ||
       JSON.stringify(form.value) !== snapshot.value),
 );
 function reset() {
   behaviourForm.value = JSON.parse(behaviourSnapshot.value);
   resources.value = JSON.parse(resourceSnapshot.value);
-  curseforgeKey.value = "";
-  removeCurseforgeKey.value = false;
+  privacyForm.value = JSON.parse(privacySnapshot.value);
   theme.value = savedTheme.value;
   if (snapshot.value) form.value = JSON.parse(snapshot.value);
   error.value = "";
@@ -329,6 +343,7 @@ async function load() {
       throw new Error(
         store.settingsError || "Appearance settings could not be loaded.",
       );
+    await loadMemory();
     form.value = await instanceApi.defaults();
     theme.value = savedTheme.value = store.settings.theme;
     snapshot.value = JSON.stringify(form.value);
@@ -343,7 +358,11 @@ async function save() {
   if (!loaded.value || busy.value) return false;
   error.value = resourceChanged.value
     ? resourceValidation(resources.value)
-    : validateOptions(form.value);
+    : JSON.stringify(form.value) !== snapshot.value
+      ? memoryLimit.value
+        ? validateOptions(form.value)
+        : "Physical memory could not be detected. Reopen Java & memory and retry."
+      : "";
   notice.value = "";
   if (error.value) {
     section.value = resourceChanged.value
@@ -374,13 +393,9 @@ async function save() {
       await resourceApi.save(resources.value);
       resourceSnapshot.value = JSON.stringify(resources.value);
     }
-    if (keyChanged.value) {
-      await contentApi.setKey(
-        removeCurseforgeKey.value ? null : curseforgeKey.value.trim(),
-      );
-      curseforgeConfigured.value = !removeCurseforgeKey.value;
-      curseforgeKey.value = "";
-      removeCurseforgeKey.value = false;
+    if (privacyChanged.value) {
+      await privacyStore.save(privacyForm.value);
+      privacySnapshot.value = JSON.stringify(privacyForm.value);
     }
     notice.value = "Settings saved.";
     return true;
@@ -474,21 +489,23 @@ onBeforeUnmount(() => {
     </header>
     <div class="settings-modal-body" :inert="confirmClose">
       <nav class="settings-categories" aria-label="Settings categories">
-        <div
-          v-for="group in groups"
-          :key="group.label"
-          class="settings-category-group"
-        >
-          <p>{{ group.label }}</p>
-          <button
-            v-for="item in group.items"
-            :key="item.id"
-            :aria-current="section === item.id ? 'page' : undefined"
-            :class="{ active: section === item.id }"
-            @click="section = item.id"
+        <div class="settings-category-scroll">
+          <div
+            v-for="group in groups"
+            :key="group.label"
+            class="settings-category-group"
           >
-            <component :is="item.icon" :size="17" />{{ item.label }}
-          </button>
+            <p>{{ group.label }}</p>
+            <button
+              v-for="item in group.items"
+              :key="item.id"
+              :aria-current="section === item.id ? 'page' : undefined"
+              :class="{ active: section === item.id }"
+              @click="section = item.id"
+            >
+              <component :is="item.icon" :size="17" />{{ item.label }}
+            </button>
+          </div>
         </div>
         <p class="settings-version">
           Azuria Launcher <span>{{ updates.version }}</span>
@@ -508,7 +525,7 @@ onBeforeUnmount(() => {
           </p>
           <div class="settings-theme-grid">
             <button
-              v-for="option in ['dark', 'light', 'system'] as const"
+              v-for="option in ['dark', 'oled', 'light', 'system'] as const"
               :key="option"
               :disabled="!loaded || busy"
               :aria-pressed="theme === option"
@@ -524,9 +541,11 @@ onBeforeUnmount(() => {
               ><strong>{{
                 option === "system"
                   ? "System"
-                  : option === "dark"
-                    ? "Dark"
-                    : "Light"
+                  : option === "oled"
+                    ? "OLED"
+                    : option === "dark"
+                      ? "Dark"
+                      : "Light"
               }}</strong
               ><span>{{
                 option === "system"
@@ -535,14 +554,7 @@ onBeforeUnmount(() => {
               }}</span>
             </button>
           </div>
-          <div class="settings-planned-row">
-            <div>
-              <h3>OLED theme</h3>
-              <p>A deeper black appearance.</p>
-            </div>
-            <span class="coming-soon">Coming soon</span>
-          </div></template
-        >
+        </template>
         <template v-else-if="section === 'behaviour'">
           <p class="settings-inheritance">
             Choose how Azuria behaves while you play. Changes apply after Save.
@@ -601,37 +613,91 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div class="settings-storage-path">
-            <h3>CurseForge API access</h3>
+            <h3>CurseForge</h3>
             <p>
               {{
                 curseforgeConfigured
-                  ? "A key is stored in Windows Credential Manager on this PC."
-                  : "No API key is stored on this PC."
+                  ? "Available through Azuria’s content service. No API key is stored on this computer."
+                  : "The publisher has not configured CurseForge access for this build."
               }}
             </p>
             <p v-if="providerError" class="inline-error">{{ providerError }}</p>
-            <label class="instance-field"
-              >{{ curseforgeConfigured ? "Replacement API key" : "API key"
-              }}<input
-                v-model="curseforgeKey"
-                type="password"
-                autocomplete="off"
-                spellcheck="false"
-                :disabled="!desktop || busy || removeCurseforgeKey"
-            /></label>
-            <label v-if="curseforgeConfigured"
-              ><input
-                v-model="removeCurseforgeKey"
-                type="checkbox"
-                :disabled="busy"
-              />Remove the saved key when I press Save</label
-            >
-            <p class="muted">
-              Use an approved key. It is stored natively, never in your instance
-              settings, browser storage or repository. Save and Reset below
-              apply to these changes too.
+          </div>
+        </template>
+        <template v-else-if="section === 'privacy'">
+          <p class="settings-inheritance">
+            Control account privacy and activity sharing. Changes apply after
+            Save.
+          </p>
+          <label class="settings-behaviour-row"
+            ><span
+              ><strong>Reconnect account on startup</strong
+              ><span
+                >Use your securely saved Microsoft session when Azuria opens.
+                Turn this off to reconnect manually from Profile.</span
+              ></span
+            ><input
+              v-model="privacyForm.restoreAccount"
+              type="checkbox"
+              role="switch"
+              aria-label="Reconnect account on startup"
+              :disabled="!privacyLoaded || busy"
+          /></label>
+          <label class="settings-behaviour-row"
+            ><span
+              ><strong>Hide account details</strong
+              ><span
+                >Replace your account name and skin head with a neutral identity
+                in the launcher. Skin editing remains available.</span
+              ></span
+            ><input
+              v-model="privacyForm.hideAccount"
+              type="checkbox"
+              role="switch"
+              aria-label="Hide account details"
+              :disabled="!privacyLoaded || busy"
+          /></label>
+          <label class="settings-behaviour-row"
+            ><span
+              ><strong>Discord Rich Presence</strong
+              ><span
+                >Share generic Minecraft activity and its start time with your
+                local Discord client. This is the same preference as
+                Behaviour.</span
+              ></span
+            ><input
+              v-model="behaviourForm.discordPresence"
+              type="checkbox"
+              role="switch"
+              aria-label="Discord Rich Presence"
+              :disabled="!behaviourLoaded || busy"
+          /></label>
+          <div class="settings-privacy-note">
+            <h3>Your data stays yours</h3>
+            <p>
+              Azuria does not collect analytics or automatically upload logs.
+              Microsoft credentials remain in Windows Credential Manager.
+              Updates, authentication and content downloads contact their
+              providers; these preferences do not disable those services.
             </p>
           </div>
+          <p
+            v-if="privacyError || behaviourError"
+            role="alert"
+            class="inline-error"
+          >
+            {{ privacyError || behaviourError }}
+          </p>
+          <button
+            v-if="privacyError || behaviourError"
+            class="text-link"
+            @click="
+              loadPrivacy();
+              loadBehaviour();
+            "
+          >
+            Retry privacy preferences
+          </button>
         </template>
         <AccountPanel v-else-if="section === 'account'" />
         <UpdatePanel v-else-if="section === 'updates'" />
@@ -661,38 +727,44 @@ onBeforeUnmount(() => {
             :disabled="!resourceReady || busy || resourceBusy"
           >
             <legend>Download preferences</legend>
-            <label class="instance-field"
-              >Keep unused downloads (GiB)<input
-                v-model.number="resources.unusedDownloadGib"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-            /></label>
-            <p class="muted">
-              Keep up to this amount of abandoned staging downloads when you run
-              cleanup. Use 0 to clear eligible files. Recent downloads are
-              always kept for 24 hours.
-            </p>
-            <label class="instance-field"
-              >Maximum concurrent downloads<input
-                v-model.number="resources.concurrentDownloads"
-                type="number"
-                min="1"
-                max="16"
-                step="1"
-            /></label>
-            <p class="muted">
-              Limits Minecraft’s asset download pool on the next preparation.
-              Content packs currently download sequentially. Save or Reset these
-              preferences below.
-            </p>
+            <label class="settings-control-row"
+              ><span
+                ><strong>Keep unused downloads</strong
+                ><span
+                  >Keep this much abandoned content for future installs. Cleanup
+                  retains recent downloads for 24 hours.</span
+                ></span
+              ><span class="settings-unit-input"
+                ><input
+                  v-model.number="resources.unusedDownloadGib"
+                  aria-label="Keep unused downloads (GiB)"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                /><span>GiB</span></span
+              ></label
+            >
+            <label class="settings-control-row"
+              ><span
+                ><strong>Concurrent downloads</strong
+                ><span
+                  >Limit simultaneous Minecraft asset downloads. Content packs
+                  download sequentially.</span
+                ></span
+              ><span class="settings-range-control"
+                ><input
+                  v-model.number="resources.concurrentDownloads"
+                  aria-label="Maximum concurrent downloads"
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                /><output>{{ resources.concurrentDownloads }}</output></span
+              ></label
+            >
           </fieldset>
         </template>
-        <p v-if="section === 'privacy'" class="settings-inheritance">
-          This build does not collect analytics or upload your logs. Microsoft
-          credentials are handled by the desktop account system.
-        </p>
         <div
           v-for="item in planned[section] ?? []"
           :key="item.title"
@@ -706,7 +778,12 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
-    <footer class="settings-modal-footer" :inert="confirmClose">
+    <footer
+      v-if="dirty || busy || error || notice"
+      class="settings-modal-footer"
+      :class="{ 'has-edits': dirty }"
+      :inert="confirmClose"
+    >
       <div class="settings-save-status">
         <p v-if="error" class="inline-error" role="alert">{{ error }}</p>
         <p v-else role="status">
@@ -724,14 +801,16 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <button
+        v-if="dirty"
         class="button secondary"
-        :disabled="busy || resourceBusy || !dirty"
+        :disabled="busy || resourceBusy"
         @click="reset"
       >
         Reset</button
       ><button
+        v-if="dirty"
         class="button primary"
-        :disabled="busy || resourceBusy || !dirty"
+        :disabled="busy || resourceBusy"
         @click="save"
       >
         Save
