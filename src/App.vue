@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useBehaviour } from "./stores/behaviour";
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter, type RouteLocationNormalized } from "vue-router";
 import {
@@ -34,6 +35,7 @@ function focusMain() {
 }
 const updates = useUpdates();
 const store = useLauncher();
+const behaviour = useBehaviour();
 const route = useRoute();
 const router = useRouter();
 function resolveBackground(path: string): RouteLocationNormalized {
@@ -98,6 +100,7 @@ onBeforeUnmount(() => clearTimeout(noticeTimer));
 const storageReady = ref(false);
 function storagePrepared() {
   storageReady.value = true;
+  void behaviour.load();
   void store.init();
   void game.init();
   void content.init();

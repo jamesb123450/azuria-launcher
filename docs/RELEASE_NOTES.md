@@ -1,3 +1,9 @@
+# Behaviour settings and Discord activity
+
+- Enable saved Behaviour preferences for minimising after Minecraft starts, refocusing after the last game closes, hiding the right sidebar and compact library defaults, with Save and Reset.
+- Add optional Windows Discord Rich Presence showing generic Playing Minecraft activity only while the game runs. Clear activity on exit or opt-out; missing Discord never blocks launching.
+- Document the public Discord Application ID build setting and disclose the limited activity data shared with Discord.
+
 # Consistent text fields
 
 - Theme text, password, numeric and multiline fields consistently across launcher popups, including storage preferences, provider keys and content installation.

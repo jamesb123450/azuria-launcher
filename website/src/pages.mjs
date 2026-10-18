@@ -803,7 +803,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
     content = html`<section class="page-intro container">
         <h1>Privacy policy</h1>
         <p>
-          Last updated: 16 October 2026. This policy covers this website and the
+          Last updated: 18 October 2026. This policy covers this website and the
           current Azuria development launcher.
         </p>
       </section>
@@ -878,6 +878,13 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
               Those providers receive normal network request information. The
               current app does not include analytics collection or automatically
               upload your logs to the project maintainer.
+            </p>
+            <p>
+              Configured Windows builds support optional Discord Rich Presence.
+              While Minecraft runs, Azuria sends generic Playing Minecraft
+              activity and its start time to the local Discord client. Account,
+              instance, world and server names are not included. Disable this in
+              Settings → Behaviour or through Discord’s activity controls.
             </p>
           </section>
           <section id="support-data">

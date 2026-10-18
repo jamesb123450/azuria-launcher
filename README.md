@@ -28,6 +28,21 @@ Choose an instance and a compatible content version, then review the download be
 
 Modpack instances keep additional content on the instance page. **View content** opens the pack’s searchable file popup; **Switch version** lists compatible releases, beta and alpha versions with provider names, dates and changelogs. Changes require review before installation. Content installs preserve different existing files and stop on conflicts. Instance pages check for compatible stable releases and missing pack files. Review Update or Repair before applying changes. Replaced files are retained under `.azuria/backups` inside the instance; edited configuration, worlds and additional files are preserved. Modified mod or pack archives stop the update for manual conflict resolution. Pack updates keep the current Minecraft version and loader family; install a separate instance to move between them. Downloads stage separately, verify hashes, and record a recovery journal before publication. Provider search and downloads contact the selected service; search errors do not display sample results. Browser previews support public Modrinth search, but installation and CurseForge configuration require the desktop app.
 
+## Behaviour and Discord activity
+
+Settings → Behaviour provides saved defaults for minimising when Minecraft starts, refocusing after the last game closes, hiding the right sidebar and using the compact library. Save applies edits; Reset restores the last saved choices. Library layout and sidebar controls remain available for temporary changes.
+
+Configured Windows builds can show generic **Playing Minecraft** activity in Discord while Minecraft is running. Preparation alone does not publish activity. The launcher clears activity when the last game exits or Discord Rich Presence is turned off in Behaviour. No account, instance, world or server names are sent; activity includes the game start time. Discord being unavailable never prevents launching.
+
+### Enable Discord in distributed builds
+
+1. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications). Its display name appears in Discord alongside the Playing Minecraft activity.
+2. Copy its **Application ID**. This is a public numeric identifier; do not use a bot token, client secret or Microsoft client ID.
+3. In the **azuria-launcher source repository**, open **Settings → Secrets and variables → Actions → Variables → New repository variable**. Name it `AZURIA_DISCORD_APPLICATION_ID` and paste the Application ID as its value.
+4. Build a new Windows release after adding the variable. Existing installers cannot gain this build-time setting without an update. For local builds, set the same environment variable before running `npm run desktop:build`.
+
+Discord must be running with activity sharing enabled. Builds without a valid Application ID retain the preference but do not connect to Discord. Users can disable it in **Settings → Behaviour → Discord Rich Presence**.
+
 ## Download and update
 
 Get the Windows installer from the [latest published release](https://github.com/jamesb123450/azuria-releases/releases/latest). Windows is the initial supported platform; macOS and Linux builds are not currently distributed.

@@ -344,6 +344,7 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     0,
                 );
                 drop(preparation);
+                let _session = crate::behaviour::RunningSession::start(app.clone(), id.clone());
                 running.wait_with_cancel(cancel.clone())
             })();
             match result {
