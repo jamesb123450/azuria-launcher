@@ -11,7 +11,7 @@ Var AzuriaPrivacyAccepted
 ; assistive technology and retain the Windows theme/high-contrast colours.
 !define MUI_HEADERIMAGE_RIGHT
 !define MUI_WELCOMEPAGE_TITLE "Welcome to Azuria Launcher"
-!define MUI_WELCOMEPAGE_TEXT "A home for your Minecraft instances.$\r$\n$\r$\nSetup will install Azuria for your Windows account. Your instances stay in your AzuriaLauncher AppData folder.$\r$\n$\r$\nOn first installation, you will review and accept the privacy policy. Microsoft sign-in takes place later in the launcher."
+!define MUI_WELCOMEPAGE_TEXT "A home for your Minecraft instances, by Azuria Studios.$\r$\n$\r$\nSetup will install Azuria for your Windows account. Your instances stay in your AzuriaLauncher AppData folder.$\r$\n$\r$\nOn first installation, you will review and accept the privacy policy. Microsoft sign-in takes place later in the launcher."
 !define MUI_FINISHPAGE_TITLE "Azuria is ready"
 !define MUI_FINISHPAGE_TEXT "Your launcher is installed.$\r$\n$\r$\nOpen Azuria to manage instances, connect your Minecraft account and choose what to play."
 
