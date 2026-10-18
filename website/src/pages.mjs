@@ -803,158 +803,187 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
     content = html`<section class="page-intro container">
         <h1>Privacy policy</h1>
         <p>
-          Last updated: 18 October 2026. This policy covers this website and the
-          current Azuria development launcher.
+          Last updated: 18 October 2026. How Azuria handles information when you
+          visit this website or use the launcher.
         </p>
       </section>
       <div class="container legal-layout">
         <nav class="legal-toc" aria-label="Privacy sections">
-          <a href="#operator">The project</a
-          ><a href="#website-data">Website data</a
-          ><a href="#launcher-data">Launcher data</a
-          ><a href="#support-data">Support</a
-          ><a href="#your-choices">Your choices</a>
+          <a href="#operator">About this policy</a
+          ><a href="#information">Information we use</a
+          ><a href="#website-data">Website & cookies</a
+          ><a href="#sharing">Service providers</a
+          ><a href="#retention">Storage & retention</a
+          ><a href="#your-choices">Your rights</a
+          ><a href="#policy-changes">Changes & contact</a>
         </nav>
         <article class="legal-content">
           <section id="operator">
-            <h2>Who runs Azuria</h2>
+            <h2>1. About this policy</h2>
             <p>
-              Azuria is an independent project maintained by
+              Azuria Launcher is an independent Minecraft Java launcher
+              maintained by
               <a href="https://github.com/jamesb123450"
                 >jamesb123450 on GitHub</a
-              >. It is not operated by Microsoft or Mojang. The
-              <a href="${link("contact/")}">contact page</a> lists the available
-              ways to reach the project.
+              >. In this policy, “Azuria”, “we” and “our” refer to the project
+              and its maintainer. Azuria is not affiliated with Microsoft or
+              Mojang.
+            </p>
+            <p>
+              This policy covers the Azuria website, launcher and
+              project-operated content service. Third-party services have their
+              own policies. Read this alongside our
+              <a href="${link("terms/")}">terms of service</a>.
+            </p>
+          </section>
+          <section id="information">
+            <h2>2. Information we use and why</h2>
+            <p>
+              <strong>Launcher data.</strong> Preferences, Minecraft profile
+              information, instances, skins, screenshots and game logs are
+              stored on your computer to provide launcher features. Saved
+              sign-in credentials are protected using Windows Credential
+              Manager. Azuria does not receive or store your Microsoft password.
+            </p>
+            <p>
+              <strong>Accounts and downloads.</strong> Microsoft, Xbox and
+              Minecraft Services authenticate your account, check game ownership
+              and provide your profile, skins and capes. Update, game-file and
+              community-content requests include connection information, such as
+              your IP address, and relevant searches, versions or content
+              identifiers to deliver results and downloads.
+            </p>
+            <p>
+              <strong>Support.</strong> If you contact the project, we receive
+              your username, message and any attachments you choose to send. We
+              use them to respond, investigate problems and maintain the
+              project. GitHub issues are public; do not post credentials or
+              private personal information. The contact page does not currently
+              submit messages.
+            </p>
+            <p>
+              Azuria does not include launcher analytics, automatically upload
+              your game logs, sell personal information or include targeted
+              advertising in the launcher.
             </p>
           </section>
           <section id="website-data">
-            <h2>When you visit this website</h2>
+            <h2>3. Website, cookies and advertising</h2>
             <p>
-              ${adsense ? `This website displays Google AdSense ads on its home page. Google and its advertising partners may process IP addresses, device information and cookies for ad delivery, measurement and, where you consent, personalised advertising. Use the consent message to accept, reject or manage choices. See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from partner sites</a>. No website accounts or social feeds are provided.` : "This website does not create accounts, set its own cookies, store preferences in your browser or include analytics, advertising trackers or embedded social feeds."}
-              Fonts and images are hosted with the website.
-            </p>
-            <p>
-              GitHub Pages hosts the website and GitHub Releases hosts
-              downloads. GitHub receives technical request information, such as
-              your IP address and browser details, to provide and secure those
-              services. Its handling, retention and international processing of
-              that information are described in the
+              This website does not provide user accounts. Fonts and images are
+              hosted with the website. Hosting and download providers process
+              technical request information, including IP addresses, browser
+              details and requested pages, to deliver and protect their
+              services. The main website uses
+              <a href="https://vercel.com/legal/privacy-notice">Vercel</a>;
+              copies served through GitHub Pages and downloads use
               <a
                 href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
-                >GitHub Privacy Statement</a
-              >.
+                >GitHub</a
+              >. Your browser also requests public release information from
+              GitHub.
             </p>
             <p>
-              When a page opens, your browser requests the latest published
-              release from GitHub’s public API. This sends ordinary connection
-              information to GitHub; it does not send launcher settings, account
-              details or files. If the request fails, the last built release
-              information remains visible and the latest-release link still
-              works.
+              ${adsense ? `This website displays Google AdSense ads on its home page. Google and its partners may use cookies and process IP addresses, device information and browsing activity to deliver and measure ads. Where required, optional advertising processing depends on your consent. Use the consent message and its privacy controls to accept, reject, change or withdraw your choices. See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from partner sites</a>. Website advertising is separate from the Windows launcher.` : "This website does not currently set its own cookies or include analytics, advertising trackers or embedded social feeds. Optional advertising must be disclosed and the required consent controls provided before it is enabled."}
             </p>
           </section>
-          <section id="launcher-data">
-            <h2>When you use the launcher</h2>
+          <section id="sharing">
+            <h2>4. Service providers and sharing</h2>
             <p>
-              Azuria stores preferences, Minecraft profiles, instances, skins,
-              screenshots and game logs on your computer to provide its
-              features. Saved sign-in credentials are protected using Windows
-              Credential Manager. Azuria does not receive or store your
-              Microsoft password.
-            </p>
-            <p>
-              Microsoft, Xbox and Minecraft Services authenticate your account,
-              verify game ownership and provide your profile, skins and capes.
-              Their processing is described in the
+              Azuria connects to
               <a href="https://privacy.microsoft.com/privacystatement"
-                >Microsoft Privacy Statement</a
-              >.
-            </p>
-            <p>
-              Updates, game files and community content connect to GitHub,
-              Microsoft/Mojang, selected mod-loader services,
+                >Microsoft/Mojang</a
+              >, GitHub, selected mod-loader services,
               <a href="https://modrinth.com/legal/privacy">Modrinth</a>,
               <a href="https://www.curseforge.com/legal/privacy-policy"
                 >CurseForge</a
               >
-              and their download providers. Requests include connection
-              information, such as your IP address, and relevant search terms,
-              versions or content identifiers to deliver results and downloads.
+              and their download providers as needed for the features you use.
               CurseForge catalogue requests may pass through Azuria’s
               <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a
-              >-hosted service, which processes request information to forward
-              requests and protect against abuse. These providers apply their
-              own privacy policies and may process information outside your
-              country.
+              >-hosted service to forward searches and content requests and
+              prevent abuse. Microsoft tokens and game logs are not sent to this
+              service.
             </p>
             <p>
-              Azuria does not include launcher analytics, automatically upload
-              game logs, sell personal information or include targeted
-              advertising in the launcher. Optional
-              <a href="https://discord.com/privacy">Discord</a> activity shares
-              only a generic Playing Minecraft status and start time with your
-              local Discord client. Disable it in Settings → Privacy or
-              Behaviour, or through Discord’s activity controls.
+              Optional
+              <a href="https://discord.com/privacy">Discord</a> activity sends a
+              generic Playing Minecraft status and start time to your local
+              Discord client. Account, instance, world and server names are not
+              included. You can turn this off in Azuria’s Privacy or Behaviour
+              settings or Discord’s activity controls.
             </p>
             <p>
-              Local files remain until you remove them. Sign out in Profile to
-              remove saved sign-in credentials. Uninstalling does not
-              automatically delete instances, worlds, screenshots, logs, local
-              trash or backups. Privacy preferences control account reconnection
-              and visible account details. Only first installation asks you to
-              acknowledge the policy; automatic updates do not ask again.
-              Acknowledgement does not enable analytics, advertising or
-              unrelated collection.
+              Providers may process information outside your country. Their own
+              policies explain their processing, retention and
+              international-transfer arrangements. Information shared with the
+              project is used for the purposes described here; we may also
+              disclose it where required by law.
             </p>
           </section>
-          <section id="support-data">
-            <h2>Information you choose to share</h2>
+          <section id="retention">
+            <h2>5. Storage, retention and legal bases</h2>
             <p>
-              If you create a GitHub issue, the maintainer can see your GitHub
-              username and anything you submit. Issues are public. Share only
-              the details needed to investigate the problem. Never post
-              passwords, tokens, private logs or sensitive personal information.
+              Local launcher files remain until you remove them. Signing out in
+              Profile removes saved sign-in credentials. Uninstalling does not
+              automatically delete instances, worlds, screenshots, logs, local
+              trash or backups. Back up important files before deleting them.
             </p>
             <p>
-              Support information is used to answer requests, investigate faults
-              and maintain the project. The project relies on legitimate
-              interests in supporting users and maintaining secure services for
-              this processing. Public issues and their history can remain
-              available until removed through GitHub’s controls; copies may
-              exist outside the project’s control. The contact page has no
-              active message form and does not collect or send form entries.
+              Support information is kept while needed to resolve enquiries,
+              maintain the project or meet legal obligations. Public issue
+              history may remain available through GitHub, and copies may exist
+              outside our control. Providers retain their own request and
+              security records under their policies.
+            </p>
+            <p>
+              Where data protection law applies, we rely on legitimate interests
+              in responding to support requests and operating secure, reliable
+              project services. Where optional website advertising requires
+              consent, that processing is based on your consent. Other providers
+              explain their own legal bases in their policies.
             </p>
           </section>
           <section id="your-choices">
-            <h2>Your choices and rights</h2>
+            <h2>6. Your choices and rights</h2>
             <p>
-              You can use the website without signing in. To remove saved
-              launcher account credentials, sign out in Profile. Local
-              preferences and instance files remain on your device until you
-              remove them; deleting an instance may retain files in local trash.
-              See the
-              <a href="${repository}#accounts-and-local-data"
-                >storage and recovery instructions</a
-              >
-              before removing files.
+              You can browse without signing in. Launcher privacy settings
+              control account reconnection, visible account details and optional
+              Discord activity. First installation asks you to acknowledge the
+              policy; automatic updates do not ask again. Acknowledgement is not
+              consent to advertising, analytics or unrelated collection.
             </p>
             <p>
-              Depending on applicable law, you may have rights to access,
-              correct, delete or restrict the use of personal information, or to
-              object to processing. For information held by GitHub or Microsoft,
-              use that provider’s privacy request process. For information
-              shared directly with the Azuria maintainer, use the
-              <a href="${link("contact/")}">contact page</a> to request a
-              suitable route without publishing sensitive details. UK users can
-              also contact the
+              Depending on applicable law, you may request access, correction,
+              deletion, restriction or a copy of personal information held by
+              the project, or object to its processing. Where processing relies
+              on consent, you can withdraw it without affecting earlier lawful
+              processing. We may need to verify your identity to handle a
+              request. For information held independently by Microsoft or
+              another provider, use that provider’s privacy process.
+            </p>
+            <p>
+              Use the <a href="${link("contact/")}">contact page</a> to arrange
+              a suitable route for a request without publishing private details.
+              You may complain to your local data protection authority; UK users
+              can contact the
               <a href="https://ico.org.uk/make-a-complaint/"
                 >Information Commissioner’s Office</a
-              >.
+              >. Parents or guardians with concerns about a child’s information
+              can use the same contact route.
+            </p>
+          </section>
+          <section id="policy-changes">
+            <h2>7. Changes and contact</h2>
+            <p>
+              We will publish revisions here with an updated date. Material
+              changes to how personal information is used will be communicated
+              before the new processing starts. A policy update does not itself
+              give permission for new optional collection.
             </p>
             <p>
-              Changes to this policy will be published here with a revised date.
-              Material changes to how personal information is used will be
-              communicated before the new processing starts.
+              For questions about this policy, visit
+              <a href="${link("contact/")}">Contact Azuria</a>.
             </p>
           </section>
         </article>
@@ -963,99 +992,150 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
     content = html`<section class="page-intro container">
         <h1>Terms of service</h1>
         <p>
-          Last updated: 16 October 2026. These terms describe use of this
-          website and the published Azuria development builds.
+          Last updated: 18 October 2026. Please read these terms before using
+          the Azuria website or launcher.
         </p>
       </section>
-      <article class="container legal-content legal-single">
-        <section>
-          <h2>About the project</h2>
-          <p>
-            Azuria is an independent Minecraft Java launcher project maintained
-            by <a href="https://github.com/jamesb123450">jamesb123450</a>. It is
-            not an official Minecraft product and is not approved by or
-            associated with Mojang or Microsoft. Contact the project through the
-            <a href="${link("contact/")}">contact page</a>.
-          </p>
-        </section>
-        <section>
-          <h2>Development builds</h2>
-          <p>
-            Current builds are offered without charge for Windows x64. Features
-            and availability can change. Current builds support Vanilla and
-            Fabric launching with a verified Minecraft Java account. Other
-            loaders and content integrations remain in development. The
-            <a href="${link("help/")}#status">current status</a> and
-            <a href="${link("changelog/")}">release notes</a> describe available
-            functionality.
-          </p>
-          <p>
-            Development software may contain errors or stop working with
-            third-party services. Keep backups of important files and review
-            release information before updating. Future features, platform
-            support and completion dates are not promised.
-          </p>
-        </section>
-        <section>
-          <h2>Your responsibilities</h2>
-          <p>
-            Use Azuria and this website lawfully. Do not attempt to compromise
-            the website, abuse third-party services, distribute malware or
-            access accounts without permission. You are responsible for
-            protecting your device, credentials and backups.
-          </p>
-          <p>
-            Azuria does not include a Minecraft licence, paid game content or
-            permission to bypass account checks. You must have the rights needed
-            for any game, mod, resource pack or other content you use.
-            Microsoft, Minecraft and other providers’ terms continue to apply to
-            their services and content.
-          </p>
-        </section>
-        <section>
-          <h2>Downloads and third-party services</h2>
-          <p>
-            Use this website’s links to the project’s GitHub Releases for
-            official Azuria builds. Signed in-app updates and Windows publisher
-            signing are different mechanisms; current development installers are
-            not Windows Authenticode signed. Third-party websites and services
-            are operated independently and have their own terms and privacy
-            policies.
-          </p>
-        </section>
-        <section>
-          <h2>Content and source code</h2>
-          <p>
-            Azuria branding, website content and source code remain subject to
-            their owners’ rights. A public source repository does not itself
-            grant a licence to reuse all project material. Follow any licence
-            supplied with a specific file or dependency. Minecraft and other
-            third-party names and assets belong to their respective owners.
-          </p>
-          <p>
-            The hero screenshot is credited below under its own Creative Commons
-            licence. That licence applies to the credited image and does not
-            imply endorsement of Azuria.
-          </p>
-        </section>
-        <section>
-          <h2>Availability and your rights</h2>
-          <p>
-            The project does not promise uninterrupted availability,
-            compatibility with every system or error-free operation. Nothing in
-            these terms excludes or limits rights or responsibilities that
-            cannot lawfully be excluded or limited, including applicable
-            consumer rights.
-          </p>
-          <p>
-            Changes to these terms will be published here with an updated date.
-            Questions can be raised through the
-            <a href="${link("contact/")}">contact page</a>. The
-            <a href="${link("privacy/")}">privacy policy</a> explains how
-            information is handled.
-          </p>
-        </section>
-      </article>`;
+      <div class="container legal-layout">
+        <nav class="legal-toc" aria-label="Terms sections">
+          <a href="#terms-scope">About these terms</a
+          ><a href="#terms-use">Using Azuria</a
+          ><a href="#terms-conduct">Acceptable use</a
+          ><a href="#terms-content">Content & ownership</a
+          ><a href="#terms-third-parties">Third parties</a
+          ><a href="#terms-updates">Updates & availability</a
+          ><a href="#terms-rights">Your rights</a
+          ><a href="#terms-contact">Changes & contact</a>
+        </nav>
+        <article class="legal-content">
+          <section id="terms-scope">
+            <h2>1. About these terms</h2>
+            <p>
+              These terms cover the Azuria website, launcher and
+              project-operated content service, maintained by
+              <a href="https://github.com/jamesb123450">jamesb123450</a>. By
+              using these services, you agree to these terms. If you do not
+              agree, stop using them. Our
+              <a href="${link("privacy/")}">privacy policy</a> separately
+              explains how information is handled.
+            </p>
+            <p>
+              Azuria is an independent project, not an official Minecraft
+              product. It is not affiliated with, approved by or endorsed by
+              Mojang or Microsoft. Their names, trademarks and game assets
+              belong to their respective owners.
+            </p>
+          </section>
+          <section id="terms-use">
+            <h2>2. Using Azuria</h2>
+            <p>
+              Current development builds are available without charge for
+              Windows x64. Azuria does not provide a Minecraft licence or
+              permission to bypass game ownership and account checks. You must
+              have the rights needed to use Minecraft and any mods, modpacks or
+              other content you install.
+            </p>
+            <p>
+              Use an account you are authorised to access and keep your device
+              and credentials secure. Follow Microsoft’s account requirements
+              and any parental permissions that apply to you. You can stop using
+              Azuria at any time. Signing out and uninstalling are separate from
+              deleting local worlds and other files.
+            </p>
+          </section>
+          <section id="terms-conduct">
+            <h2>3. Acceptable use</h2>
+            <p>
+              Use Azuria lawfully and respect other people’s rights. Do not
+              distribute malware, access accounts without permission, interfere
+              with security controls or abuse the project’s or a provider’s
+              services. Automated requests must respect service limits and
+              provider rules.
+            </p>
+            <p>
+              We may restrict access to project-operated online services where
+              reasonably necessary to address abuse, protect security or comply
+              with law. This does not transfer ownership of your local files or
+              your Minecraft account to Azuria.
+            </p>
+          </section>
+          <section id="terms-content">
+            <h2>4. Content and ownership</h2>
+            <p>
+              Azuria branding, website content and software remain subject to
+              their owners’ rights. Follow the licence supplied with a file,
+              dependency or downloaded item. Access to a repository or download
+              does not by itself grant permission to copy, redistribute or
+              commercially reuse all project material. These terms do not
+              override rights granted by a separate licence or applicable law.
+            </p>
+            <p>
+              Your worlds, screenshots and other local creations remain yours,
+              subject to any rights in third-party material they contain.
+              Installing or using Azuria does not grant the project ownership of
+              those files.
+            </p>
+          </section>
+          <section id="terms-third-parties">
+            <h2>5. Third-party content and services</h2>
+            <p>
+              Microsoft, Mojang, GitHub, mod loaders, Modrinth, CurseForge,
+              Discord and other linked services operate independently. Their
+              terms, licences, account requirements and privacy policies apply
+              when you use them. Azuria cannot guarantee their availability or
+              continued compatibility.
+            </p>
+            <p>
+              Mods and modpacks are supplied by their authors and may change the
+              game or access files on your device. Review their source and
+              permissions, choose downloads carefully and keep backups.
+              Availability in a catalogue does not make an item an Azuria-owned
+              product or guarantee it is suitable for every setup.
+            </p>
+          </section>
+          <section id="terms-updates">
+            <h2>6. Downloads, updates and availability</h2>
+            <p>
+              Use the download links on this website for official releases. The
+              launcher checks for and installs available updates automatically.
+              Privacy acknowledgement is requested only on first installation;
+              automatic updates do not request it again.
+            </p>
+            <p>
+              Azuria remains in development. Features, system requirements and
+              service availability may change, and builds may contain errors. We
+              do not promise uninterrupted service, compatibility with every
+              system or a completion date for planned features. The
+              <a href="${link("changelog/")}">release notes</a> describe
+              published changes. Keep backups of important worlds and files.
+            </p>
+          </section>
+          <section id="terms-rights">
+            <h2>7. Your rights and our responsibilities</h2>
+            <p>
+              To the extent permitted by law, development builds are provided as
+              available without a guarantee of error-free operation. Nothing in
+              these terms excludes or limits liability for fraud, death or
+              personal injury caused by negligence, or any other liability that
+              cannot lawfully be excluded. Your statutory consumer rights remain
+              unaffected.
+            </p>
+          </section>
+          <section id="terms-contact">
+            <h2>8. Changes and contact</h2>
+            <p>
+              Revised terms will be published here with an updated date.
+              Material changes will be brought to users’ attention before they
+              take effect. Changes do not remove rights that have already
+              arisen. If you no longer agree, you can stop using Azuria.
+            </p>
+            <p>
+              For questions, support or concerns about these terms, visit
+              <a href="${link("contact/")}">Contact Azuria</a>.
+            </p>
+          </section>
+        </article>
+      </div>`;
   if (page === "contact")
     content = html`<section class="page-intro container">
         <h1>Contact Azuria</h1>
