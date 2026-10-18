@@ -880,8 +880,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
               <a
                 href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
                 >GitHub</a
-              >. Your browser also requests public release information from
-              GitHub.
+              >. Your browser also requests the latest published release from
+              GitHub’s public API.
             </p>
             <p>
               ${adsense ? `This website displays Google AdSense ads on its home page. Google and its partners may use cookies and process IP addresses, device information and browsing activity to deliver and measure ads. Where required, optional advertising processing depends on your consent. Use the consent message and its privacy controls to accept, reject, change or withdraw your choices. See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from partner sites</a>. Website advertising is separate from the Windows launcher.` : "This website does not currently set its own cookies or include analytics, advertising trackers or embedded social feeds. Optional advertising must be disclosed and the required consent controls provided before it is enabled."}
@@ -1117,8 +1117,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
               available without a guarantee of error-free operation. Nothing in
               these terms excludes or limits liability for fraud, death or
               personal injury caused by negligence, or any other liability that
-              cannot lawfully be excluded. Your statutory consumer rights remain
-              unaffected.
+              cannot lawfully be excluded. Your statutory rights, including
+              applicable consumer rights, remain unaffected.
             </p>
           </section>
           <section id="terms-contact">

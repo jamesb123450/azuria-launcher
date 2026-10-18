@@ -227,7 +227,9 @@ test("release metadata accepts only published releases and assets from this repo
 });
 
 test("public policies, contact route and real screenshot credit are present", async () => {
-  const privacy = await readFile(resolve(root, "privacy/index.html"), "utf8");
+  const privacy = (
+    await readFile(resolve(root, "privacy/index.html"), "utf8")
+  ).replace(/\s+/g, " ");
   const terms = await readFile(resolve(root, "terms/index.html"), "utf8");
   const contact = await readFile(resolve(root, "contact/index.html"), "utf8");
   assert.match(privacy, /GitHub’s public API/);
