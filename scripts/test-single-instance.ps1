@@ -11,8 +11,26 @@ $children = @()
 function Assert($condition, $message) { if (-not $condition) { throw $message } }
 Add-Type @'
 using System;
+using System.Text;
 using System.Runtime.InteropServices;
 public static class AzuriaSingleInstanceWindow {
+  private delegate bool EnumProc(IntPtr h, IntPtr data);
+  [DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc callback, IntPtr data);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr h, StringBuilder title, int count);
+  public static IntPtr FindLauncherWindow(uint processId) {
+    IntPtr found = IntPtr.Zero;
+    EnumWindows((h, unused) => {
+      uint owner;
+      GetWindowThreadProcessId(h, out owner);
+      if (owner != processId) return true;
+      var title = new StringBuilder(512);
+      GetWindowText(h, title, title.Capacity);
+      if (title.ToString() != "Azuria Launcher") return true;
+      found = h;
+      return false;
+    }, IntPtr.Zero);
+    return found;
+  }
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int command);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
@@ -30,13 +48,16 @@ try {
   for ($i = 0; $i -lt 300; $i++) {
     $primary.Refresh()
     Assert (-not $primary.HasExited) 'Primary launcher exited during startup.'
-    if ($primary.MainWindowHandle -ne 0) {
-      $window = $primary.MainWindowHandle
+    # Debug executables can have a console as well as the launcher window.
+    # Process.MainWindowHandle does not identify which one it returns.
+    $window = [AzuriaSingleInstanceWindow]::FindLauncherWindow($primary.Id)
+    if ($window -ne 0 -and [AzuriaSingleInstanceWindow]::IsWindowVisible($window)) {
       break
     }
     Start-Sleep -Milliseconds 200
   }
-  Assert ($window -ne 0) 'The launcher did not create its main window.'
+  Assert ($window -ne 0 -and [AzuriaSingleInstanceWindow]::IsWindowVisible($window)) 'The launcher did not create its visible main window.'
+  Write-Output "Testing Azuria main window $window in original PID $($primary.Id)."
 
   # Closing to tray hides this same window. Also cover minimised and visible states.
   foreach ($state in @('hidden', 'minimised', 'visible')) {
