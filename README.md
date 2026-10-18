@@ -61,6 +61,12 @@ Azuria checks for updates on every startup and downloads available releases auto
 
 Update packages are verified with the public signing key bundled in Azuria. This is separate from Windows Authenticode signing: development installers may still display an unknown-publisher or SmartScreen prompt.
 
+## Windows setup
+
+The Windows installer uses Azuria artwork and native, keyboard-accessible setup controls. First installation requires reading and accepting the included offline privacy policy before continuing. Cancel exits setup. A local policy fingerprint is saved only after successful installation; a changed policy requires acceptance again. Unattended updates can reuse an unchanged accepted policy, while an unaccepted policy opens an interactive step or stops a silent installation. No optional preferences are enabled by accepting the policy.
+
+Installer sources, policy maintenance and validation are documented in [the installer guide](src-tauri/installer/README.md).
+
 ## Accounts and local data
 
 Microsoft sign-in opens the default browser. Authentication runs through the native Windows backend; saved refresh credentials use Windows Credential Manager. Account tokens are not exposed to the web interface or stored in the instance database. Signing out removes Azuria’s saved account without signing the browser out of Microsoft.
