@@ -277,6 +277,9 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
         ).length,
     ),
   ).toBe(1);
+  await expect(page.locator(".topbar").getByRole("status")).toHaveText(
+    "1 instance running",
+  );
   await page.screenshot({
     path: test.info().outputPath("vanilla-running.png"),
   });
@@ -296,9 +299,14 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
   await expect(
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
+  await expect(page.locator(".topbar").getByRole("status")).toHaveText(
+    "No instances running",
+  );
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.getByRole("button", { name: "Stop", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Preparation cancelled");
+  await expect(page.locator(".launch-status")).toContainText(
+    "Preparation cancelled",
+  );
 });
 test("account failure stays actionable and does not invent a running process", async ({
   page,
