@@ -46,20 +46,24 @@ test("instance navigation, general settings, defaults and overrides persist", as
   ).toBeVisible();
   await page.getByRole("button", { name: "Logs", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Logs are available in the desktop app" }),
+    page.getByRole("heading", {
+      name: "Logs are available in the desktop app",
+    }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
     .getByLabel("Instance name", { exact: true })
     .fill("Aurora renamed");
   await page.getByRole("button", { name: "Save details" }).click();
-  await expect(page.getByRole("status")).toContainText(
+  await expect(page.locator(".instance-feedback")).toContainText(
     "Instance details saved",
   );
   await page.getByRole("button", { name: "Overrides", exact: true }).click();
   await page.getByLabel("Memory allocation in MB").fill("8192");
   await page.getByRole("button", { name: "Save overrides" }).click();
-  await expect(page.getByRole("status")).toContainText("Overrides saved");
+  await expect(page.locator(".instance-feedback")).toContainText(
+    "Overrides saved",
+  );
   await page.getByRole("button", { name: "Close instance settings" }).click();
   await page.reload();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
