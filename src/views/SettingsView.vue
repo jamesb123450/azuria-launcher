@@ -24,6 +24,8 @@ import {
   ShieldCheck,
   Users,
 } from "@lucide/vue";
+import { useBehaviour } from "../stores/behaviour";
+import { behaviourApi, defaultBehaviour } from "../behaviour-api";
 import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
 import { desktop } from "../api";
@@ -44,6 +46,7 @@ import "./instance.css";
 import "./settings.css";
 const emit = defineEmits<{ close: [] }>();
 const store = useLauncher();
+const behaviourStore = useBehaviour();
 const updates = useUpdates();
 const route = useRoute();
 const router = useRouter();
@@ -106,24 +109,6 @@ const planned: Record<string, { title: string; description: string }[]> = {
     {
       title: "Instance tabs",
       description: "Choose which content tabs appear in your instances.",
-    },
-  ],
-  behaviour: [
-    {
-      title: "Minimise when Minecraft starts",
-      description: "Keep the launcher out of the way while playing.",
-    },
-    {
-      title: "Refocus after Minecraft closes",
-      description: "Return to Azuria when your game ends.",
-    },
-    {
-      title: "Sidebar visibility",
-      description: "Choose whether the right sidebar opens by default.",
-    },
-    {
-      title: "Compact library",
-      description: "Display instances in a smaller row layout.",
     },
   ],
   language: [
@@ -253,15 +238,80 @@ watch(
   },
   { immediate: true },
 );
+const behaviourForm = ref(defaultBehaviour());
+const behaviourSnapshot = ref(JSON.stringify(behaviourForm.value));
+const behaviourLoaded = ref(false);
+const behaviourError = ref("");
+const discordConfigured = ref(false);
+const behaviourChanged = computed(
+  () =>
+    behaviourLoaded.value &&
+    JSON.stringify(behaviourForm.value) !== behaviourSnapshot.value,
+);
+const behaviourItems = [
+  {
+    key: "minimiseOnStart",
+    title: "Minimise when Minecraft starts",
+    description: "Keep Azuria out of the way once the game is running.",
+  },
+  {
+    key: "refocusOnExit",
+    title: "Refocus after Minecraft closes",
+    description: "Bring Azuria back when your last running game exits.",
+  },
+  {
+    key: "hideRightSidebar",
+    title: "Hide the right sidebar by default",
+    description:
+      "Start with more space in your library. You can still show the sidebar from its toolbar button.",
+  },
+  {
+    key: "compactLibrary",
+    title: "Compact library",
+    description:
+      "Open your instances in the compact list view. The grid and list buttons remain available.",
+  },
+  {
+    key: "discordPresence",
+    title: "Discord Rich Presence",
+    description:
+      "Show that you are playing Minecraft while a game is running. Account details, server addresses and world names are never included.",
+  },
+] as const;
+async function loadBehaviour() {
+  behaviourError.value = "";
+  await behaviourStore.load();
+  if (!behaviourStore.ready) {
+    behaviourError.value = behaviourStore.error;
+    return;
+  }
+  behaviourForm.value = { ...behaviourStore.options };
+  behaviourSnapshot.value = JSON.stringify(behaviourForm.value);
+  behaviourLoaded.value = true;
+  try {
+    discordConfigured.value = await behaviourApi.discordConfigured();
+  } catch {
+    discordConfigured.value = false;
+  }
+}
+watch(
+  section,
+  (value) => {
+    if (value === "behaviour" && !behaviourLoaded.value) void loadBehaviour();
+  },
+  { immediate: true },
+);
 const dirty = computed(
   () =>
     loaded.value &&
-    (resourceChanged.value ||
+    (behaviourChanged.value ||
+      resourceChanged.value ||
       keyChanged.value ||
       theme.value !== savedTheme.value ||
       JSON.stringify(form.value) !== snapshot.value),
 );
 function reset() {
+  behaviourForm.value = JSON.parse(behaviourSnapshot.value);
   resources.value = JSON.parse(resourceSnapshot.value);
   curseforgeKey.value = "";
   removeCurseforgeKey.value = false;
@@ -315,6 +365,10 @@ async function save() {
       if (store.settings.theme !== theme.value)
         throw new Error("Appearance could not be saved. Please retry.");
       savedTheme.value = theme.value;
+    }
+    if (behaviourChanged.value) {
+      await behaviourStore.save(behaviourForm.value);
+      behaviourSnapshot.value = JSON.stringify(behaviourForm.value);
     }
     if (resourceChanged.value) {
       await resourceApi.save(resources.value);
@@ -489,6 +543,52 @@ onBeforeUnmount(() => {
             <span class="coming-soon">Coming soon</span>
           </div></template
         >
+        <template v-else-if="section === 'behaviour'">
+          <p class="settings-inheritance">
+            Choose how Azuria behaves while you play. Changes apply after Save.
+          </p>
+          <p v-if="!desktop" class="muted">
+            Window actions and Discord presence work in the Windows app.
+          </p>
+          <label
+            v-for="item in behaviourItems"
+            :key="item.key"
+            class="settings-behaviour-row"
+          >
+            <span
+              ><strong>{{ item.title }}</strong
+              ><span :id="'behaviour-' + item.key">{{
+                item.description
+              }}</span></span
+            >
+            <input
+              v-model="behaviourForm[item.key]"
+              type="checkbox"
+              role="switch"
+              :aria-label="item.title"
+              :aria-describedby="'behaviour-' + item.key"
+              :disabled="!behaviourLoaded || busy"
+            />
+          </label>
+          <p v-if="!discordConfigured" class="settings-inheritance">
+            Discord presence is unavailable in this build. Your preference is
+            kept for builds that support it.
+          </p>
+          <p v-else class="muted">
+            Discord must be running with activity sharing enabled. No Discord
+            sign-in is needed in Azuria.
+          </p>
+          <p v-if="behaviourError" class="inline-error" role="alert">
+            {{ behaviourError }}
+          </p>
+          <button
+            v-if="behaviourError"
+            class="button secondary"
+            @click="loadBehaviour"
+          >
+            Retry behaviour settings
+          </button>
+        </template>
         <template v-else-if="section === 'providers'">
           <p class="settings-inheritance">
             Modrinth search and downloads use its public API. CurseForge

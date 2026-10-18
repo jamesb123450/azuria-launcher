@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAccount } from "../stores/account";
 const account = useAccount();
-import { computed, nextTick, onBeforeUnmount, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import {
   Plus,
   Search,
@@ -28,6 +28,7 @@ import LaunchControl from "../components/LaunchControl.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import VersionPicker from "../components/VersionPicker.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
+import { useBehaviour } from "../stores/behaviour";
 import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
 import type { Instance } from "../types";
@@ -35,6 +36,7 @@ import { LOADERS, loaderName } from "../types";
 import { useRouter } from "vue-router";
 const router = useRouter();
 const store = useLauncher();
+const behaviour = useBehaviour();
 const updates = useUpdates();
 const search = ref("");
 const filter = ref("all");
@@ -49,12 +51,30 @@ const deleting = ref<Instance>();
 const deleteDialog = ref<HTMLDialogElement>();
 const deleteCancel = ref<HTMLButtonElement>();
 const filtersOpen = ref(false);
-const contextOpen = ref(true);
+const contextOverride = ref<boolean>();
+const contextOpen = computed({
+  get: () => contextOverride.value ?? !behaviour.options.hideRightSidebar,
+  set: (value) => (contextOverride.value = value),
+});
+watch(
+  () => behaviour.options.hideRightSidebar,
+  () => (contextOverride.value = undefined),
+);
 const actionMenu = ref<string>();
 const setupComplete = computed(
   () => !!store.instances.length && account.view.verified,
 );
-const layout = ref<"grid" | "list">("grid");
+const layoutOverride = ref<"grid" | "list">();
+const layout = computed({
+  get: () =>
+    layoutOverride.value ??
+    (behaviour.options.compactLibrary ? "list" : "grid"),
+  set: (value: "grid" | "list") => (layoutOverride.value = value),
+});
+watch(
+  () => behaviour.options.compactLibrary,
+  () => (layoutOverride.value = undefined),
+);
 const recent = computed(() => {
   const newest = [...store.instances].sort((a, b) => b.createdAt - a.createdAt);
   return newest.filter((i) => i.id !== store.selected?.id).slice(0, 3);

@@ -12,6 +12,8 @@ on:
       - ".github/workflows/website.yml"
       - ".github/scripts/release-scope.mjs"
   workflow_dispatch:
+env:
+  AZURIA_DISCORD_APPLICATION_ID: ${{ vars.AZURIA_DISCORD_APPLICATION_ID }}
 permissions:
   contents: read
 concurrency:

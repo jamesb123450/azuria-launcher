@@ -324,3 +324,60 @@
   margin-bottom: 20px;
   line-height: 1.6;
 }
+
+.settings-behaviour-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.settings-behaviour-row > span {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.settings-behaviour-row strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+.settings-behaviour-row > span > span {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.settings-behaviour-row input {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 22px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--input);
+  margin: 0;
+  cursor: pointer;
+}
+.settings-behaviour-row input::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.settings-behaviour-row input:checked {
+  background: var(--pink);
+  border-color: var(--pink);
+}
+.settings-behaviour-row input:checked::before {
+  left: 17px;
+  background: var(--bg);
+}
+.settings-behaviour-row input:disabled {
+  cursor: not-allowed;
+}
