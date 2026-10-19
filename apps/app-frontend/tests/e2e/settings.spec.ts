@@ -6,9 +6,21 @@ test("settings stage edits across categories, reset and persist only on Save", a
   await page.goto("/#/settings");
   const popup = page.getByRole("dialog", { name: "Settings", exact: true });
   await expect(popup).toBeVisible();
+  await expect(
+    popup.getByRole("button", { name: "Light Use the light theme" }),
+  ).toBeEnabled();
+  const initialTheme = await page.locator("html").getAttribute("data-theme");
   await popup
     .getByRole("button", { name: "Light Use the light theme" })
     .click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("azuria-preview-v1") || "{}").settings
+          ?.theme,
+    ),
+  ).not.toBe("light");
   await popup
     .getByRole("button", { name: "Java & memory", exact: true })
     .click();
@@ -18,6 +30,10 @@ test("settings stage edits across categories, reset and persist only on Save", a
   await page.getByRole("button", { name: "Keep editing" }).click();
   await popup.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(popup.getByLabel("Memory allocation in MB")).toHaveValue("4096");
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-theme",
+    initialTheme!,
+  );
   await popup.getByLabel("Memory allocation in MB").fill("6144");
   await popup.getByRole("button", { name: "Appearance", exact: true }).click();
   await popup

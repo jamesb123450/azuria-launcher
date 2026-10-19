@@ -4,7 +4,6 @@ import VersionsView from "./views/VersionsView.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ProjectView from "./views/ProjectView.vue";
 import DiscoverView from "./views/DiscoverView.vue";
-import RoadmapView from "./views/RoadmapView.vue";
 import WardrobeView from "./views/WardrobeView.vue";
 import ScreenshotsView from "./views/ScreenshotsView.vue";
 import InstanceView from "./views/InstanceView.vue";
@@ -32,7 +31,6 @@ export const router = createRouter({
     },
     { path: "/discover", component: DiscoverView },
     { path: "/discover/:provider/:kind/:project", component: ProjectView },
-    { path: "/roadmap", component: RoadmapView },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });

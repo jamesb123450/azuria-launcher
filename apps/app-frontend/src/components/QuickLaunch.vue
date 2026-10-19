@@ -17,6 +17,7 @@ import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
 import { desktop } from "../api";
 import { loaderName } from "../types";
+defineProps<{ compact?: boolean }>();
 const quick = useQuickPlay(),
   game = useGame(),
   account = useAccount(),
@@ -123,6 +124,7 @@ async function launch() {
           ></span
         ></button
       ><button
+        v-if="!compact"
         ref="picker"
         class="launch-dropdown"
         :disabled="quick.preparing || !!active"
@@ -157,6 +159,7 @@ async function launch() {
       >
     </div>
     <dialog
+      v-if="!compact"
       ref="dialog"
       class="quick-version-dialog"
       aria-labelledby="quick-version-heading"

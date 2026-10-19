@@ -95,6 +95,7 @@ test("version and loader picker persists selection, restores focus and supports 
   await page.getByLabel("Include snapshots & older builds").check();
   await page.getByRole("button", { name: "Choose Minecraft 24w14a" }).click();
   await expect(page.locator(".launch-main")).toContainText("24w14a");
+  await page.getByRole("link", { name: "Home", exact: true }).click();
   await page.getByRole("button", { name: "Choose version and loader" }).click();
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();

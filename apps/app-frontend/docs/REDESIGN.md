@@ -47,3 +47,11 @@ setup through the Home launch button.
 The news section intentionally displays Coming soon. Artwork credits are available
 under the hero and in `public/scenery/CREDITS.md`; provider asset sources live in
 `public/providers/CREDITS.md`.
+
+## Versions and appearance refinements
+
+The Versions catalogue groups release patches into portrait cards (1.x by minor version, 26+ by year). Mojang catalogue order is preserved; snapshots and historical builds stay separate. Selecting a card updates the right context panel without navigating away. The patch selector and Vanilla/Fabric controls feed the existing quick-play store. The compact launch control reuses Home's account checks, automatic setup mapping, launch progress and cancellation paths. Unsupported loaders are not presented as available. Saved setups remains a separate tab.
+
+Version art is local, with sources in `public/version-art/README.md`. Release illustrations and screenshots come from Mojang's official launcher feed; unmapped versions use clearly generic existing Minecraft scenery. The sidebar uses Play for Home, removes Development, and puts its separator above Saved setups and Settings.
+
+Appearance selection temporarily overrides the rendered theme without changing persisted settings. Save commits through the existing settings API; Reset restores the last saved choice. Discard and unmount remove the preview. System-theme changes also respect the active preview. Other settings continue to require Save. The footer version area has a subtle dark gradient; scrollbars and Home scenery blur share the app theme.
