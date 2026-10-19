@@ -259,7 +259,7 @@ test("public policies, contact route and real screenshot credit are present", as
     assert.ok((await stat(resolve(root, asset))).isFile(), asset);
 });
 
-test("panorama assets are packaged and unsupported WebGL keeps the static fallback", async () => {
+test("scenery assets stay packaged and the homepage uses a static fallback", async () => {
   const { mountPanorama } = await import("../src/panorama.js");
   await mountPanorama({ getContext: () => null });
   for (let index = 0; index < 6; index++) {
@@ -268,10 +268,8 @@ test("panorama assets are packaged and unsupported WebGL keeps the static fallba
     );
   }
   const html = await readFile(resolve(root, "index.html"), "utf8");
-  assert.match(
-    html,
-    /data-panorama-base="\/azuria-releases\/assets\/panorama-"/,
-  );
+  assert.match(html, /class="premium-scenery"/);
+  assert.doesNotMatch(html, /<canvas|data-panorama-base/);
   assert.doesNotMatch(html, /explore-sidebar/);
   assert.ok(
     html.indexOf('class="hero-shot"') < html.indexOf('class="section-intro"'),

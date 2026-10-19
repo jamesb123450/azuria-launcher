@@ -1,3 +1,4 @@
+import { renderHomepage } from "./homepage.mjs";
 // Named HTML templates let the formatter keep page markup readable.
 // Dynamic release content and attribute values are escaped at their call sites.
 const html = (parts, ...values) =>
@@ -139,7 +140,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
   const header = html`<a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
-        <a class="wordmark" href="${link("")}" aria-label="Azuria home"
+        <a class="wordmark" href="${link("")}" aria-label="Azuria Launcher home"
           ><img
             src="${asset("azuria.png")}"
             width="44"
@@ -168,24 +169,43 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
         >
       </div>
     </header>`;
-  const footer = html`<footer class="site-footer">
-    <div class="footer-top">
-      <a class="wordmark" href="${link("")}"
-        ><img src="${asset("azuria.png")}" width="30" height="30" alt="" /><span
-          >azuria</span
-        ></a
-      >
-      <p>Minecraft Java, organised your way.</p>
-      <a href="${repository}">View the project ${icon("external", 13)}</a>
-    </div>
-    <div class="footer-bottom">
-      <span>Developed and maintained by Azuria Studios.</span>
+  const footer = html`<footer class="site-footer premium-footer">
+    <div class="premium-footer-grid">
       <div>
-        <a href="${link("privacy/")}">Privacy policy</a
+        <a class="wordmark" href="${link("")}"
+          ><img
+            src="${asset("azuria.png")}"
+            width="40"
+            height="40"
+            alt=""
+          /><span>azuria</span></a
+        >
+        <p>
+          A home for your Minecraft instances.<br />Developed and maintained by
+          Azuria Studios.
+        </p>
+      </div>
+      <div>
+        <h2>The launcher</h2>
+        <a href="${link("downloads/")}">Downloads</a
+        ><a href="${link("changelog/")}">Changelog</a
+        ><a href="${link("help/")}">Help &amp; support</a
+        ><a href="${repository}">GitHub ${icon("external", 13)}</a>
+      </div>
+      <div>
+        <h2>Azuria Studios</h2>
+        <a href="${link("contact/")}">Contact</a
+        ><a href="${link("privacy/")}">Privacy policy</a
         ><a href="${link("terms/")}">Terms of service</a
-        ><a href="${link("contact/")}">Contact</a
         ><a href="${repository}/issues">Report an issue</a>
       </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© Azuria Studios</span
+      ><span
+        >Not an official Minecraft product. Not approved by or associated with
+        Mojang or Microsoft.</span
+      >
     </div>
     <p class="image-credit">
       Minecraft cherry grove:
@@ -197,309 +217,21 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
       >. Panorama and fallback image converted to WebP and displayed with a
       contrast overlay. Not captured in Azuria.
     </p>
-    <p class="disclaimer">
-      Not an official Minecraft product. Not approved by or associated with
-      Mojang or Microsoft.
-    </p>
   </footer>`;
   let content = "";
   if (page === "home") {
-    const summary = (release) =>
-      (release.notes || "")
-        .split(/\r?\n/)
-        .find((line) => line.startsWith("- "))
-        ?.slice(2) || "Read the published release notes.";
-    content = html`<section class="brand-hero">
-        <canvas
-          class="hero-scene"
-          data-panorama
-          data-panorama-base="${asset("panorama-")}"
-          aria-hidden="true"
-        ></canvas>
-        <div class="hero container">
-          <div class="hero-copy">
-            <img
-              class="hero-mark"
-              src="${asset("azuria.png")}"
-              width="160"
-              height="160"
-              alt=""
-            />
-            <h1>Azuria Launcher</h1>
-            <p class="hero-tagline">A home for your Minecraft instances.</p>
-            <div class="hero-actions">
-              ${download("View Windows download")}<a
-                class="quiet-link"
-                href="#features"
-                >Explore the launcher</a
-              >
-            </div>
-            <p class="download-meta">
-              <span data-latest-version>${e(latest.tag)}</span> for Windows x64
-            </p>
-            <p class="hero-disclosure">
-              <strong>Development preview.</strong> Windows x64 · Minecraft Java
-              Edition. Vanilla and Fabric launching supported.
-              <a href="${link("help/")}#status">Current status</a>
-            </p>
-          </div>
-        </div>
-      </section>
-      <section
-        id="features"
-        class="section container launcher-showcase"
-        aria-label="Azuria launcher features"
-      >
-        <figure class="hero-shot">
-          <img
-            src="${asset("library.webp")}"
-            alt="Azuria’s current library with sample Vanilla and Fabric instances, Play controls and a player skin head."
-            width="1280"
-            height="900"
-            fetchpriority="high"
-          />
-          <figcaption>
-            Current launcher interface with sample instances and a demo account.
-          </figcaption>
-        </figure>
-        <div class="section-intro">
-          <h2>Organise your Minecraft instances.</h2>
-          <p>
-            Keep version and loader settings separate. Search, group and
-            favourite your setups, and give each one its own icon.
-          </p>
-        </div>
-        <div class="feature-details">
-          <div>
-            <h3>A setup for each version</h3>
-            <p>
-              Choose Minecraft and loader versions without mixing up your
-              instance settings.
-            </p>
-          </div>
-          <div>
-            <h3>Find the right instance</h3>
-            <p>
-              Search your library, group related setups and keep favourites
-              close.
-            </p>
-          </div>
-          <div>
-            <h3>Recognise it at a glance</h3>
-            <p>Choose an icon and colour, or add your own artwork.</p>
-          </div>
-        </div>
-        <p class="small-note">
-          Play prepares game files and Java automatically for Vanilla and
-          Fabric. Forge, NeoForge and Quilt launching remain in development.
-        </p>
-        <details class="create-detail">
-          <summary>See instance creation</summary>
-          <figure class="detail-shot">
-            <img
-              src="${asset("create.webp")}"
-              alt="Azuria’s Create instance screen with the Custom setup option."
-              width="1280"
-              height="900"
-              loading="lazy"
-            />
-            <figcaption>
-              Create an instance, then choose its version and loader settings.
-            </figcaption>
-          </figure>
-        </details>
-      </section>
-      <section
-        class="section container product-tour"
-        aria-labelledby="tour-heading"
-      >
-        <div class="section-intro">
-          <h2 id="tour-heading">More of your launcher, in one place.</h2>
-          <p>Manage how you play, how you look and what each instance needs.</p>
-        </div>
-        <article class="product-feature">
-          <div class="product-feature-copy">
-            <span class="section-kicker">Skins &amp; capes</span>
-            <h3>A wardrobe of your own.</h3>
-            <p>
-              Save skins locally, turn the character preview to inspect them,
-              choose Classic or Slim arms and select a cape you own. Apply your
-              choice to your Minecraft account when you’re ready.
-            </p>
-            <p class="small-note">
-              Official Steve texture shown with a demo account. Cape choices
-              depend on your account.
-            </p>
-          </div>
-          <figure class="detail-shot">
-            <img
-              src="${asset("skins.webp")}"
-              width="1280"
-              height="900"
-              loading="lazy"
-              alt="Current Azuria skin selector with a rotatable Steve preview and a saved skin card."
-            />
-            <figcaption>
-              Saved skins and an interactive character preview.
-            </figcaption>
-          </figure>
-        </article>
-        <article class="product-feature reverse">
-          <div class="product-feature-copy">
-            <span class="section-kicker">Launcher settings</span>
-            <h3>Make it feel right.</h3>
-            <p>
-              Appearance, account controls, Java, memory and window defaults sit
-              in a centred settings popup. Save when you’re happy, or Reset to
-              return to your last saved values.
-            </p>
-            <p class="small-note">
-              Features still in development are marked in the app.
-            </p>
-          </div>
-          <figure class="detail-shot">
-            <img
-              src="${asset("settings.webp")}"
-              width="1280"
-              height="900"
-              loading="lazy"
-              alt="Azuria’s centred settings popup with category navigation, theme cards and fixed Save and Reset buttons."
-            />
-            <figcaption>
-              One settings popup with changes kept until you save.
-            </figcaption>
-          </figure>
-        </article>
-        <article class="product-feature">
-          <div class="product-feature-copy">
-            <span class="section-kicker">Your instances</span>
-            <h3>Everything for one world.</h3>
-            <p>
-              Open an instance for its content, worlds, screenshots and live
-              logs. Use per-instance overrides for Java, memory and window
-              preferences without changing your launcher defaults.
-            </p>
-            <p class="small-note">
-              Play becomes Stop during preparation and while Minecraft runs.
-              Screenshots can be previewed, exported or opened in their folder.
-            </p>
-          </div>
-          <figure class="detail-shot">
-            <img
-              src="${asset("instance.webp")}"
-              width="1280"
-              height="900"
-              loading="lazy"
-              alt="Azuria’s current instance page with Play, content navigation, logs, screenshots and settings controls."
-            />
-            <figcaption>
-              Instance detail view with sample library content.
-            </figcaption>
-          </figure>
-        </article>
-      </section>
-      <section id="appearance" class="appearance-section">
-        <div class="container appearance-grid">
-          <div class="section-copy">
-            <h2>Choose your appearance.</h2>
-            <p>
-              Dark, light or your system setting. The same controls with
-              Azuria’s pink and blue details.
-            </p>
-            <div
-              class="preview-switch"
-              role="group"
-              aria-label="Launcher appearance preview"
-            >
-              <button
-                aria-pressed="true"
-                data-preview-image="${asset("library.webp")}"
-                data-preview-alt="Azuria’s dark library with sample instance configurations."
-                data-preview-caption="Dark appearance, populated library"
-              >
-                Dark</button
-              ><button
-                aria-pressed="false"
-                data-preview-image="${asset("library-light.webp")}"
-                data-preview-alt="Azuria’s light appearance with the same sample instances."
-                data-preview-caption="Light appearance, sample library"
-              >
-                Light
-              </button>
-            </div>
-            <p class="small-note">
-              The same sample library in both themes. This control switches the
-              launcher preview; the website keeps its dark appearance.
-            </p>
-          </div>
-          <figure class="appearance-shot">
-            <img
-              data-theme-preview
-              src="${asset("library.webp")}"
-              width="1280"
-              height="900"
-              alt="Azuria’s dark library with sample instance configurations."
-              loading="lazy"
-            />
-            <figcaption data-preview-caption>
-              Dark appearance, populated library
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-      <section id="updates" class="section container updates-section">
-        <div class="section-topline">
-          <div>
-            <h2>Latest release</h2>
-            <p>What changed, straight from the published notes.</p>
-          </div>
-          <a class="text-link" href="${link("changelog/")}">Full changelog</a>
-        </div>
-        <div class="update-grid">
-          ${releases
-            .slice(0, 3)
-            .map(
-              (release, index) =>
-                html`<article
-                  class="update-card"
-                  ${index === 0 ? "data-latest-card" : ""}
-                >
-                  <a
-                    class="update-cover"
-                    href="${safeReleaseURL(release.url) ? e(release.url) : releaseURL}"
-                    aria-label="Read ${e(release.tag)} release notes"
-                    ><span>${e(release.tag)}</span
-                    >${index === 0 ? "<small>Latest release</small>" : ""}</a
-                  >
-                  <div class="update-body">
-                    <time datetime="${e(release.published)}"
-                      >${e(date(release.published))}</time
-                    >
-                    <h3>${index === 0 ? "What’s new" : "Earlier release"}</h3>
-                    <p>${e(summary(release))}</p>
-                    <a
-                      class="text-link"
-                      href="${safeReleaseURL(release.url) ? e(release.url) : releaseURL}"
-                      >Read release notes</a
-                    >
-                  </div>
-                </article>`,
-            )
-            .join("")}
-        </div>
-        <p class="updates-note">
-          Already using Azuria? Updates are checked automatically at startup.
-        </p>
-      </section>
-      <section class="section container questions">
-        <div>
-          <h2>Before you download</h2>
-          <p>Platform support, updates and what works today.</p>
-        </div>
-        <div class="faq-list">
-          ${faq("Can I play Minecraft through Azuria yet?", "Yes. Current Windows builds prepare and launch Vanilla and Fabric instances using a verified Minecraft Java account. Other loaders and live modpack installation are still in development.")}${faq("Which platforms are supported?", "Current builds support Windows x64. macOS, Linux and ARM64 builds are not available.")}${faq("How do updates work?", "Azuria checks for signed updates at startup and downloads them automatically. A restart countdown installs the update; choose Later to postpone. Updates wait while Minecraft is running.")}
-        </div>
-      </section>`;
+    content = renderHomepage({
+      asset,
+      link,
+      download,
+      icon,
+      releases,
+      releaseURL,
+      escapeHTML,
+      safeReleaseURL,
+      date,
+      html,
+    });
   }
   if (page === "downloads")
     content = html`<section class="page-intro container">
@@ -1241,6 +973,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
           crossorigin
         />
         <link rel="stylesheet" href="${link("site.css")}" />
+        <link rel="stylesheet" href="${link("premium.css")}" />
         <script type="module" src="${link("site.js")}"></script>
       </head>
       <body class="${page === "home" ? "home-page" : "inner-page"}">
