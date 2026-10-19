@@ -180,13 +180,10 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
             alt=""
           /><span>azuria</span></a
         >
-        <p>
-          A home for your Minecraft instances.<br />Developed and maintained by
-          Azuria Studios.
-        </p>
+        <p>Minecraft, organised.<br />Made by Azuria Studios.</p>
       </div>
       <div>
-        <h2>The launcher</h2>
+        <h2>Launcher</h2>
         <a href="${link("downloads/")}">Downloads</a
         ><a href="${link("changelog/")}">Changelog</a
         ><a href="${link("help/")}">Help &amp; support</a
@@ -201,22 +198,26 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© Azuria Studios</span
+      <span>© 2026 Azuria Studios</span
       ><span
         >Not an official Minecraft product. Not approved by or associated with
         Mojang or Microsoft.</span
       >
     </div>
-    <p class="image-credit">
-      Minecraft cherry grove:
-      <a href="https://modrinth.com/resourcepack/karbin-panoramas"
-        >Karbin_Drem · Distant Shaded Panoramas</a
-      >
-      ·
-      <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a
-      >. Panorama and fallback image converted to WebP and displayed with a
-      contrast overlay. Not captured in Azuria.
-    </p>
+    <details class="footer-credits">
+      <summary>Image credits</summary>
+      <p class="image-credit">
+        Minecraft cherry grove:
+        <a href="https://modrinth.com/resourcepack/karbin-panoramas"
+          >Karbin_Drem · Distant Shaded Panoramas</a
+        >
+        ·
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/"
+          >CC BY-SA 4.0</a
+        >. Panorama and fallback image converted to WebP and displayed with a
+        contrast overlay. Not captured in Azuria.
+      </p>
+    </details>
   </footer>`;
   let content = "";
   if (page === "home") {
@@ -349,8 +350,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
     content = html`<section class="page-intro container">
         <h1>Release notes.</h1>
         <p>
-          Published changes, straight from the project’s release notes. Azuria
-          checks for updates automatically at startup.
+          See what changed in each release. Azuria checks for updates when you
+          open the launcher.
         </p>
       </section>
       <div class="container changelog-layout">
@@ -392,7 +393,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
   if (page === "help")
     content = html`<section class="page-intro container">
         <h1>Help & support.</h1>
-        <p>Installation, updates and an honest look at what works today.</p>
+        <p>Help with installation, updates and supported features.</p>
       </section>
       <div class="container help-layout">
         <nav class="help-navigation" aria-label="Help topics">
@@ -444,7 +445,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
                 </tr>
                 <tr>
                   <th scope="row">
-                    Instance overrides and Save/Reset settings
+                    Instance overrides and save and reset controls
                   </th>
                   <td>Available</td>
                 </tr>
@@ -535,7 +536,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
     content = html`<section class="page-intro container">
         <h1>Privacy policy</h1>
         <p>
-          Last updated: 18 October 2026. How Azuria handles information when you
+          Last updated: 19 October 2026. How Azuria handles information when you
           visit this website or use the launcher.
         </p>
       </section>
@@ -554,12 +555,9 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
             <h2>1. About this policy</h2>
             <p>
               Azuria Launcher is an independent Minecraft Java launcher
-              developed and maintained by Azuria Studios. Azuria Studios is the
-              trading name used by the project’s maintainer (<a
-                href="https://github.com/jamesb123450"
-                >jamesb123450 on GitHub</a
-              >). In this policy, “Azuria”, “we” and “our” refer to that
-              operator. Azuria is not affiliated with Microsoft or Mojang.
+              developed and maintained by Azuria Studios. In this policy,
+              “Azuria”, “we” and “our” mean Azuria Studios. Azuria is not
+              affiliated with Microsoft or Mojang.
             </p>
             <p>
               This policy covers the Azuria website, launcher and
@@ -724,7 +722,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
     content = html`<section class="page-intro container">
         <h1>Terms of service</h1>
         <p>
-          Last updated: 18 October 2026. Please read these terms before using
+          Last updated: 19 October 2026. Please read these terms before using
           the Azuria website or launcher.
         </p>
       </section>
@@ -745,11 +743,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
             <p>
               These terms cover the Azuria website, launcher and
               project-operated content service, developed and maintained by
-              Azuria Studios, the trading name used by the project’s maintainer
-              (<a href="https://github.com/jamesb123450"
-                >jamesb123450 on GitHub</a
-              >). By using these services, you agree to these terms. If you do
-              not agree, stop using them. Our
+              Azuria Studios. By using these services, you agree to these terms.
+              If you do not agree, stop using them. Our
               <a href="${link("privacy/")}">privacy policy</a>
               separately explains how information is handled.
             </p>
@@ -893,8 +888,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
           <span class="contact-icon">${icon("external", 28)}</span>
           <h2>Project enquiries</h2>
           <p>
-            Contact Azuria Studios through the public project on GitHub. There
-            is no promised response time.
+            Contact Azuria Studios through the public project on GitHub.
+            Response times may vary.
           </p>
           <a class="button secondary" href="${repository}/issues"
             >Visit the project ${icon("external", 16)}</a
@@ -921,7 +916,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
   if (page === "404")
     content = html`<section class="page-intro container not-found">
       <span class="section-kicker">404 · PAGE NOT FOUND</span>
-      <h1>This path ends here.</h1>
+      <h1>Page not found.</h1>
       <p>
         The page may have moved. Head back to Azuria or find installation help.
       </p>

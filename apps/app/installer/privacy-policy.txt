@@ -1,8 +1,8 @@
 AZURIA LAUNCHER — PRIVACY POLICY
-Last updated: 18 October 2026
+Last updated: 19 October 2026
 
 ABOUT THIS POLICY
-Azuria Launcher is an independent Minecraft Java launcher developed and maintained by Azuria Studios, the trading name used by the project’s maintainer (jamesb123450 on GitHub). This policy explains how personal information is used when you use the launcher. Azuria is not affiliated with Microsoft or Mojang.
+Azuria Launcher is an independent Minecraft Java launcher developed and maintained by Azuria Studios. This policy explains how personal information is used when you use the launcher. Azuria is not affiliated with Microsoft or Mojang.
 For questions or privacy requests, visit https://launcher.azuriasmp.org/contact/. Do not include private information in public support issues.
 
 INFORMATION AND HOW IT IS USED

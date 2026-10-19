@@ -289,7 +289,7 @@ test("product pages describe current features and use refreshed captures", async
     assert.ok(home.includes(image), image);
     assert.ok((await stat(resolve(root, "assets", image))).size > 1000);
   }
-  assert.match(home, /Save and Reset/);
+  assert.match(home, /Save your changes/);
   for (const file of [
     "index.html",
     "downloads/index.html",
