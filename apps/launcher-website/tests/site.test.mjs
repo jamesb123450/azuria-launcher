@@ -10,7 +10,7 @@ import {
   releaseRepository,
   legacyRepository,
 } from "../src/release-data.mjs";
-import { affectsLauncher } from "../../.github/scripts/release-scope.mjs";
+import { affectsLauncher } from "../../../.github/scripts/release-scope.mjs";
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const base = "/azuria-releases/";
 const files = [
@@ -148,8 +148,8 @@ test("raw release HTML is escaped and unexpected download origins are rejected",
 test("website-only changes never request a new launcher release", () => {
   assert.equal(
     affectsLauncher([
-      "website/src/pages.mjs",
-      "website/data/releases.json",
+      "apps/launcher-website/src/pages.mjs",
+      "apps/launcher-website/data/releases.json",
       ".github/workflows/website.yml",
       "docs/WEBSITE.md",
       "docs/ARCHITECTURE.md",
@@ -161,9 +161,15 @@ test("website-only changes never request a new launcher release", () => {
     ]),
     false,
   );
-  assert.equal(affectsLauncher(["src/App.vue", "website/src/pages.mjs"]), true);
-  assert.equal(affectsLauncher(["docs/RELEASE_NOTES.md"]), true);
-  assert.equal(affectsLauncher(["unknown-config-file"]), true);
+  assert.equal(
+    affectsLauncher([
+      "apps/launcher/src/App.vue",
+      "apps/launcher-website/src/pages.mjs",
+    ]),
+    true,
+  );
+  assert.equal(affectsLauncher(["apps/launcher/docs/RELEASE_NOTES.md"]), true);
+  assert.equal(affectsLauncher(["unknown-config-file"]), false);
   assert.equal(affectsLauncher([]), false);
 });
 

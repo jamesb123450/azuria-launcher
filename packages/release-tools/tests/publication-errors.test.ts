@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 // @ts-expect-error Node publishing helper has no TypeScript declarations.
-import { publicationError } from "../../scripts/publish-errors.mjs";
+import { publicationError } from "../publication-errors.mjs";
 it("identifies authentication and branch failures without exposing subprocess output", () => {
   const secret = "private-token-sentinel";
   expect(

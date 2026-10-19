@@ -7,6 +7,10 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
     "refresh": "node scripts/sync-releases.mjs",
-    "preview": "node scripts/serve.mjs"
+    "preview": "node scripts/serve.mjs",
+    "publish:site": "node scripts/publish.mjs"
+  },
+  "dependencies": {
+    "@azuria/release-tools": "*"
   }
 }
