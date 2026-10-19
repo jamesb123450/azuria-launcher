@@ -9,7 +9,6 @@ mod media;
 mod privacy;
 mod resources;
 mod skin_library;
-mod tray;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
 use azuria_core::{Instance, InstanceInput, Settings, Store};
 use std::sync::Mutex;
@@ -287,11 +286,6 @@ fn open_project_page() -> Result<(), String> {
 
 pub fn run() {
     tauri::Builder::default()
-        // Register first: secondary processes must exit before storage setup,
-        // migration, accounts or game monitoring can start a second time.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            tray::show(app);
-        }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             content::remove_legacy_key();
@@ -315,11 +309,6 @@ pub fn run() {
                 WebProvider::new().map_err(|error| std::io::Error::other(error.message))?,
                 NativeVault,
             ));
-            // If tray creation fails, never hide the only accessible window.
-            let available = tray::setup(app.handle()).is_ok();
-            app.manage(tray::TrayAvailable(std::sync::atomic::AtomicBool::new(
-                available,
-            )));
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -334,13 +323,6 @@ pub fn run() {
                     .unwrap_or(true);
                 if blocked {
                     api.prevent_close();
-                } else if window
-                    .state::<tray::TrayAvailable>()
-                    .0
-                    .load(std::sync::atomic::Ordering::Relaxed)
-                {
-                    api.prevent_close();
-                    let _ = window.hide();
                 } else if window.state::<game::Games>().has_active() {
                     api.prevent_close();
                     let _ = window.emit("game-close-blocked", ());

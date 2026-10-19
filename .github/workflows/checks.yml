@@ -2,19 +2,28 @@ name: Foundation checks
 on:
   push:
     branches: [main, "feat/**"]
-    paths-ignore:
-      - "website/**"
-      - ".github/workflows/website.yml"
+    paths:
+      - "apps/launcher/**"
+      - "packages/release-tools/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/checks.yml"
       - ".github/scripts/release-scope.mjs"
   pull_request:
-    paths-ignore:
-      - "website/**"
-      - ".github/workflows/website.yml"
+    paths:
+      - "apps/launcher/**"
+      - "packages/release-tools/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/checks.yml"
       - ".github/scripts/release-scope.mjs"
   workflow_dispatch:
 env:
   AZURIA_DISCORD_APPLICATION_ID: ${{ vars.AZURIA_DISCORD_APPLICATION_ID }}
   AZURIA_CURSEFORGE_PROXY_URL: ${{ vars.AZURIA_CURSEFORGE_PROXY_URL }}
+defaults:
+  run:
+    working-directory: apps/launcher
 permissions:
   contents: read
 concurrency:
@@ -33,6 +42,7 @@ jobs:
           fetch-depth: 0
       - id: scope
         run: node .github/scripts/release-scope.mjs
+        working-directory: .
         env:
           AZURIA_BEFORE: ${{ github.event.before }}
           AZURIA_COMMIT: ${{ github.sha }}
@@ -45,6 +55,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+        working-directory: .
       - run: node scripts/installer-policy.mjs --check
       - run: npm run build
       - run: npm test
@@ -54,7 +65,7 @@ jobs:
         if: failure()
         with:
           name: browser-test-results
-          path: test-results/
+          path: apps/launcher/test-results/
   windows:
     runs-on: windows-latest
     steps:
@@ -68,8 +79,9 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: apps/launcher/src-tauri
       - run: npm ci
+        working-directory: .
       - run: npm run build
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - run: cargo fmt --manifest-path crates/azuria-auth/Cargo.toml -- --check
@@ -89,12 +101,10 @@ jobs:
       - run: npm run desktop:build -- --debug
       - name: Check installer privacy acceptance
         run: pwsh -File scripts/test-installer.ps1
-      - name: Check launcher process reuse
-        run: pwsh -File scripts/test-single-instance.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: azuria-windows-development-installer
-          path: src-tauri/target/debug/bundle/nsis/*.exe
+          path: apps/launcher/src-tauri/target/debug/bundle/nsis/*.exe
           if-no-files-found: error
 
   release:
@@ -114,13 +124,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: apps/launcher/src-tauri
+      - run: npm ci
+        working-directory: .
       - name: Verify public update host and allocate release version
         run: node scripts/release-host.mjs configure
         env:
           AZURIA_RELEASES_TOKEN: ${{ secrets.AZURIA_RELEASES_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: npm ci
       - name: Build signed update
         run: npm run desktop:build -- --config update-build.json
         env:

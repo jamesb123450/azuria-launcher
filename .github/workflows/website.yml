@@ -3,18 +3,18 @@ on:
   push:
     branches: [main, "feat/**"]
     paths:
-      - "website/**"
-      - "scripts/publish-website.mjs"
-      - "scripts/publish-errors.mjs"
-      - "scripts/release-host.mjs"
+      - "apps/launcher-website/**"
+      - "packages/release-tools/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/website.yml"
       - ".github/scripts/release-scope.mjs"
   pull_request:
     paths:
-      - "website/**"
-      - "scripts/publish-website.mjs"
-      - "scripts/publish-errors.mjs"
-      - "scripts/release-host.mjs"
+      - "apps/launcher-website/**"
+      - "packages/release-tools/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/website.yml"
       - ".github/scripts/release-scope.mjs"
   schedule:
@@ -39,19 +39,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - run: npm ci
       - name: Refresh public release metadata
-        run: npm --prefix website run refresh
-      - run: npm --prefix website run build
-      - run: npm --prefix website test
+        run: npm run refresh --workspace=azuria-website
+      - run: npm run build --workspace=azuria-website
+      - run: npm run test --workspace=azuria-website
       - name: Save reviewable website artifact
         uses: actions/upload-artifact@v4
         with:
           name: azuria-website
-          path: website/dist/
+          path: apps/launcher-website/dist/
           include-hidden-files: true
           if-no-files-found: error
       - name: Publish built website to public distribution repository
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: node scripts/publish-website.mjs
+        run: npm run publish:site --workspace=azuria-website
         env:
           AZURIA_RELEASES_TOKEN: ${{ secrets.AZURIA_RELEASES_TOKEN }}

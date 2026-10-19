@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 // @ts-expect-error Worker JavaScript is exercised directly.
-import { handle, target } from "../../services/curseforge/worker.mjs";
+import { handle, target } from "../worker.mjs";
 const req = (path: string, options = {}) =>
   new Request(`https://azuria.example${path}`, options);
 it("restricts proxy requests to bounded read-only provider routes", () => {

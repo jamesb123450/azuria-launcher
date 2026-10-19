@@ -2,7 +2,8 @@ import { appendFileSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-export const publicRepository = "jamesb123450/azuria-releases";
+import { publicRepository } from "@azuria/release-tools";
+export { publicRepository };
 export function nextVersion(runNumber, tags) {
   const run = Number(runNumber);
   if (!Number.isInteger(run) || run < 1)

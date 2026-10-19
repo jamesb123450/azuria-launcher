@@ -2,12 +2,12 @@ import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
-import { publicationError } from "./publish-errors.mjs";
-import { publicRepository } from "./release-host.mjs";
+import { publicationError } from "@azuria/release-tools/publication-errors";
+import { publicRepository } from "@azuria/release-tools";
 const token = process.env.AZURIA_RELEASES_TOKEN;
 if (!token)
   throw new Error("Configure the AZURIA_RELEASES_TOKEN Actions secret");
-const built = resolve("website/dist");
+const built = resolve("dist");
 if (!existsSync(join(built, "index.html")))
   throw new Error("Build the website before publishing");
 const cwd = mkdtempSync(join(tmpdir(), "azuria-public-site-"));

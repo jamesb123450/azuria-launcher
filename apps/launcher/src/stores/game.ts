@@ -51,7 +51,7 @@ export const useGame = defineStore("game", () => {
       });
       await listen("game-close-blocked", () => {
         error.value =
-          "Stop Minecraft and finish or cancel downloads before quitting Azuria. The window can stay closed in the system tray while you play.";
+          "Close Minecraft or cancel preparation before closing Azuria. This keeps game monitoring and instance protection active.";
       });
       const current = await invoke<GameLaunch[]>("game_launches");
       for (const launch of current)

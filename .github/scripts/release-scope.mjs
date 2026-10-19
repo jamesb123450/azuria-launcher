@@ -2,12 +2,18 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-// Website/source documentation and CI setup do not change the launcher binary.
-// Unknown paths conservatively count as launcher changes.
+// Products outside this explicit dependency boundary cannot publish a launcher.
 export function affectsLauncher(paths) {
-  const websitePath =
-    /^(website\/|docs\/(?!RELEASE_NOTES\.md$)|\.github\/workflows\/website\.yml$|\.github\/workflows\/checks\.yml$|\.github\/scripts\/release-scope\.mjs$|README\.md$|\.gitignore$)/;
-  return paths.some((path) => !websitePath.test(path));
+  return paths.some((path) => {
+    if (path.startsWith("apps/launcher/")) {
+      const local = path.slice("apps/launcher/".length);
+      return !/^(README\.md$|docs\/(?!RELEASE_NOTES\.md$))/.test(local);
+    }
+    return (
+      path.startsWith("packages/release-tools/") ||
+      ["package.json", "package-lock.json"].includes(path)
+    );
+  });
 }
 if (
   process.argv[1] &&
@@ -24,10 +30,8 @@ if (
     !output
   )
     throw new Error("Missing or invalid workflow commit metadata");
-  // GitHub uses an all-zero before SHA for a newly created branch.
-  // Treat it conservatively as app-relevant without diffing an absent object.
   const paths = /^0{40}$/.test(before)
-    ? ["__new_branch__"]
+    ? ["apps/launcher/__new_branch__"]
     : execFileSync("git", ["diff", "--name-only", "-z", before, commit], {
         encoding: "utf8",
       })
@@ -36,8 +40,6 @@ if (
   const publish = affectsLauncher(paths);
   appendFileSync(output, `publish=${publish}\n`);
   console.log(
-    publish
-      ? "Launcher changes detected."
-      : "Website/documentation changes only; no launcher release.",
+    publish ? "Launcher changes detected." : "No launcher release required.",
   );
 }

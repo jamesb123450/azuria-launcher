@@ -1,0 +1,16 @@
+{
+  "name": "@azuria/release-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./publication-errors": "./publication-errors.mjs"
+  },
+  "scripts": {
+    "test": "vitest run tests"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.4"
+  }
+}
