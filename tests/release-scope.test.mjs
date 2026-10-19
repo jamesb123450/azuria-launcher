@@ -18,9 +18,13 @@ test("other products cannot trigger a launcher publication", () => {
 });
 test("launcher and its shared build dependencies trigger a release", () => {
   for (const path of [
-    "apps/launcher/src/App.vue",
-    "apps/launcher/src-tauri/src/lib.rs",
-    "apps/launcher/crates/azuria-core/src/lib.rs",
+    "apps/launcher-frontend/src/App.vue",
+    "apps/launcher/src/lib.rs",
+    "packages/azuria-core/src/lib.rs",
+    "packages/azuria-auth/src/lib.rs",
+    "packages/azuria-content/src/lib.rs",
+    "packages/azuria-launch/src/lib.rs",
+    "apps/launcher-frontend/vite.config.ts",
     "apps/launcher/docs/RELEASE_NOTES.md",
     "packages/release-tools/index.mjs",
     "package.json",
@@ -28,12 +32,15 @@ test("launcher and its shared build dependencies trigger a release", () => {
   ])
     assert.equal(affectsLauncher([path]), true, path);
   assert.equal(affectsLauncher(["apps/launcher/README.md"]), false);
-  assert.equal(affectsLauncher(["apps/launcher/docs/FONT-LICENSE.txt"]), false);
+  assert.equal(
+    affectsLauncher(["apps/launcher-frontend/docs/FONT-LICENSE.txt"]),
+    false,
+  );
   assert.equal(affectsLauncher([]), false);
   assert.equal(
     affectsLauncher([
       "apps/launcher-website/src/pages.mjs",
-      "apps/launcher/src/App.vue",
+      "apps/launcher-frontend/src/App.vue",
     ]),
     true,
   );

@@ -69,7 +69,7 @@ Update packages are verified with the public signing key bundled in Azuria. This
 
 The Windows installer uses Azuria artwork and native, keyboard-accessible setup controls. Only first installation requires accepting the included offline privacy policy before continuing. Cancel exits setup. Automatic updates use a separate update flow without an acceptance page, including updates from older releases. Manual upgrades and reinstalls of an existing installation do not ask again. Acceptance does not enable optional features or tracking.
 
-Installer sources, policy maintenance and validation are documented in [the installer guide](src-tauri/installer/README.md).
+Installer sources, policy maintenance and validation are documented in [the installer guide](installer/README.md).
 
 ## Accounts and local data
 
@@ -101,7 +101,7 @@ Planned features are not promises of a release date.
 
 ## Build from source
 
-The desktop app uses **Vue 3, TypeScript and Pinia** for the interface, **Tauri 2 and Rust** for native integration, and **SQLite** for local storage.
+The desktop app uses **Vue 3, TypeScript and Pinia** in `apps/launcher-frontend`, **Tauri 2 and Rust** in `apps/launcher`, and native Rust libraries in `packages/azuria-*`. SQLite provides local storage. Tauri builds and packages the sibling frontend; the root `npm run build` builds web code, while `npm run launcher:build` creates the native installer.
 
 For Windows development, install Node.js 24, stable Rust, WebView2 and Visual Studio Build Tools with **Desktop development with C++**. See the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for native setup.
 
@@ -126,7 +126,7 @@ To build a Windows installer:
 npm run launcher:build
 ```
 
-Installer output from the repository root: `apps/launcher/src-tauri/target/release/bundle/nsis/`.
+Installer output from the repository root: `apps/launcher/target/release/bundle/nsis/`.
 
 ### Checks and releases
 
@@ -153,7 +153,7 @@ The [public website](https://launcher.azuriasmp.org/) can be deployed independen
 
 Report bugs and suggest improvements through [GitHub Issues](https://github.com/jamesb123450/azuria-releases/issues). Include the app version, Windows version and steps to reproduce a problem. Keep account credentials, tokens and personal data out of public reports.
 
-A project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](docs/FONT-LICENSE.txt).
+A project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](../launcher-frontend/docs/FONT-LICENSE.txt).
 
 Azuria is an independent project and is not affiliated with or endorsed by Mojang or Microsoft.
 

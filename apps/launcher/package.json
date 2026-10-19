@@ -1,44 +1,27 @@
 {
   "name": "azuria-launcher",
   "version": "0.2.1",
-  "description": "Azuria Minecraft Java desktop launcher",
+  "private": true,
+  "type": "module",
+  "description": "Azuria Launcher native shell and installer",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "test": "vitest run tests/unit",
-    "test:e2e": "playwright test",
+    "dev": "tauri dev",
+    "build": "tauri build",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
-    "format": "prettier --write src tests docs README.md index.html *.ts *.json src-tauri/*.json src-tauri/capabilities/*.json",
-    "format:check": "prettier --check src tests docs README.md index.html *.ts *.json src-tauri/*.json src-tauri/capabilities/*.json"
+    "test": "vitest run tests/unit",
+    "format": "prettier --write scripts tests docs README.md *.json capabilities/*.json",
+    "format:check": "prettier --check scripts tests docs README.md *.json capabilities/*.json",
+    "installer:check": "node scripts/installer-policy.mjs --check"
   },
-  "keywords": [],
-  "author": "",
-  "type": "module",
   "dependencies": {
-    "@fontsource-variable/inter": "^5.3.0",
-    "@lucide/vue": "^1.55.0",
-    "@tauri-apps/api": "^2.12.3",
-    "@tauri-apps/plugin-updater": "^2.13.3",
-    "dompurify": "^3.4.17",
-    "marked": "^18.1.1",
-    "pinia": "^4.0.3",
-    "vue": "^3.5.43",
-    "vue-router": "^5.4.0",
+    "azuria-launcher-frontend": "*",
     "@azuria/release-tools": "*"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
     "@tauri-apps/cli": "^2.12.2",
-    "@types/node": "^26.6.5",
-    "@vitejs/plugin-vue": "^6.0.10",
     "prettier": "^3.9.10",
-    "typescript": "~5.9.3",
-    "vite": "^8.3.4",
-    "vitest": "^5.0.4",
-    "vue-tsc": "^3.3.13"
-  },
-  "private": true
+    "vitest": "^5.0.4"
+  }
 }

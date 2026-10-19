@@ -61,7 +61,7 @@ try {
   Assert (Test-Path $compiler) 'NSIS compiler not found after the desktop build.'
   & $compiler /V2 (Join-Path $work 'privacy-test.nsi')
   Assert ($LASTEXITCODE -eq 0) 'Privacy fixture compilation failed.'
-  $version = [regex]::Match((Get-Content (Join-Path $root 'src-tauri\installer\privacy-version.nsh') -Raw), '"([a-f0-9]{64})"').Groups[1].Value
+  $version = [regex]::Match((Get-Content (Join-Path $root 'installer\privacy-version.nsh') -Raw), '"([a-f0-9]{64})"').Groups[1].Value
   Assert ($version.Length -eq 64) 'Missing policy fingerprint.'
 
   $run = Start-Fixture '/S'

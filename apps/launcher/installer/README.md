@@ -35,4 +35,4 @@ Windows Foundation checks compile the real installer, then run `scripts/test-ins
 
 Before distribution, also inspect the real setup wizard at 100%, 150% and 200% Windows scaling, with keyboard/Narrator and a Windows contrast theme. Local non-Windows NSIS compilation checks syntax/resources but does not establish native screen-reader behaviour. Update signatures and the application stack remain unchanged; branding is separate from Windows Authenticode signing.
 
-Artwork derives from Azuria’s existing `public/branding/app-icon.png` and bundled Sora typeface, using charcoal, pink and blue. `sidebar.bmp` is 328×628 and `header.bmp` is 300×114 for scaling into the native wizard’s standard image regions.
+Artwork derives from Azuria’s existing `apps/launcher-frontend/public/branding/app-icon.png` and bundled Sora typeface, using charcoal, pink and blue. `sidebar.bmp` is 328×628 and `header.bmp` is 300×114 for scaling into the native wizard’s standard image regions.

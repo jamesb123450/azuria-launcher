@@ -21,7 +21,7 @@ afterEach(async () => {
 it("publishes matching safe filenames without changing signed bytes", async () => {
   const root = await mkdtemp(join(tmpdir(), "azuria-package-"));
   temporary.push(root);
-  const folder = join(root, "src-tauri/target/release/bundle/nsis");
+  const folder = join(root, "target/release/bundle/nsis");
   await mkdir(folder, { recursive: true });
   const original = "Azuria Launcher_0.2.25_x64-setup.exe";
   const payload = Buffer.from("signed installer fixture");

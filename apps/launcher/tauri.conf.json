@@ -4,10 +4,10 @@
   "version": "0.2.1",
   "identifier": "com.azuria.launcher",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev --workspace=azuria-launcher-frontend",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "node scripts/installer-policy.mjs --check && npm run build",
-    "frontendDist": "../dist"
+    "beforeBuildCommand": "npm run installer:check --workspace=azuria-launcher && npm run build --workspace=azuria-launcher-frontend",
+    "frontendDist": "../launcher-frontend/dist"
   },
   "app": {
     "windows": [

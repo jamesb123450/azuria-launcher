@@ -5,12 +5,16 @@ import { pathToFileURL } from "node:url";
 // Products outside this explicit dependency boundary cannot publish a launcher.
 export function affectsLauncher(paths) {
   return paths.some((path) => {
-    if (path.startsWith("apps/launcher/")) {
-      const local = path.slice("apps/launcher/".length);
+    const app = ["apps/launcher/", "apps/launcher-frontend/"].find((prefix) =>
+      path.startsWith(prefix),
+    );
+    if (app) {
+      const local = path.slice(app.length);
       return !/^(README\.md$|docs\/(?!RELEASE_NOTES\.md$))/.test(local);
     }
     return (
       path.startsWith("packages/release-tools/") ||
+      /^packages\/azuria-(auth|core|content|launch)\//.test(path) ||
       ["package.json", "package-lock.json"].includes(path)
     );
   });

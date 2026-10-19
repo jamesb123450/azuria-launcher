@@ -163,7 +163,7 @@ test("website-only changes never request a new launcher release", () => {
   );
   assert.equal(
     affectsLauncher([
-      "apps/launcher/src/App.vue",
+      "apps/launcher-frontend/src/App.vue",
       "apps/launcher-website/src/pages.mjs",
     ]),
     true,

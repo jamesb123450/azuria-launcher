@@ -12,18 +12,18 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "npm run dev --workspace=azuria-launcher --",
-    "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev --workspace=azuria-launcher-frontend --",
+    "build": "npm run build --workspace=azuria-launcher-frontend && npm run build --workspace=azuria-website",
     "test": "node --test tests/*.test.mjs && npm run test --workspaces --if-present",
     "launcher:dev": "npm run desktop:dev --workspace=azuria-launcher --",
     "launcher:build": "npm run desktop:build --workspace=azuria-launcher --",
-    "launcher:check": "npm run build --workspace=azuria-launcher && npm run test --workspace=azuria-launcher",
-    "test:e2e": "npm run test:e2e --workspace=azuria-launcher --",
+    "launcher:check": "npm run build --workspace=azuria-launcher-frontend && npm run test --workspace=azuria-launcher-frontend && npm run test --workspace=azuria-launcher",
+    "test:e2e": "npm run test:e2e --workspace=azuria-launcher-frontend --",
     "website:build": "npm run build --workspace=azuria-website",
     "website:preview": "npm run preview --workspace=azuria-website",
     "website:test": "npm run build --workspace=azuria-website && npm run test --workspace=azuria-website",
     "service:test": "npm run test --workspace=@azuria/curseforge",
-    "format": "prettier --write README.md docs tests .github package.json packages services && npm run format --workspace=azuria-launcher",
-    "format:check": "prettier --check README.md docs tests .github package.json packages services && npm run format:check --workspace=azuria-launcher"
+    "format": "prettier --write README.md docs tests .github package.json packages services && npm run format --workspace=azuria-launcher && npm run format --workspace=azuria-launcher-frontend",
+    "format:check": "prettier --check README.md docs tests .github package.json packages services && npm run format:check --workspace=azuria-launcher && npm run format:check --workspace=azuria-launcher-frontend"
   }
 }

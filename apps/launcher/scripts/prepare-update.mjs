@@ -10,7 +10,7 @@ if (!/^0\.2\.\d+$/.test(version ?? "") || Number(version.split(".")[2]) > 65535)
   throw new Error("Invalid Windows release version");
 if (!/^[\w-]+\/[\w.-]+$/.test(repository ?? ""))
   throw new Error("Invalid release repository");
-const folder = "src-tauri/target/release/bundle/nsis";
+const folder = "target/release/bundle/nsis";
 const installers = (await readdir(folder)).filter((name) =>
   name.endsWith(".exe"),
 );
