@@ -1,3 +1,9 @@
+# Restore normal launcher closure
+
+- Remove system-tray behaviour and the associated single-instance integration.
+- Closing Azuria exits when idle; keep the existing protection against closing during active games, preparation or unacknowledged storage migration.
+- Retain the Azuria Studios monorepo migration and other settings, privacy and installer changes.
+
 # Azuria Studios monorepo
 
 - Organise launcher, website and service source as separate workspaces with shared release tooling.

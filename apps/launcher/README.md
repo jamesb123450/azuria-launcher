@@ -38,7 +38,7 @@ Settings → Privacy controls automatic account reconnection, hiding your accoun
 
 Memory controls detect the computer’s physical RAM and use it as the allocation ceiling, including computers above 64 GiB. Allocations use 256 MiB steps; leave memory for Windows and other applications. Storage download concurrency ranges from 1 to 10; existing larger saved limits are reduced to 10. Browser previews use an approximate memory estimate; the installed Windows app reads and validates physical memory natively.
 
-A startup screen remains visible while local storage and the library open. Migration acknowledgement is still required only when migration actually needs it. Closing the Windows window keeps Azuria in the system tray, including while Minecraft runs. Click the tray icon or choose Open Azuria to return. Quit Azuria exits when games and downloads are idle; active tasks keep the launcher available for monitoring. If tray creation fails, the window is never hidden without a way to reopen it.
+A startup screen remains visible while local storage and the library open. Migration acknowledgement is still required only when migration actually needs it. Closing the window exits Azuria when idle. While Minecraft or game preparation is active, Azuria stays open to retain game monitoring and instance protection; close Minecraft or cancel preparation before closing the launcher.
 
 The topbar shows each running instance by name, with Stop and Open logs controls. Preparation is not shown as a running game.
 
