@@ -409,12 +409,14 @@ const prettySize = (size: number) =>
     <div>
       <h1>Instance not found</h1>
       <p class="muted">It may have been removed from your library.</p>
-      <RouterLink class="button secondary" to="/">Back to Library</RouterLink>
+      <RouterLink class="button secondary" to="/versions?tab=setups"
+        >Back to saved setups</RouterLink
+      >
     </div>
   </section>
   <div v-else class="instance-workspace">
-    <RouterLink class="instance-back text-link" to="/"
-      ><ArrowLeft :size="16" />{{ "Library" }}</RouterLink
+    <RouterLink class="instance-back text-link" to="/versions?tab=setups"
+      ><ArrowLeft :size="16" />{{ "Saved setups" }}</RouterLink
     >
     <header class="instance-page-header">
       <ContentIcon

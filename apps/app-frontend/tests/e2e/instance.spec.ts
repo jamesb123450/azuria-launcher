@@ -29,7 +29,7 @@ test.beforeEach(async ({ page }) => {
 test("instance navigation, general settings, defaults and overrides persist", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page.getByRole("button", { name: "Open Aurora", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Aurora", exact: true }),
@@ -156,7 +156,7 @@ test("minimum window settings fit and missing instances have an exit", async ({
     page.getByRole("heading", { name: "Instance not found" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Back to Library" }),
+    page.getByRole("link", { name: "Back to saved setups" }),
   ).toBeVisible();
 });
 
@@ -213,15 +213,15 @@ test("icon studio offers distinct symbols and finishes and saves the chosen icon
 test("navigation highlights only the current page and screenshot tab matches its peers", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   const library = page
     .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "Library", exact: true });
-  const quick = page.getByRole("link", { name: "Open Aurora", exact: true });
+    .getByRole("link", { name: "Versions", exact: true });
+  const quick = page.locator(".instance-card").getByRole("link").first();
   await expect(library).toHaveClass(/router-link-exact-active/);
-  await expect(quick).not.toHaveClass(/active/);
-  await quick.click();
-  await expect(quick).toHaveClass(/active/);
+
+  await page.goto(`/#/instances/${id}`);
+
   await expect(library).not.toHaveClass(/router-link-exact-active/);
   const tabs = page.getByRole("navigation", { name: "Instance sections" });
   const content = tabs.getByRole("button", { name: "Content", exact: true });
@@ -234,15 +234,14 @@ test("navigation highlights only the current page and screenshot tab matches its
   await expect(
     page.getByRole("link", { name: "Screenshots", exact: true }),
   ).toHaveClass(/router-link-exact-active/);
-  await expect(quick).not.toHaveClass(/active/);
+
   await library.click();
-  await expect(quick).not.toHaveClass(/active/);
 });
 test("ad placeholder fits the bottom of the information sidebar", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   const ad = page.getByRole("region", { name: "Advertisement placeholder" });
   await expect(ad).toBeVisible();
   const sidebar = await page

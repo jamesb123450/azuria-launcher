@@ -60,7 +60,7 @@ test("persistent library lifecycle and honest launch state", async ({
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
@@ -118,7 +118,7 @@ test("persistent library lifecycle and honest launch state", async ({
     .click();
   await expect(page.locator(".instance-card")).toHaveCount(2);
   await page.getByRole("textbox", { name: "Search instances" }).fill("missing");
-  await expect(page.getByText("No matching instances.")).toBeVisible();
+  await expect(page.getByText("No matching setups.")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
   await page
     .getByRole("button", {
@@ -140,7 +140,8 @@ test("persistent library lifecycle and honest launch state", async ({
 test("themes persist and modal cancellation restores focus", async ({
   page,
 }) => {
-  await page.goto("/#/settings");
+  await page.goto("/#/versions?tab=setups");
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Light", exact: false }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -153,7 +154,7 @@ test("themes persist and modal cancellation restores focus", async ({
   await page.getByRole("button", { name: "Dark", exact: false }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await page.getByRole("button", { name: "Close settings" }).click();
-  await page.getByRole("link", { name: /Library/ }).click();
+  await page.getByRole("link", { name: /Saved setups/ }).click();
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
@@ -179,7 +180,7 @@ test("themes persist and modal cancellation restores focus", async ({
 test("instance selection and grid/list views work at minimum desktop size", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   for (const name of [
     "Survival",
     "Creative",
@@ -205,7 +206,10 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
   await expect(
     page.getByRole("heading", { name: "Survival", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Library", exact: true }).last().click();
+  await page
+    .getByRole("link", { name: "Saved setups", exact: true })
+    .last()
+    .click();
   await expect(
     page
       .locator(".selected-instance")
@@ -225,7 +229,7 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
   await page.getByRole("button", { name: "Grid view", exact: true }).click();
   await page.locator(".instance-card").first().scrollIntoViewIfNeeded();
   await expect(page.locator(".instance-card").first()).toBeInViewport();
-  const avatar = await page.locator(".rail-avatar").boundingBox();
+  const avatar = await page.locator(".topbar-account").boundingBox();
   expect(avatar!.y + avatar!.height).toBeLessThanOrEqual(650);
   await expect(
     page.getByRole("link", { name: "Settings", exact: true }),
@@ -238,7 +242,8 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
 });
 
 test("browser preview does not offer desktop updates", async ({ page }) => {
-  await page.goto("/#/settings");
+  await page.goto("/#/versions?tab=setups");
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Updates", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Always moving forward" }),
@@ -254,7 +259,7 @@ test("browser preview does not offer desktop updates", async ({ page }) => {
 test("library grouping and collapsed sections remain usable", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   for (const name of ["Alpha", "Beta"]) {
     await page
       .getByRole("button", { name: "Create instance", exact: true })
@@ -297,7 +302,7 @@ test("library grouping and collapsed sections remain usable", async ({
 test("failed saves retain input and unrelated errors do not block creation", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
@@ -350,7 +355,7 @@ test("failed saves retain input and unrelated errors do not block creation", asy
 test("custom setup preserves selections, icons and all loader types", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
@@ -435,7 +440,8 @@ test("custom setup preserves selections, icons and all loader types", async ({
 test("icon uploads, manual versions and minimum-height light layout work", async ({
   page,
 }) => {
-  await page.goto("/#/settings");
+  await page.goto("/#/versions?tab=setups");
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Light", exact: false }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await page.getByRole("button", { name: "Close settings" }).click();
@@ -509,7 +515,7 @@ test("catalogue failures leave manual creation available", async ({ page }) => {
   await page.route("https://piston-meta.mojang.com/**", (route) =>
     route.abort(),
   );
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
@@ -529,7 +535,7 @@ test("catalogue failures leave manual creation available", async ({ page }) => {
 test("version menus support keyboard navigation, pre-releases and game-specific loaders", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
@@ -621,7 +627,7 @@ test("version menus support keyboard navigation, pre-releases and game-specific 
 test("loader catalogue errors are retryable and editing preserves existing memory", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page.evaluate(() =>
     localStorage.setItem(
       "azuria-preview-v1",
@@ -682,9 +688,9 @@ test("loader catalogue errors are retryable and editing preserves existing memor
 test("account navigation explains Windows-only sign-in in browser preview", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page
-    .getByRole("link", { name: "Minecraft account", exact: true })
+    .getByRole("link", { name: "Sign in to Minecraft", exact: true })
     .click();
   await expect(
     page

@@ -22,7 +22,8 @@ test("Behaviour stages edits, resets, persists and applies library defaults", as
         }),
       );
   });
-  await page.goto("/#/settings");
+  await page.goto("/#/versions?tab=setups");
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByRole("button", { name: "Behaviour", exact: true }).click();
   const minimise = dialog.getByRole("switch", {
@@ -100,7 +101,8 @@ test("Behaviour stages edits, resets, persists and applies library defaults", as
 test("failed behaviour saves retain staged edits for retry", async ({
   page,
 }) => {
-  await page.goto("/#/settings");
+  await page.goto("/#/versions?tab=setups");
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByRole("button", { name: "Behaviour", exact: true }).click();
   const compact = dialog.getByRole("switch", {

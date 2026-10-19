@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 test("keyboard users can skip navigation and use themed library controls", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page.keyboard.press("Tab");
   await expect(
     page.getByRole("link", { name: "Skip to content" }),
@@ -27,7 +27,7 @@ test("polished screens retain their layout at minimum size", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 900, height: 650 });
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   for (const theme of ["dark", "light"]) {
     await page.getByRole("link", { name: "Settings", exact: true }).click();
     await page
@@ -74,7 +74,7 @@ test("polished screens retain their layout at minimum size", async ({
 
 test("populated library remains readable at desktop size", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page.evaluate(() =>
     localStorage.setItem(
       "azuria-preview-v1",
@@ -145,7 +145,7 @@ test("populated library remains readable at desktop size", async ({ page }) => {
 test("library states fit both themes at minimum and wide desktop sizes", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   for (const theme of ["dark", "light"]) {
     for (const count of [0, 1, 8]) {
       await page.evaluate(

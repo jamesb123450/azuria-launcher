@@ -102,7 +102,7 @@ test("startup displays a loader until storage is ready without inventing migrati
       },
     }),
   );
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await expect(
     page.getByRole("status", { name: "Starting Azuria" }),
   ).toBeVisible();

@@ -97,7 +97,7 @@ const steps: Record<AuthStage, string> = {
       <p class="muted update-hint">
         Azuria remembers one account securely in Windows Credential Manager.
         Signing out removes it from Azuria; your browser may stay signed in to
-        Microsoft. Game installation and launching are still in development.
+        Microsoft. Vanilla and Fabric launching are supported.
       </p>
     </template>
   </section>

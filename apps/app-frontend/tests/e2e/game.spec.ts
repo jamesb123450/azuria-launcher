@@ -99,20 +99,38 @@ async function setup(page: Page, denied = false, loader = "vanilla") {
                 id: "created-instance",
               };
               items.push(created);
-              callbacks[handlers["game-progress"]!]?.({
-                event: "game-progress",
-                id: 1,
-                payload: {
-                  id: created.id,
-                  stage: "queued",
-                  prepareOnly: true,
-                  message: "Queued to download Minecraft files",
-                  completed: 0,
-                  total: 0,
-                  exitCode: null,
-                },
+              if (args?.prepare !== false)
+                callbacks[handlers["game-progress"]!]?.({
+                  event: "game-progress",
+                  id: 1,
+                  payload: {
+                    id: created.id,
+                    stage: "queued",
+                    prepareOnly: true,
+                    message: "Queued to download Minecraft files",
+                    completed: 0,
+                    total: 0,
+                    exitCode: null,
+                  },
+                });
+              Object.assign(window, {
+                createdInput: args?.input,
+                createdPrepare: args?.prepare,
+                finishQuickGame: () =>
+                  callbacks[handlers["game-progress"]!]?.({
+                    event: "game-progress",
+                    id: 1,
+                    payload: {
+                      id: created.id,
+                      stage: "exited",
+                      message: "Game closed",
+                      completed: 0,
+                      total: 0,
+                      exitCode: 0,
+                      prepareOnly: false,
+                    },
+                  }),
               });
-              Object.assign(window, { createdInput: args?.input });
               return created;
             }
             if (cmd === "get_settings") return { theme: "dark" };
@@ -232,7 +250,7 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
   page,
 }) => {
   await setup(page);
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await expect(
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
@@ -306,7 +324,7 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
   await expect(page.locator(".topbar").getByRole("status")).toHaveText(
-    "No instances running",
+    "No games running",
   );
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.getByRole("button", { name: "Stop", exact: true }).click();
@@ -423,7 +441,7 @@ test("live log updates can be paused and resumed", async ({ page }) => {
 
 test("the account sidebar shows the player skin head", async ({ page }) => {
   await setup(page);
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await expect(page.locator(".account-portrait canvas")).toBeVisible();
   await page.locator(".account-identity").click();
   await expect(
@@ -435,7 +453,7 @@ test("Stop terminates a running game after acknowledgement", async ({
   page,
 }) => {
   await setup(page);
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.evaluate(() =>
     (
@@ -618,7 +636,7 @@ test("Fabric uses Play/Stop and cancellation during loader preparation", async (
   page,
 }) => {
   await setup(page, false, "fabric");
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.evaluate(() =>
     (
@@ -640,7 +658,7 @@ test("download-only tasks can stop, resume and become ready without starting Min
   page,
 }) => {
   await setup(page, false, "fabric");
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   const progress = (stage: string, message: string) =>
     page.evaluate(
       ({ stage, message }) =>
@@ -696,7 +714,7 @@ test("creating Fabric pins Stable and starts download-only preparation", async (
   await page.route("https://piston-meta.mojang.com/**", (route) =>
     route.fulfill({ json: { versions: [{ id: "26.1", type: "release" }] } }),
   );
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page
     .getByRole("button", { name: "Create instance", exact: true })
     .click();
@@ -731,7 +749,7 @@ test("topbar Stop reaches the native cancellation command", async ({
   page,
 }) => {
   await setup(page);
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.evaluate(() =>
     (window as any).emitGame("running", "Minecraft running"),
@@ -744,4 +762,44 @@ test("topbar Stop reaches the native cancellation command", async ({
       page.evaluate(() => (window as any).gameCalls.includes("cancel_launch")),
     )
     .toBe(true);
+});
+
+test("Home creates one automatic setup without background preparation and reuses it", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.route("https://piston-meta.mojang.com/**", (r) =>
+    r.fulfill({ json: { versions: [{ id: "1.21.1", type: "release" }] } }),
+  );
+  await page.goto("/");
+  const launch = page.locator(".launch-main");
+  await expect(launch).toBeEnabled();
+  await launch.click();
+  await expect(
+    page.getByRole("button", { name: /Cancel launch/ }),
+  ).toBeVisible();
+  const result = await page.evaluate(() => ({
+    calls: (window as any).gameCalls,
+    input: (window as any).createdInput,
+    prepare: (window as any).createdPrepare,
+  }));
+  expect(result.prepare).toBe(false);
+  expect(result.input.loader).toBe("vanilla");
+  expect(
+    result.calls.filter((c: string) => c === "create_instance"),
+  ).toHaveLength(1);
+  expect(
+    result.calls.filter((c: string) => c === "launch_instance"),
+  ).toHaveLength(1);
+  expect(
+    result.calls.filter((c: string) => c === "prepare_instance"),
+  ).toHaveLength(0);
+  await page.evaluate(() => (window as any).finishQuickGame());
+  await expect(launch).toContainText("Launch game");
+  await launch.click();
+  const calls = await page.evaluate(
+    () => (window as any).gameCalls as string[],
+  );
+  expect(calls.filter((c) => c === "create_instance")).toHaveLength(1);
+  expect(calls.filter((c) => c === "launch_instance")).toHaveLength(2);
 });

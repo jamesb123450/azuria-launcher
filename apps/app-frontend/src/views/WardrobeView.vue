@@ -327,15 +327,17 @@ onBeforeUnmount(() => {
         <summary>
           <h2>Saved skins</h2>
           <span>{{ library.skins.length }}</span>
+        </summary>
+        <div class="saved-skin-tools">
           <button
             class="icon-button"
             aria-label="Refresh saved skins"
             :disabled="locked"
-            @click.stop.prevent="library.load"
+            @click="library.load"
           >
             <RotateCcw :size="15" />
           </button>
-        </summary>
+        </div>
         <div class="saved-skin-grid" :class="{ 'drop-active': dropActive }">
           <button
             class="skin-add-card"
@@ -940,5 +942,13 @@ onBeforeUnmount(() => {
   .skin-current :deep(.skin-model-person) {
     scale: 1.6;
   }
+}
+</style>
+
+<style scoped>
+.saved-skin-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin: -12px 0 8px;
 }
 </style>

@@ -4,6 +4,8 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter, type RouteLocationNormalized } from "vue-router";
 import {
   Play,
+  Gamepad2,
+  Plus,
   Square,
   Terminal,
   Settings,
@@ -25,7 +27,6 @@ import SkinHead from "./components/SkinHead.vue";
 import StartupUpdate from "./components/StartupUpdate.vue";
 import StorageMigration from "./components/StorageMigration.vue";
 import WindowControls from "./components/WindowControls.vue";
-import InstanceIcon from "./components/InstanceIcon.vue";
 import { useUpdates } from "./stores/updates";
 import { useAccount } from "./stores/account";
 import { useContent } from "./stores/content";
@@ -111,7 +112,9 @@ const page = computed(() =>
               ? "Skins & capes"
               : route.path === "/screenshots"
                 ? "Screenshots"
-                : "Library",
+                : route.path === "/versions"
+                  ? "Versions"
+                  : "Home",
 );
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
@@ -203,6 +206,21 @@ async function storagePrepared() {
       </div>
       <div class="topbar-right">
         <RouterLink
+          to="/settings#account"
+          class="topbar-account"
+          :aria-label="
+            account.view.account
+              ? 'Manage Minecraft account'
+              : 'Sign in to Minecraft'
+          "
+          ><SkinHead v-if="account.view.account" /><UserRound
+            v-else
+            :size="16"
+          /><span>{{
+            account.view.account ? account.label : "Sign in"
+          }}</span></RouterLink
+        >
+        <RouterLink
           v-if="updates.update"
           to="/settings"
           class="text-link update-chip"
@@ -213,7 +231,7 @@ async function storagePrepared() {
           class="game-status"
           role="status"
           aria-live="polite"
-          ><span class="game-status-dot" aria-hidden="true" />No instances
+          ><span class="game-status-dot" aria-hidden="true" />No games
           running</span
         >
         <div v-else class="running-instances" aria-label="Running instances">
@@ -255,13 +273,20 @@ async function storagePrepared() {
     </header>
     <aside class="sidebar" :inert="route.path === '/settings'">
       <nav aria-label="Main navigation">
+        <RouterLink to="/" class="rail-link" aria-label="Home" title="Home"
+          ><img
+            class="rail-home-mark"
+            src="/branding/app-icon.png"
+            alt=""
+          /><span class="rail-tooltip">Home</span></RouterLink
+        >
         <RouterLink
-          to="/"
+          to="/versions"
           class="rail-link"
-          aria-label="Library"
-          title="Library"
-          ><Play :size="22" /><span class="rail-tooltip"
-            >Library</span
+          aria-label="Versions"
+          title="Versions"
+          ><Gamepad2 :size="21" /><span class="rail-tooltip"
+            >Versions</span
           ></RouterLink
         >
         <RouterLink
@@ -290,29 +315,16 @@ async function storagePrepared() {
         /></RouterLink>
       </nav>
       <div class="rail-divider" />
-      <div class="rail-instances" aria-label="Quick instance selection">
-        <RouterLink
-          v-for="item in store.instances.slice(0, 5)"
-          :key="item.id"
-          :to="`/instances/${item.id}`"
-          :class="[
-            'quick-instance',
-            item.loader,
-            { active: route.path === `/instances/${item.id}` },
-          ]"
-          :aria-label="'Open ' + item.name"
-          :title="item.name"
-          :aria-current="
-            route.path === `/instances/${item.id}` ? 'page' : undefined
-          "
-          @click="store.selectedId = item.id"
-          ><InstanceIcon
-            :loader="item.loader"
-            :seed="item.id"
-            :icon="item.icon"
-        /></RouterLink>
-      </div>
       <div class="sidebar-bottom">
+        <RouterLink
+          to="/versions?tab=setups"
+          class="rail-link"
+          aria-label="Saved setups"
+          title="Saved setups"
+          ><Plus :size="21" /><span class="rail-tooltip"
+            >Saved setups</span
+          ></RouterLink
+        >
         <RouterLink
           to="/roadmap"
           class="rail-link"
@@ -351,7 +363,10 @@ async function storagePrepared() {
       <main
         id="main-content"
         tabindex="-1"
-        :class="{ 'is-library': route.path === '/' }"
+        :class="{
+          'is-library':
+            route.path === '/versions' && route.query.tab === 'setups',
+        }"
       >
         <RouteSurface :key="instanceSettingsRevision" :route="displayedRoute" />
       </main>

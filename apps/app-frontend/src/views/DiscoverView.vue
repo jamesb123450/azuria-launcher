@@ -239,11 +239,22 @@ onBeforeUnmount(() => {
             >CurseForge availability</RouterLink
           >
         </div>
-        <div v-else-if="loading" class="discover-empty" role="status">
-          <Search :size="28" />
-          <p>
-            Searching {{ source === "modrinth" ? "Modrinth" : "CurseForge" }}…
-          </p>
+        <div
+          v-else-if="loading"
+          class="discover-loading"
+          role="status"
+          aria-label="Loading projects"
+        >
+          <div
+            v-for="i in 6"
+            :key="i"
+            class="project-skeleton"
+            aria-hidden="true"
+          >
+            <span />
+            <div><i /><i /><i /></div>
+          </div>
+          <span class="sr-only">Loading projects…</span>
         </div>
         <div v-else-if="projects.length" class="discover-project-list">
           <article v-for="p in projects" :key="p.id" class="discover-project">
@@ -343,7 +354,12 @@ onBeforeUnmount(() => {
               category = '';
             "
           >
-            {{ p.label }}
+            <img
+              :src="`/providers/${p.value}.svg`"
+              alt=""
+              width="18"
+              height="18"
+            />{{ p.label }}
           </button>
         </fieldset>
         <div class="discover-filter-field">

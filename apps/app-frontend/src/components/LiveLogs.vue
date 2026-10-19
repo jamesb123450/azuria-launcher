@@ -540,14 +540,14 @@ onBeforeUnmount(() => {
 }
 </style>
 <style scoped>
-:global(html[data-theme="light"]) .level-error,
-:global(html[data-theme="light"]) .console-error {
+:global(html[data-theme="light"] .level-error),
+:global(html[data-theme="light"] .console-error) {
   color: #a02b46;
 }
-:global(html[data-theme="light"]) .level-warn {
+:global(html[data-theme="light"] .level-warn) {
   color: #79530b;
 }
-:global(html[data-theme="light"]) .console-output {
+:global(html[data-theme="light"] .console-output) {
   background: var(--input);
 }
 </style>

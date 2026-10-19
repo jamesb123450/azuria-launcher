@@ -78,7 +78,7 @@ test("migration requires confirmation while opening the folder is optional", asy
 }) => {
   await page.setViewportSize({ width: 900, height: 650 });
   await mockStorage(page);
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   const dialog = page.getByRole("dialog");
   await expect(
     dialog.getByRole("heading", { name: "Migrating data", exact: true }),
@@ -129,18 +129,18 @@ test("migration requires confirmation while opening the folder is optional", asy
     ),
   ).not.toContain("open_instances_folder");
   await expect(
-    page.getByRole("heading", { name: "Library", exact: true }),
+    page.getByRole("heading", { name: "Saved setups", exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Library", exact: true }),
+    page.getByRole("heading", { name: "Saved setups", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("migration failure stays gated and supports retry", async ({ page }) => {
   await mockStorage(page, true);
-  await page.goto("/");
+  await page.goto("/#/versions?tab=setups");
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("alert")).toContainText(
     "Close other Azuria windows",
@@ -200,9 +200,9 @@ test("acknowledged launches never open the migration modal even during slow stor
     };
   });
   for (let start = 0; start < 3; start++) {
-    await page.goto("/");
+    await page.goto("/#/versions?tab=setups");
     await expect(
-      page.getByRole("heading", { name: "Library", exact: true }),
+      page.getByRole("heading", { name: "Saved setups", exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(
