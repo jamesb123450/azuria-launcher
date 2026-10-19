@@ -1,14 +1,19 @@
 import { readFile, writeFile, mkdir, cp, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { privacy, terms } from "../src/legal.mjs";
+import { analyticsMarkup } from "../src/analytics.mjs";
+const analytics = analyticsMarkup({
+  id: process.env.AZURIA_GA_MEASUREMENT_ID,
+  site: "studios",
+});
 const root = fileURLToPath(new URL("../", import.meta.url));
 const output = `${root}dist`;
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 const home = await readFile(`${root}src/home.html`, "utf8");
-const banner = `<section class="cookie-banner" aria-label="Cookie preferences" hidden><div><h2>Your privacy, your choice</h2><p>We store your theme and cookie preferences in this browser. We don’t currently use optional cookies or tracking. Read our <a href="/privacy/">privacy policy</a>.</p></div><div class="cookie-actions"><button type="button" data-cookie-choice="rejected">Reject optional</button><button type="button" data-cookie-choice="accepted">Accept optional</button></div></section><p class="site-announcement" aria-live="polite"></p>`;
+const banner = analytics;
 const render = (title, body, description) =>
-  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${description}"><meta name="theme-color" content="#101116"><title>${title}</title><link rel="icon" href="/assets/azuria.png"><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"><script src="/site.js" defer></script></head><body><a class="skip-link" href="#as-top">Skip to content</a>${body.replace(/<\/div>\s*$/, `${banner}</div>`)}</body></html>`;
+  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${description}"><meta name="theme-color" content="#101116"><title>${title}</title><link rel="icon" href="/assets/azuria.png"><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/analytics.css"><script src="/site.js" defer></script></head><body><a class="skip-link" href="#as-top">Skip to content</a>${body.replace(/<\/div>\s*$/, `${banner}</div>`)}</body></html>`;
 await writeFile(
   `${output}/index.html`,
   render(
@@ -52,3 +57,6 @@ await writeFile(
 console.log("Built Azuria Studios website in dist/");
 
 await cp(`${root}src/theme.js`, `${output}/theme.js`);
+
+for (const name of ["analytics.js", "analytics.css"])
+  await cp(`${root}src/${name}`, `${output}/${name}`);

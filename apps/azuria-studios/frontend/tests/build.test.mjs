@@ -14,8 +14,8 @@ test("home and legal routes are complete static documents with shared controls",
     assert.match(html, /<!doctype html>/);
     assert.equal((html.match(/<main /g) || []).length, 1);
     assert.match(html, /class="cookie-settings"/);
-    assert.match(html, /data-cookie-choice="rejected"/);
-    assert.match(html, /data-cookie-choice="accepted"/);
+    assert.match(html, /data-analytics-choice="rejected"/);
+    assert.match(html, /data-analytics-choice="accepted"/);
     assert.match(html, /href="\/privacy\/"/);
     assert.match(html, /href="\/terms\/"/);
     assert.doesNotMatch(html, /data:image|data-lucide|<style|<script(?! src=)/);

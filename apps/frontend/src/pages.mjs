@@ -72,7 +72,10 @@ export function releaseNotes(text) {
     })
     .join("");
 }
-export function render(page, { siteURL, base, releases, adsense = "" }) {
+export function render(
+  page,
+  { siteURL, base, releases, adsense = "", analyticsEnabled = false },
+) {
   const e = escapeHTML;
   const link = (path) => `${base}${path}`;
   const asset = (name) => link(`assets/${name}`);
@@ -194,7 +197,8 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
         <a href="${link("contact/")}">Contact</a
         ><a href="${link("privacy/")}">Privacy policy</a
         ><a href="${link("terms/")}">Terms of service</a
-        ><a href="${repository}/issues">Report an issue</a>
+        ><a href="${repository}/issues">Report an issue</a
+        ><button class="cookie-settings" type="button">Cookie settings</button>
       </div>
     </div>
     <div class="footer-bottom">
@@ -493,7 +497,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
               website hosting, account data and support information.
             </p>
             <p>
-              ${adsense ? "Google AdSense display advertising is enabled on the home page. Google and its partners may process advertising requests and use cookies according to your consent choices. Manage your preferences through the consent message. This site has no website accounts." : "This website has no analytics, advertising scripts or website accounts."}
+              ${adsense ? "Google AdSense display advertising is enabled on the home page. Google and its partners may process advertising requests and use cookies according to your consent choices. Manage your preferences through the consent message. This site has no website accounts." : "This website has no accounts. Optional Google Analytics is used only when configured and you accept analytics in Cookie settings."}
               Fonts and screenshots are served with the site. GitHub hosts the
               site and installer downloads and processes requests under its own
               policies.
@@ -600,6 +604,30 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
           <section id="website-data">
             <h2>3. Website, cookies and advertising</h2>
             <p>
+              When configured, we use Google Analytics to understand page
+              visits, device and browser information, and how the website is
+              used. The Google tag loads only after you accept analytics. Google
+              may use first-party analytics cookies and process technical
+              information, including your IP address. Advertising
+              personalisation and Google signals are disabled in our tag
+              configuration. We omit query strings and fragments from the page
+              address sent with the initial page view.
+            </p>
+            <p>
+              Use Cookie settings in the footer to accept, reject or withdraw
+              analytics consent. Your choice is stored locally for up to 180
+              days, separately from any advertising choices. Changing the
+              analytics measurement ID requires a new choice. Rejecting
+              analytics prevents the tag from loading; withdrawing consent stops
+              it and removes accessible Google Analytics cookies. Google may
+              process data outside the UK under its applicable safeguards. See
+              <a href="https://policies.google.com/privacy"
+                >Google’s privacy policy</a
+              >
+              for its handling and retention practices. We do not send account
+              details or launcher data to website analytics.
+            </p>
+            <p>
               This website does not provide user accounts. Fonts and images are
               hosted with the website. Hosting and download providers process
               technical request information, including IP addresses, browser
@@ -614,7 +642,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
               GitHub’s public API.
             </p>
             <p>
-              ${adsense ? `This website displays Google AdSense ads on its home page. Google and its partners may use cookies and process IP addresses, device information and browsing activity to deliver and measure ads. Where required, optional advertising processing depends on your consent. Use the consent message and its privacy controls to accept, reject, change or withdraw your choices. See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from partner sites</a>. Website advertising is separate from the Windows launcher.` : "This website does not currently set its own cookies or include analytics, advertising trackers or embedded social feeds. Optional advertising must be disclosed and the required consent controls provided before it is enabled."}
+              ${adsense ? `This website displays Google AdSense ads on its home page. Google and its partners may use cookies and process IP addresses, device information and browsing activity to deliver and measure ads. Where required, optional advertising processing depends on your consent. Use the consent message and its privacy controls to accept, reject, change or withdraw your choices. See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from partner sites</a>. Website advertising is separate from the Windows launcher.` : "This website has no embedded social feeds. Optional advertising must be disclosed and the required advertising consent controls provided before it is enabled."}
             </p>
           </section>
           <section id="sharing">
@@ -941,7 +969,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
         <meta name="color-scheme" content="dark" />
         <meta
           http-equiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; object-src 'none'; base-uri 'none'; form-action 'none'"
+          content="default-src 'self'; script-src 'self'${analyticsEnabled ? " https://www.googletagmanager.com" : ""}; style-src 'self'; img-src 'self'${analyticsEnabled ? " https://*.google-analytics.com https://*.googletagmanager.com" : ""}; font-src 'self'; connect-src https://api.github.com${analyticsEnabled ? " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com" : ""}; object-src 'none'; base-uri 'none'; form-action 'none'"
         />
         <link rel="canonical" href="${e(canonical)}" />
         <meta property="og:type" content="website" />
@@ -969,6 +997,7 @@ export function render(page, { siteURL, base, releases, adsense = "" }) {
         />
         <link rel="stylesheet" href="${link("site.css")}" />
         <link rel="stylesheet" href="${link("premium.css")}" />
+        <link rel="stylesheet" href="${link("analytics.css")}" />
         <script type="module" src="${link("site.js")}"></script>
       </head>
       <body class="${page === "home" ? "home-page" : "inner-page"}">

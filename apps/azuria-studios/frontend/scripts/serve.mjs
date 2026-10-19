@@ -2,6 +2,9 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+const securityHeaders = JSON.parse(
+  await readFile(new URL("../vercel.json", import.meta.url), "utf8"),
+).headers[0].headers;
 const root = fileURLToPath(new URL("../dist", import.meta.url));
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -11,6 +14,7 @@ const types = {
   ".woff2": "font/woff2",
 };
 createServer(async (req, res) => {
+  for (const { key, value } of securityHeaders) res.setHeader(key, value);
   try {
     let path = decodeURIComponent(
       new URL(req.url, "http://localhost").pathname,

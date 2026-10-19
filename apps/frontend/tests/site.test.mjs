@@ -173,7 +173,7 @@ test("website-only changes never request a new launcher release", () => {
   assert.equal(affectsLauncher([]), false);
 });
 
-test("site contains no remote scripts, account form, analytics or unsupported platform downloads", async () => {
+test("default build contains no remote tags, account forms or unsupported platform downloads", async () => {
   const html = await readFile(resolve(root, "index.html"), "utf8");
   if (process.env.AZURIA_ADSENSE_ENABLED === "true") {
     assert.match(html, /aria-label="Advertisement"/);

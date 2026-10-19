@@ -2,6 +2,8 @@ import { mkdir, readFile, cp, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { advertisingMarkup } from "../src/advertising.mjs";
 import { render } from "../src/pages.mjs";
+import { analyticsMarkup } from "../src/analytics.mjs";
+analyticsMarkup({ id: process.env.AZURIA_GA_MEASUREMENT_ID });
 const root = new URL("../", import.meta.url);
 const dist = new URL("dist/", root);
 const siteURL =
@@ -33,6 +35,8 @@ await cp(new URL("assets/", root), new URL("assets/", dist), {
   recursive: true,
 });
 for (const filename of [
+  "analytics.js",
+  "analytics.css",
   "site.css",
   "premium.css",
   "motion.mjs",
@@ -61,7 +65,19 @@ for (const page of [
   await mkdir(new URL("./", destination), { recursive: true });
   await writeFile(
     destination,
-    render(page, { siteURL: url.href, base: url.pathname, releases, adsense }),
+    render(page, {
+      siteURL: url.href,
+      base: url.pathname,
+      releases,
+      adsense,
+      analyticsEnabled: Boolean(process.env.AZURIA_GA_MEASUREMENT_ID?.trim()),
+    }).replace(
+      "</body>",
+      analyticsMarkup({
+        id: process.env.AZURIA_GA_MEASUREMENT_ID,
+        base: url.pathname,
+      }) + "</body>",
+    ),
   );
 }
 await writeFile(new URL(".nojekyll", dist), "");
