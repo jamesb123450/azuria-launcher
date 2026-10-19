@@ -1,3 +1,8 @@
+# Reuse the running launcher
+
+- Keep one Azuria process running. Opening a desktop shortcut, Windows search result or executable restores and focuses the existing launcher, including when hidden in the system tray or minimised.
+- Prevent a second launcher from starting storage migration or competing for instance and account state.
+
 # Azuria Studios branding
 
 - Identify Azuria Studios as the developer and maintainer on the website, in setup and in the README.
