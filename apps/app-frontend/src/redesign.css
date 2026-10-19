@@ -913,3 +913,305 @@ html[data-theme="oled"] {
     transition: none !important;
   }
 }
+
+/* Play rail, softer scenery, and quieter native scrollbars. */
+.sidebar-bottom .rail-divider {
+  margin: 0 0 12px;
+  width: 28px;
+}
+.home-scenery {
+  filter: blur(3px) brightness(0.76) saturate(0.87);
+  transform: scale(1.035);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted);
+}
+.settings-version {
+  position: relative;
+  background: linear-gradient(to top, #0005, #0002 60%, transparent);
+  padding: 28px 18px 18px;
+}
+html[data-theme="light"] .settings-version {
+  background: linear-gradient(to top, #202a3c1c, transparent);
+}
+
+/* Poster catalogue and persistent launch context. */
+.versions-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  gap: 24px;
+  align-items: start;
+}
+.versions-catalogue {
+  min-width: 0;
+}
+.versions-catalogue .versions-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.versions-catalogue .search-box {
+  flex: 1 1 220px;
+}
+.versions-catalogue .minecraft-version-grid {
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 22px 16px;
+}
+.versions-catalogue .minecraft-version-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  gap: 8px;
+  align-items: center;
+  border-radius: 10px;
+}
+.versions-catalogue .minecraft-version-card:hover {
+  background: transparent;
+}
+.versions-catalogue .version-art {
+  position: relative;
+  aspect-ratio: 3/4;
+  height: auto;
+  overflow: hidden;
+  margin: 0 0 4px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--panel-soft);
+}
+.version-art > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+  transition: transform 0.2s;
+}
+.version-poster-caption {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 40px 13px 16px;
+  background: linear-gradient(transparent, #080b12ed);
+  color: #fff;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+}
+.version-poster-caption strong {
+  font-size: 20px;
+  letter-spacing: -0.8px;
+  font-weight: 750;
+}
+.version-poster-caption > span {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #ece6f6;
+}
+.versions-catalogue .minecraft-version-card.selected .version-art {
+  border-color: var(--pink);
+}
+.minecraft-version-card:hover .version-art > img {
+  transform: scale(1.04);
+}
+.minecraft-version-card > svg {
+  color: var(--pink);
+  margin-right: 3px;
+}
+.version-context {
+  position: sticky;
+  top: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 14px;
+  min-height: min(690px, calc(100dvh - 80px));
+  display: flex;
+  flex-direction: column;
+}
+.version-context-art {
+  aspect-ratio: 16/9;
+  border-radius: 9px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+.version-context-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.version-context-art > span {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 25px 11px 10px;
+  color: #fff;
+  background: linear-gradient(transparent, #080b12dc);
+  font-weight: 600;
+  font-size: 12px;
+}
+.version-context-copy h2 {
+  font-size: 19px;
+  margin: 18px 0 10px;
+}
+.version-context-copy p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 8px;
+}
+.version-context-copy a {
+  font-size: 12px;
+  color: var(--blue);
+}
+.version-context-controls {
+  margin-top: auto;
+  padding-top: 32px;
+  display: grid;
+  gap: 13px;
+}
+.version-patch,
+.version-loader-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.version-patch select {
+  max-width: 150px;
+  min-width: 85px;
+  background: var(--panel-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px;
+  font: inherit;
+}
+.version-loader-row .quick-loaders {
+  gap: 5px;
+}
+.version-loader-row .quick-loaders button {
+  padding: 7px 9px;
+  font-size: 11px;
+}
+.version-setup-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 7px;
+  padding: 10px;
+  background: var(--panel-soft);
+  color: var(--blue);
+  font-size: 12px;
+}
+.version-setup-note {
+  color: var(--muted);
+  font-size: 11px;
+  margin: -5px 0 2px;
+  line-height: 1.5;
+}
+.version-launch-row {
+  display: flex;
+  gap: 8px;
+  align-items: start;
+}
+.version-launch-row > .icon-button {
+  flex: 0 0 36px;
+  height: 48px;
+  background: var(--panel-soft);
+}
+.version-launch-row .quick-launch {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.version-launch-row .launch-split {
+  width: 100%;
+}
+.version-launch-row .launch-main {
+  width: 100%;
+  padding: 10px;
+  min-height: 48px;
+  border-radius: 8px;
+}
+.version-launch-row .launch-main strong {
+  font-size: 12px;
+  gap: 6px;
+}
+.version-launch-row .launch-main > span {
+  display: none;
+}
+.version-launch-row .home-launch-error {
+  position: static;
+  width: auto;
+  margin: 10px 0 0;
+}
+.versions-art-credit {
+  color: var(--muted);
+  margin-top: 28px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.versions-art-credit a {
+  color: var(--blue);
+}
+.versions-art-credit summary {
+  width: fit-content;
+  cursor: pointer;
+}
+@media (max-width: 1100px) {
+  .versions-workspace {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 16px;
+  }
+  .versions-catalogue .minecraft-version-grid {
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 16px 12px;
+  }
+}
+@media (max-width: 760px) {
+  .versions-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .version-context {
+    position: static;
+    min-height: 0;
+  }
+  .version-context-controls {
+    padding-top: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .version-art > img {
+    transition: none;
+  }
+  .minecraft-version-card:hover .version-art > img {
+    transform: none;
+  }
+}
+.version-launch-row .quick-launch {
+  max-width: none;
+}
+.version-launch-row .launch-split {
+  min-width: 0;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}

@@ -195,6 +195,13 @@ const heading = computed(
 const theme = ref<Theme>(store.settings.theme);
 const form = ref(defaultLaunchOptions());
 const savedTheme = ref<Theme>(theme.value);
+watch(
+  theme,
+  (value) => {
+    if (loaded.value) store.previewAppearance(value);
+  },
+  { flush: "sync" },
+);
 const snapshot = ref("");
 const loaded = ref(false);
 const busy = ref(false);
@@ -460,6 +467,7 @@ watch(confirmClose, async () => {
 });
 window.addEventListener("beforeunload", beforeUnload);
 onBeforeUnmount(() => {
+  store.previewAppearance(null);
   removeGuard();
   window.removeEventListener("beforeunload", beforeUnload);
   dialog.value?.close();
@@ -520,8 +528,8 @@ onBeforeUnmount(() => {
         <h2>{{ heading }}</h2>
         <template v-if="section === 'appearance'"
           ><p class="muted">
-            Choose the look that feels right for you. Changes apply after
-            saving.
+            Try an appearance now. Save to keep it, or Reset to return to your
+            saved appearance.
           </p>
           <div class="settings-theme-grid">
             <button

@@ -21,14 +21,16 @@ export const useLauncher = defineStore("launcher", () => {
       instances.value.find((i) => i.id === selectedId.value) ??
       instances.value[0],
   );
+  const appearancePreview = ref<Theme | null>(null);
   const system = window.matchMedia("(prefers-color-scheme: dark)");
   function applyTheme() {
+    const chosen = appearancePreview.value ?? settings.value.theme;
     document.documentElement.dataset.theme =
-      settings.value.theme === "system"
-        ? system.matches
-          ? "dark"
-          : "light"
-        : settings.value.theme;
+      chosen === "system" ? (system.matches ? "dark" : "light") : chosen;
+  }
+  function previewAppearance(theme: Theme | null) {
+    appearancePreview.value = theme;
+    applyTheme();
   }
   system.addEventListener("change", applyTheme);
   function message(e: unknown) {
@@ -141,5 +143,6 @@ export const useLauncher = defineStore("launcher", () => {
     favorite,
     remove,
     theme,
+    previewAppearance,
   };
 });

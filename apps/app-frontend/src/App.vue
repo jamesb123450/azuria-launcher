@@ -16,7 +16,6 @@ import {
   Shirt,
   ChevronRight,
   ChevronLeft,
-  CircleHelp,
   Download,
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
@@ -102,19 +101,17 @@ const page = computed(() =>
     ? "Settings"
     : route.path.startsWith("/discover")
       ? "Discover"
-      : route.path === "/roadmap"
-        ? "Development"
-        : route.name === "instance-settings"
-          ? "Instance settings"
-          : route.name === "instance"
-            ? "Instance"
-            : route.path === "/wardrobe"
-              ? "Skins & capes"
-              : route.path === "/screenshots"
-                ? "Screenshots"
-                : route.path === "/versions"
-                  ? "Versions"
-                  : "Home",
+      : route.name === "instance-settings"
+        ? "Instance settings"
+        : route.name === "instance"
+          ? "Instance"
+          : route.path === "/wardrobe"
+            ? "Skins & capes"
+            : route.path === "/screenshots"
+              ? "Screenshots"
+              : route.path === "/versions"
+                ? "Versions"
+                : "Home",
 );
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
@@ -274,11 +271,7 @@ async function storagePrepared() {
     <aside class="sidebar" :inert="route.path === '/settings'">
       <nav aria-label="Main navigation">
         <RouterLink to="/" class="rail-link" aria-label="Home" title="Home"
-          ><img
-            class="rail-home-mark"
-            src="/branding/app-icon.png"
-            alt=""
-          /><span class="rail-tooltip">Home</span></RouterLink
+          ><Play :size="23" /><span class="rail-tooltip">Home</span></RouterLink
         >
         <RouterLink
           to="/versions"
@@ -314,10 +307,12 @@ async function storagePrepared() {
           ><Camera :size="21"
         /></RouterLink>
       </nav>
-      <div class="rail-divider" />
       <div class="sidebar-bottom">
+        <div class="rail-divider" />
         <RouterLink
           to="/versions?tab=setups"
+          exact-active-class=""
+          active-class=""
           class="rail-link"
           aria-label="Saved setups"
           title="Saved setups"
@@ -325,13 +320,7 @@ async function storagePrepared() {
             >Saved setups</span
           ></RouterLink
         >
-        <RouterLink
-          to="/roadmap"
-          class="rail-link"
-          aria-label="Development information"
-          title="Development information"
-          ><CircleHelp :size="20" /></RouterLink
-        ><a
+        <a
           class="rail-link"
           href="https://github.com/jamesb123450/azuria-releases"
           @click.prevent="store.openProject"
