@@ -23,3 +23,17 @@ The hero uses the existing static cherry-grove image, real Azuria icon and real 
 `src/motion.mjs` progressively enhances the already visible page. Scroll reveals run once; reduced-motion preferences disable or cancel motion. The screenshot switch decodes the next image before committing, then crossfades it with a slight scale transition. A request counter prevents stale image loads from replacing newer selections. Failed loads retain the screenshot and accessible selection and provide retry feedback.
 
 Keep outgoing screenshot layers decorative, reserve image dimensions, retain visible keyboard focus, and never make content depend on animation or JavaScript. The website tests cover theme-load races, failures, reduced-motion changes, release validation, generated links and policy rendering. Automated accessibility scans complement keyboard, mobile, text-spacing and assistive-technology review; they do not establish full WCAG conformance by themselves.
+
+## Google Analytics (GA4)
+
+In this website's **Vercel project → Settings → Environment Variables**, add:
+
+```text
+AZURIA_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+Use the GA4 web stream's measurement ID, not the whole Google script or a GTM container ID. Redeploy after adding, changing or removing the value. Leave it unset to disable analytics. Set it separately for each Vercel project; separate web streams are recommended for the two websites. Enable only in the deployment environments you want measured, normally Production. No secret key is needed.
+
+The static build validates the ID and includes it in the local consent script. Google is never contacted by this integration until a visitor accepts analytics (basic consent mode). Advertising consent remains denied; Google signals and ad personalisation are disabled. Initial page-view URLs omit query strings/fragments. Review GA4's enhanced-measurement settings before enabling features that could collect URLs or user-entered information. Analytics preferences are separate from AdSense's certified consent controls; accepting analytics does not authorise advertising.
+
+Changing the ID requests fresh consent. Cookie settings allows withdrawal. Preferences are local to each origin and website. Set an appropriate retention period in GA4; removing the tag does not delete data already held by Google. Google documentation: https://developers.google.com/tag-platform/security/guides/consent

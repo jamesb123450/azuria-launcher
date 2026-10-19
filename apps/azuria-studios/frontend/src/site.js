@@ -1,6 +1,4 @@
-const CONSENT_KEY = "azuria-studios.cookies.v1";
 const THEME_KEY = "azuria-studios.theme";
-const lifetime = 180 * 24 * 60 * 60 * 1000;
 const read = (key) => {
   try {
     return localStorage.getItem(key);
@@ -32,38 +30,3 @@ themeButton.addEventListener("click", () => {
   applyTheme(theme);
   write(THEME_KEY, theme);
 });
-const banner = document.querySelector(".cookie-banner");
-let returnFocus;
-const validChoice = () => {
-  try {
-    const value = JSON.parse(read(CONSENT_KEY));
-    return (
-      value &&
-      ["accepted", "rejected"].includes(value.choice) &&
-      value.at <= Date.now() &&
-      Date.now() - value.at < lifetime
-    );
-  } catch {
-    return false;
-  }
-};
-banner.hidden = Boolean(validChoice());
-document.querySelectorAll(".cookie-settings").forEach((button) =>
-  button.addEventListener("click", () => {
-    returnFocus = button;
-    banner.hidden = false;
-    banner.querySelector("button").focus();
-  }),
-);
-banner.querySelectorAll("[data-cookie-choice]").forEach((button) =>
-  button.addEventListener("click", () => {
-    write(
-      CONSENT_KEY,
-      JSON.stringify({ choice: button.dataset.cookieChoice, at: Date.now() }),
-    );
-    banner.hidden = true;
-    (returnFocus || document.querySelector(".cookie-settings")).focus();
-    document.querySelector(".site-announcement").textContent =
-      "Your cookie preferences have been saved.";
-  }),
-);
