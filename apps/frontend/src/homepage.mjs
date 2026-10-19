@@ -49,8 +49,10 @@ export function renderHomepage({
           Your Minecraft.<span>Beautifully organised.</span>
         </h1>
         <p class="premium-lead">
-          A home for every version, every modpack,<br class="desktop-break" />
-          and whatever you play next.
+          Keep your Minecraft versions, mods and worlds<br
+            class="desktop-break"
+          />
+          together in one launcher.
         </p>
         <div class="premium-actions">
           ${download("Download for Windows")}<a
@@ -93,8 +95,8 @@ export function renderHomepage({
     >
       <div class="container premium-split" data-reveal>
         <div class="section-intro">
-          <p class="premium-kicker">Everything in its place</p>
-          <h2 id="library-heading">A home for<br />every adventure.</h2>
+          <p class="premium-kicker">Your instances</p>
+          <h2 id="library-heading">Keep your setups<br />organised.</h2>
           <p>
             A vanilla world, a Fabric setup, or a modpack for your next weekend.
             Keep each instance organised, with its own versions and settings.
@@ -115,39 +117,52 @@ export function renderHomepage({
       <div class="container">
         <div class="premium-section-top" data-reveal>
           <div>
-            <p class="premium-kicker">Find your next favourite</p>
-            <h2 id="content-heading">A little more<br />Minecraft.</h2>
+            <p class="premium-kicker">Mods and modpacks</p>
+            <h2 id="content-heading">Find mods for<br />your next setup.</h2>
           </div>
           <p>
-            Explore mods, packs and the extras that make your next instance
-            yours.
+            Browse projects from Modrinth and CurseForge. Check what is
+            supported before installing.
           </p>
         </div>
         <div class="premium-providers">
           <article data-reveal>
-            <span class="provider-monogram" aria-hidden="true">M</span>
+            <img
+              class="provider-icon"
+              src="${asset("modrinth.svg")}"
+              width="44"
+              height="44"
+              alt=""
+              loading="lazy"
+            />
             <div>
               <h3>Modrinth</h3>
               <p>
-                Discover community projects and compatible releases, then review
-                what you want to install.
+                Find community mods, modpacks and resource packs on Modrinth.
               </p>
             </div>
           </article>
           <article data-reveal>
-            <span class="provider-monogram" aria-hidden="true">C</span>
+            <img
+              class="provider-icon"
+              src="${asset("curseforge.svg")}"
+              width="44"
+              height="44"
+              alt=""
+              loading="lazy"
+            />
             <div>
               <h3>CurseForge</h3>
               <p>
-                Browse another catalogue through Azuria’s configured service.
-                Provider download restrictions are respected.
+                Browse CurseForge projects. Some downloads may need to be opened
+                on the CurseForge website.
               </p>
             </div>
           </article>
         </div>
         <div class="premium-split premium-reverse" data-reveal>
           <div>
-            <h3>Choose it. Review it. Make it yours.</h3>
+            <h3>Choose a version and get started.</h3>
             <p>
               Create your next setup and keep compatible content alongside the
               instance it belongs to. Vanilla and Fabric launching are
@@ -169,12 +184,12 @@ export function renderHomepage({
       <div class="container">
         <div class="premium-section-top" data-reveal>
           <div>
-            <p class="premium-kicker">Your space, your style</p>
-            <h2 id="appearance-heading">Make yourself<br />at home.</h2>
+            <p class="premium-kicker">Launcher appearance</p>
+            <h2 id="appearance-heading">Choose your<br />appearance.</h2>
           </div>
           <p>
-            Dark, light and OLED in the launcher. Familiar controls, with a
-            different feel.
+            Choose dark, light or OLED in the launcher. Try the dark and light
+            previews below.
           </p>
         </div>
         <div
@@ -225,12 +240,11 @@ export function renderHomepage({
     <section class="premium-section" aria-labelledby="skins-heading">
       <div class="container premium-split" data-reveal>
         <div>
-          <p class="premium-kicker">Look the part</p>
-          <h2 id="skins-heading">A familiar face.<br />A fresh look.</h2>
+          <p class="premium-kicker">Skins and capes</p>
+          <h2 id="skins-heading">Your skins,<br />ready to use.</h2>
           <p>
-            Keep a local skin collection, inspect your character and manage
-            skins and capes available to your account. Apply your choice when
-            you’re ready.
+            Save skins on your computer, preview your character and choose from
+            the skins and capes available to your account.
           </p>
           <p class="small-note">
             Official Steve texture and a demo account shown. Cape choices depend
@@ -243,15 +257,14 @@ export function renderHomepage({
     <section class="premium-section" aria-labelledby="settings-heading">
       <div class="container premium-split premium-reverse" data-reveal>
         <div>
-          <p class="premium-kicker">The details, your way</p>
-          <h2 id="settings-heading">Comfortably<br />in control.</h2>
+          <p class="premium-kicker">Settings</p>
+          <h2 id="settings-heading">Set it up<br />your way.</h2>
           <p>
             Set Java, memory and window preferences, then tailor individual
             instances when they need something different.
           </p>
           <p>
-            Save and Reset keep changes deliberate. Choose the appearance and
-            behaviour that suit you.
+            Save your changes when you’re ready, or reset them to start again.
           </p>
         </div>
         ${shot("settings.webp", "Azuria’s settings popup with category navigation and appearance controls.")}
@@ -260,24 +273,24 @@ export function renderHomepage({
     <section class="premium-section" aria-labelledby="steps-heading">
       <div class="container">
         <div class="premium-center" data-reveal>
-          <p class="premium-kicker">Ready when you are</p>
+          <p class="premium-kicker">Getting started</p>
           <h2 id="steps-heading">
             Your next instance,<br />in a few simple steps.
           </h2>
         </div>
         <ol class="premium-steps">
           <li data-reveal>
-            <span>01 / INSTALL</span>
-            <h3>Meet Azuria.</h3>
+            <span>Step 1</span>
+            <h3>Install Azuria.</h3>
             <p>Download the Windows installer and open your new launcher.</p>
           </li>
           <li data-reveal>
-            <span>02 / SET UP</span>
+            <span>Step 2</span>
             <h3>Pick your version.</h3>
             <p>Create a Vanilla or Fabric instance and choose your settings.</p>
           </li>
           <li data-reveal>
-            <span>03 / PLAY</span>
+            <span>Step 3</span>
             <h3>Start your next world.</h3>
             <p>
               Sign in with an account that owns Minecraft Java Edition, then
@@ -295,10 +308,8 @@ export function renderHomepage({
       <div class="container">
         <div class="premium-section-top" data-reveal>
           <div>
-            <p class="premium-kicker">Built to keep getting better</p>
-            <h2 id="updates-heading">
-              The next chapter<br />is always coming.
-            </h2>
+            <p class="premium-kicker">Updates</p>
+            <h2 id="updates-heading">Latest releases.</h2>
           </div>
           <a class="text-link" href="${link("changelog/")}"
             >Full changelog ${icon("arrow", 17)}</a
@@ -350,8 +361,8 @@ export function renderHomepage({
     >
       <div class="container">
         <img src="${asset("azuria.png")}" width="84" height="84" alt="" />
-        <p class="premium-kicker">Your next adventure starts here</p>
-        <h2 id="download-heading">Make room for<br />something new.</h2>
+        <p class="premium-kicker">Azuria Launcher</p>
+        <h2 id="download-heading">Ready to play?</h2>
         <div class="premium-actions">${download("Download Azuria")}</div>
         <p class="premium-status">
           Windows x64 · Development preview ·
