@@ -34,6 +34,8 @@ await cp(new URL("assets/", root), new URL("assets/", dist), {
 });
 for (const filename of [
   "site.css",
+  "premium.css",
+  "motion.mjs",
   "site.js",
   "release-data.mjs",
   "panorama.js",
