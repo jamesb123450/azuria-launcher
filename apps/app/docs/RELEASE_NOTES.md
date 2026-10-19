@@ -1,3 +1,9 @@
+# Separate launcher frontend and native app
+
+- Keep the Vue interface and browser tests in their own workspace, separate from the native shell and installer.
+- Move Rust libraries into packages and update build hooks, release paths and CI without changing the Windows app identity or updater address.
+- Keep the existing window-close behaviour; system-tray support remains removed.
+
 # Restore normal launcher closure
 
 - Remove system-tray behaviour and the associated single-instance integration.

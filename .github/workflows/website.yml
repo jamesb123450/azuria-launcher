@@ -3,7 +3,7 @@ on:
   push:
     branches: [main, "feat/**"]
     paths:
-      - "apps/launcher-website/**"
+      - "apps/frontend/**"
       - "packages/release-tools/**"
       - "package.json"
       - "package-lock.json"
@@ -11,7 +11,7 @@ on:
       - ".github/scripts/release-scope.mjs"
   pull_request:
     paths:
-      - "apps/launcher-website/**"
+      - "apps/frontend/**"
       - "packages/release-tools/**"
       - "package.json"
       - "package-lock.json"
@@ -48,7 +48,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: azuria-website
-          path: apps/launcher-website/dist/
+          path: apps/frontend/dist/
           include-hidden-files: true
           if-no-files-found: error
       - name: Publish built website to public distribution repository

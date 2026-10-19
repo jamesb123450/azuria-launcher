@@ -3,7 +3,9 @@ on:
   push:
     branches: [main, "feat/**"]
     paths:
-      - "apps/launcher/**"
+      - "apps/app/**"
+      - "apps/app-frontend/**"
+      - "packages/azuria-*/**"
       - "packages/release-tools/**"
       - "package.json"
       - "package-lock.json"
@@ -11,7 +13,9 @@ on:
       - ".github/scripts/release-scope.mjs"
   pull_request:
     paths:
-      - "apps/launcher/**"
+      - "apps/app/**"
+      - "apps/app-frontend/**"
+      - "packages/azuria-*/**"
       - "packages/release-tools/**"
       - "package.json"
       - "package-lock.json"
@@ -23,7 +27,7 @@ env:
   AZURIA_CURSEFORGE_PROXY_URL: ${{ vars.AZURIA_CURSEFORGE_PROXY_URL }}
 defaults:
   run:
-    working-directory: apps/launcher
+    working-directory: apps/app
 permissions:
   contents: read
 concurrency:
@@ -48,6 +52,9 @@ jobs:
           AZURIA_COMMIT: ${{ github.sha }}
   frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/app-frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -57,6 +64,7 @@ jobs:
       - run: npm ci
         working-directory: .
       - run: node scripts/installer-policy.mjs --check
+        working-directory: apps/app
       - run: npm run build
       - run: npm test
       - run: npx playwright install --with-deps chromium
@@ -65,7 +73,7 @@ jobs:
         if: failure()
         with:
           name: browser-test-results
-          path: apps/launcher/test-results/
+          path: apps/app-frontend/test-results/
   windows:
     runs-on: windows-latest
     steps:
@@ -79,32 +87,33 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/launcher/src-tauri
+          workspaces: apps/app
       - run: npm ci
         working-directory: .
-      - run: npm run build
-      - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-      - run: cargo fmt --manifest-path crates/azuria-auth/Cargo.toml -- --check
-      - run: cargo test --locked --manifest-path crates/azuria-auth/Cargo.toml
-      - run: cargo clippy --locked --manifest-path crates/azuria-auth/Cargo.toml --all-targets -- -D warnings
-      - run: cargo fmt --manifest-path crates/azuria-core/Cargo.toml -- --check
-      - run: cargo test --locked --manifest-path crates/azuria-core/Cargo.toml
-      - run: cargo clippy --locked --manifest-path crates/azuria-core/Cargo.toml --all-targets -- -D warnings
-      - run: cargo fmt --manifest-path crates/azuria-content/Cargo.toml -- --check
-      - run: cargo test --locked --manifest-path crates/azuria-content/Cargo.toml
-      - run: cargo clippy --locked --manifest-path crates/azuria-content/Cargo.toml --all-targets -- -D warnings
-      - run: cargo fmt --manifest-path crates/azuria-launch/Cargo.toml -- --check
-      - run: cargo test --locked --manifest-path crates/azuria-launch/Cargo.toml
-      - run: cargo clippy --locked --manifest-path crates/azuria-launch/Cargo.toml --all-targets -- -D warnings
-      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
-      - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - run: npm run build --workspace=azuria-launcher-frontend
+      - run: npm test
+      - run: cargo fmt --manifest-path Cargo.toml -- --check
+      - run: cargo fmt --manifest-path ../../packages/azuria-auth/Cargo.toml -- --check
+      - run: cargo test --locked --manifest-path ../../packages/azuria-auth/Cargo.toml
+      - run: cargo clippy --locked --manifest-path ../../packages/azuria-auth/Cargo.toml --all-targets -- -D warnings
+      - run: cargo fmt --manifest-path ../../packages/azuria-core/Cargo.toml -- --check
+      - run: cargo test --locked --manifest-path ../../packages/azuria-core/Cargo.toml
+      - run: cargo clippy --locked --manifest-path ../../packages/azuria-core/Cargo.toml --all-targets -- -D warnings
+      - run: cargo fmt --manifest-path ../../packages/azuria-content/Cargo.toml -- --check
+      - run: cargo test --locked --manifest-path ../../packages/azuria-content/Cargo.toml
+      - run: cargo clippy --locked --manifest-path ../../packages/azuria-content/Cargo.toml --all-targets -- -D warnings
+      - run: cargo fmt --manifest-path ../../packages/azuria-launch/Cargo.toml -- --check
+      - run: cargo test --locked --manifest-path ../../packages/azuria-launch/Cargo.toml
+      - run: cargo clippy --locked --manifest-path ../../packages/azuria-launch/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --locked --manifest-path Cargo.toml
+      - run: cargo clippy --locked --manifest-path Cargo.toml --all-targets -- -D warnings
       - run: npm run desktop:build -- --debug
       - name: Check installer privacy acceptance
         run: pwsh -File scripts/test-installer.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: azuria-windows-development-installer
-          path: apps/launcher/src-tauri/target/debug/bundle/nsis/*.exe
+          path: apps/app/target/debug/bundle/nsis/*.exe
           if-no-files-found: error
 
   release:
@@ -124,7 +133,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/launcher/src-tauri
+          workspaces: apps/app
       - run: npm ci
         working-directory: .
       - name: Verify public update host and allocate release version

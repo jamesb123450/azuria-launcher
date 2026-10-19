@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 const target = resolve(process.argv[2] ?? "test-results/installer");
 await mkdir(target, { recursive: true });
-const root = fileURLToPath(new URL("../src-tauri/installer/", import.meta.url));
+const root = fileURLToPath(new URL("../installer/", import.meta.url));
 const template = await readFile(resolve(root, "installer.nsi"), "utf8");
 const page = template
   .split("; AZURIA: a real,")[1]

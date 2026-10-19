@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
-const root = new URL("../src-tauri/installer/", import.meta.url);
+const root = new URL("../installer/", import.meta.url);
 const policy = (
   await readFile(new URL("privacy-policy.txt", root), "utf8")
 ).replace(/\r\n/g, "\n");

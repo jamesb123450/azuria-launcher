@@ -98,7 +98,7 @@ export function publish() {
   )
     throw new Error("Invalid public release configuration");
   const installer = `Azuria-Launcher_${version}_x64-setup.exe`;
-  const folder = "src-tauri/target/release/bundle/nsis";
+  const folder = "target/release/bundle/nsis";
   const assets = [installer, installer + ".sig", "latest.json"].map((name) =>
     join(folder, name),
   );

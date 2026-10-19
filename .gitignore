@@ -10,4 +10,4 @@ playwright-report/
 .dev.vars.*
 .wrangler/
 *.log
-apps/launcher/update-build.json
+apps/app/update-build.json

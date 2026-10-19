@@ -1,0 +1,27 @@
+{
+  "name": "azuria-launcher",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "description": "Azuria Launcher native shell and installer",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "test": "vitest run tests/unit",
+    "format": "prettier --write scripts tests docs README.md *.json capabilities/*.json",
+    "format:check": "prettier --check scripts tests docs README.md *.json capabilities/*.json",
+    "installer:check": "node scripts/installer-policy.mjs --check"
+  },
+  "dependencies": {
+    "azuria-launcher-frontend": "*",
+    "@azuria/release-tools": "*"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.2",
+    "prettier": "^3.9.10",
+    "vitest": "^5.0.4"
+  }
+}

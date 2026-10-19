@@ -1,4 +1,4 @@
-> This product is part of the [Azuria Studios monorepo](../../README.md). Install dependencies at the repository root. Run native scripts from `apps/launcher` or use the root workspace commands.
+> This product is part of the [Azuria Studios monorepo](../../README.md). Install dependencies at the repository root. Run native scripts from `apps/app` or use the root workspace commands.
 
 # Azuria Launcher
 
@@ -69,7 +69,7 @@ Update packages are verified with the public signing key bundled in Azuria. This
 
 The Windows installer uses Azuria artwork and native, keyboard-accessible setup controls. Only first installation requires accepting the included offline privacy policy before continuing. Cancel exits setup. Automatic updates use a separate update flow without an acceptance page, including updates from older releases. Manual upgrades and reinstalls of an existing installation do not ask again. Acceptance does not enable optional features or tracking.
 
-Installer sources, policy maintenance and validation are documented in [the installer guide](src-tauri/installer/README.md).
+Installer sources, policy maintenance and validation are documented in [the installer guide](installer/README.md).
 
 ## Accounts and local data
 
@@ -101,7 +101,7 @@ Planned features are not promises of a release date.
 
 ## Build from source
 
-The desktop app uses **Vue 3, TypeScript and Pinia** for the interface, **Tauri 2 and Rust** for native integration, and **SQLite** for local storage.
+The desktop app uses **Vue 3, TypeScript and Pinia** in `apps/app-frontend`, **Tauri 2 and Rust** in `apps/app`, and native Rust libraries in `packages/azuria-*`. SQLite provides local storage. Tauri builds and packages the sibling frontend; the root `npm run build` builds web code, while `npm run launcher:build` creates the native installer.
 
 For Windows development, install Node.js 24, stable Rust, WebView2 and Visual Studio Build Tools with **Desktop development with C++**. See the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for native setup.
 
@@ -126,7 +126,7 @@ To build a Windows installer:
 npm run launcher:build
 ```
 
-Installer output from the repository root: `apps/launcher/src-tauri/target/release/bundle/nsis/`.
+Installer output from the repository root: `apps/app/target/release/bundle/nsis/`.
 
 ### Checks and releases
 
@@ -144,7 +144,7 @@ With automatic releases enabled, launcher changes merged into `main` run the che
 
 ## Website and documentation
 
-The [public website](https://launcher.azuriasmp.org/) can be deployed independently to Vercel; the GitHub workflow also maintains the public distribution copy. Its source lives in [`../launcher-website/`](../launcher-website/) in this repository, with a separate static build workflow that publishes compiled output to the public distribution repository. Download links and release information use published GitHub releases.
+The [public website](https://launcher.azuriasmp.org/) can be deployed independently to Vercel; the GitHub workflow also maintains the public distribution copy. Its source lives in [`../frontend/`](../frontend/) in this repository, with a separate static build workflow that publishes compiled output to the public distribution repository. Download links and release information use published GitHub releases.
 
 - [Privacy policy](https://launcher.azuriasmp.org/privacy/)
 - [Terms of service](https://launcher.azuriasmp.org/terms/)
@@ -153,7 +153,7 @@ The [public website](https://launcher.azuriasmp.org/) can be deployed independen
 
 Report bugs and suggest improvements through [GitHub Issues](https://github.com/jamesb123450/azuria-releases/issues). Include the app version, Windows version and steps to reproduce a problem. Keep account credentials, tokens and personal data out of public reports.
 
-A project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](docs/FONT-LICENSE.txt).
+A project licence has not been selected. Dependency and asset licences continue to apply; see the licence files alongside assets and [Inter’s font licence](../app-frontend/docs/FONT-LICENSE.txt).
 
 Azuria is an independent project and is not affiliated with or endorsed by Mojang or Microsoft.
 
@@ -161,7 +161,7 @@ Azuria is an independent project and is not affiliated with or endorsed by Mojan
 
 ### Website advertising
 
-Paste your complete **display ad-unit** snippet into [`../launcher-website/src/adsense.html`](../launcher-website/src/adsense.html). This source-only slot renders on the website home page, above the latest-release notice. There is no public configuration form. It is never loaded by the Windows launcher: standard AdSense does not support desktop software.
+Paste your complete **display ad-unit** snippet into [`../frontend/src/adsense.html`](../frontend/src/adsense.html). This source-only slot renders on the website home page, above the latest-release notice. There is no public configuration form. It is never loaded by the Windows launcher: standard AdSense does not support desktop software.
 
 In Google AdSense, open **Ads → By ad unit → Display ads → Save and get code**. Before enabling, add and obtain approval for your website and configure/publish a Google-certified consent message, for example **Privacy & messaging → European regulations**. Review the advertising disclosures and regional settings for your audience.
 
@@ -189,4 +189,4 @@ Set up the migration in this order:
 
 Existing clients must install the bridge update before the source becomes private. Clients that miss it will need the public installer once, because their old updater address will become inaccessible. Subsequent releases use the new public address, retain signatures, continue version numbering and include `docs/RELEASE_NOTES.md`. Making a formerly public repository private cannot recall existing copies of its source.
 
-The website is served at <https://launcher.azuriasmp.org/>. Its source remains in `../launcher-website/`; the distribution repository stores only the built output. Update the token secret before its expiry. If publication fails, inspect incomplete draft releases before retrying; published version tags are never overwritten automatically.
+The website is served at <https://launcher.azuriasmp.org/>. Its source remains in `../frontend/`; the distribution repository stores only the built output. Update the token secret before its expiry. If publication fails, inspect incomplete draft releases before retrying; published version tags are never overwritten automatically.

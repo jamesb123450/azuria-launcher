@@ -148,8 +148,8 @@ test("raw release HTML is escaped and unexpected download origins are rejected",
 test("website-only changes never request a new launcher release", () => {
   assert.equal(
     affectsLauncher([
-      "apps/launcher-website/src/pages.mjs",
-      "apps/launcher-website/data/releases.json",
+      "apps/frontend/src/pages.mjs",
+      "apps/frontend/data/releases.json",
       ".github/workflows/website.yml",
       "docs/WEBSITE.md",
       "docs/ARCHITECTURE.md",
@@ -163,12 +163,12 @@ test("website-only changes never request a new launcher release", () => {
   );
   assert.equal(
     affectsLauncher([
-      "apps/launcher/src/App.vue",
-      "apps/launcher-website/src/pages.mjs",
+      "apps/app-frontend/src/App.vue",
+      "apps/frontend/src/pages.mjs",
     ]),
     true,
   );
-  assert.equal(affectsLauncher(["apps/launcher/docs/RELEASE_NOTES.md"]), true);
+  assert.equal(affectsLauncher(["apps/app/docs/RELEASE_NOTES.md"]), true);
   assert.equal(affectsLauncher(["unknown-config-file"]), false);
   assert.equal(affectsLauncher([]), false);
 });
