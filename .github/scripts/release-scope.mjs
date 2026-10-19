@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 // Products outside this explicit dependency boundary cannot publish a launcher.
 export function affectsLauncher(paths) {
   return paths.some((path) => {
-    const app = ["apps/launcher/", "apps/launcher-frontend/"].find((prefix) =>
+    const app = ["apps/app/", "apps/app-frontend/"].find((prefix) =>
       path.startsWith(prefix),
     );
     if (app) {
@@ -35,7 +35,7 @@ if (
   )
     throw new Error("Missing or invalid workflow commit metadata");
   const paths = /^0{40}$/.test(before)
-    ? ["apps/launcher/__new_branch__"]
+    ? ["apps/app/__new_branch__"]
     : execFileSync("git", ["diff", "--name-only", "-z", before, commit], {
         encoding: "utf8",
       })

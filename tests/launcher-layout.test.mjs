@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
 
 const root = new URL("../", import.meta.url);
-const native = new URL("apps/launcher/", root);
+const native = new URL("apps/app/", root);
 test("native packaging locates the separately built frontend", async () => {
   const config = JSON.parse(
     await readFile(new URL("tauri.conf.json", native), "utf8"),

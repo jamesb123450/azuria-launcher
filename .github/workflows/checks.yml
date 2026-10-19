@@ -3,8 +3,8 @@ on:
   push:
     branches: [main, "feat/**"]
     paths:
-      - "apps/launcher/**"
-      - "apps/launcher-frontend/**"
+      - "apps/app/**"
+      - "apps/app-frontend/**"
       - "packages/azuria-*/**"
       - "packages/release-tools/**"
       - "package.json"
@@ -13,8 +13,8 @@ on:
       - ".github/scripts/release-scope.mjs"
   pull_request:
     paths:
-      - "apps/launcher/**"
-      - "apps/launcher-frontend/**"
+      - "apps/app/**"
+      - "apps/app-frontend/**"
       - "packages/azuria-*/**"
       - "packages/release-tools/**"
       - "package.json"
@@ -27,7 +27,7 @@ env:
   AZURIA_CURSEFORGE_PROXY_URL: ${{ vars.AZURIA_CURSEFORGE_PROXY_URL }}
 defaults:
   run:
-    working-directory: apps/launcher
+    working-directory: apps/app
 permissions:
   contents: read
 concurrency:
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/launcher-frontend
+        working-directory: apps/app-frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,7 +64,7 @@ jobs:
       - run: npm ci
         working-directory: .
       - run: node scripts/installer-policy.mjs --check
-        working-directory: apps/launcher
+        working-directory: apps/app
       - run: npm run build
       - run: npm test
       - run: npx playwright install --with-deps chromium
@@ -73,7 +73,7 @@ jobs:
         if: failure()
         with:
           name: browser-test-results
-          path: apps/launcher-frontend/test-results/
+          path: apps/app-frontend/test-results/
   windows:
     runs-on: windows-latest
     steps:
@@ -87,7 +87,7 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/launcher
+          workspaces: apps/app
       - run: npm ci
         working-directory: .
       - run: npm run build --workspace=azuria-launcher-frontend
@@ -113,7 +113,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: azuria-windows-development-installer
-          path: apps/launcher/target/debug/bundle/nsis/*.exe
+          path: apps/app/target/debug/bundle/nsis/*.exe
           if-no-files-found: error
 
   release:
@@ -133,7 +133,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/launcher
+          workspaces: apps/app
       - run: npm ci
         working-directory: .
       - name: Verify public update host and allocate release version
