@@ -8,14 +8,14 @@ test("topbar follows navigation with working history controls", async ({
   await expect(
     header.getByRole("button", { name: "Go back", exact: true }),
   ).toBeDisabled();
-  await expect(header.getByRole("status")).toHaveText("No instances running");
+  await expect(header.getByRole("status")).toHaveText("No games running");
   await page
     .getByRole("navigation", { name: "Main navigation" })
     .getByRole("link", { name: "Discover", exact: true })
     .click();
   await expect(header.locator(".breadcrumb")).toHaveText("Discover");
   await header.getByRole("button", { name: "Go back", exact: true }).click();
-  await expect(header.locator(".breadcrumb")).toHaveText("Library");
+  await expect(header.locator(".breadcrumb")).toHaveText("Home");
   await header.getByRole("button", { name: "Go forward", exact: true }).click();
   await expect(header.locator(".breadcrumb")).toHaveText("Discover");
   await page.setViewportSize({ width: 900, height: 650 });

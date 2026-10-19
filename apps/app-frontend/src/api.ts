@@ -53,8 +53,8 @@ export const api = {
   },
   list: async (): Promise<Instance[]> =>
     desktop ? invoke("list_instances") : read().instances,
-  create: async (input: InstanceInput): Promise<Instance> => {
-    if (desktop) return invoke("create_instance", { input });
+  create: async (input: InstanceInput, prepare = true): Promise<Instance> => {
+    if (desktop) return invoke("create_instance", { input, prepare });
     const error = validateInput(input);
     if (error) throw new Error(error);
     const value = read();

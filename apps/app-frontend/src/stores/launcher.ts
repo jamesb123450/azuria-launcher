@@ -73,10 +73,12 @@ export const useLauncher = defineStore("launcher", () => {
       loading.value = false;
     }
   }
-  async function save(input: InstanceInput, id?: string) {
+  async function save(input: InstanceInput, id?: string, prepare = true) {
     if (loading.value || !libraryReady.value) return;
     return perform(async () => {
-      const item = id ? await api.update(id, input) : await api.create(input);
+      const item = id
+        ? await api.update(id, input)
+        : await api.create(input, prepare);
       instances.value = id
         ? instances.value.map((i) => (i.id === id ? item : i))
         : [...instances.value, item];

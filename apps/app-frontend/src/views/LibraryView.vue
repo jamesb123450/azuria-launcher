@@ -171,7 +171,7 @@ onBeforeUnmount(closeDelete);
   <div :class="['play-page', { 'context-collapsed': !contextOpen }]">
     <div class="play-main" :aria-busy="store.loading || store.busy">
       <div class="library-page-heading">
-        <h1>Library</h1>
+        <h2>Saved setups</h2>
         <button
           class="button secondary context-toggle"
           :aria-expanded="contextOpen"
@@ -399,8 +399,8 @@ onBeforeUnmount(closeDelete);
             <h3>
               {{
                 store.instances.length
-                  ? "No matching instances."
-                  : "Your library is empty"
+                  ? "No matching setups."
+                  : "No saved setups yet"
               }}
             </h3>
             <p class="muted">
@@ -627,8 +627,8 @@ onBeforeUnmount(closeDelete);
 
           <h3>What’s available</h3>
           <p class="muted">
-            Manage instance settings and connect your Microsoft account. Game
-            mod loader installation is still in development.
+            Launch Vanilla or Fabric, manage your saved setups and connect your
+            Minecraft account. Other loaders are still in development.
           </p>
           <RouterLink class="text-link" to="/roadmap"
             >View roadmap <ArrowUpRight :size="14"

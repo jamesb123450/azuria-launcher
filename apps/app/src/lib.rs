@@ -169,12 +169,15 @@ fn create_instance(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     input: InstanceInput,
+    prepare: Option<bool>,
 ) -> Result<Instance, String> {
     let instance = with_store(&state, |store| store.create(input))?;
-    if matches!(
-        instance.loader,
-        azuria_core::Loader::Vanilla | azuria_core::Loader::Fabric
-    ) {
+    if prepare.unwrap_or(true)
+        && matches!(
+            instance.loader,
+            azuria_core::Loader::Vanilla | azuria_core::Loader::Fabric
+        )
+    {
         if let Err(error) = game::prepare_instance(app.clone(), instance.id.clone()) {
             game::preparation_failed(&app, &instance.id, &error);
         }

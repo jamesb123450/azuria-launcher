@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
-import LibraryView from "./views/LibraryView.vue";
+import HomeView from "./views/HomeView.vue";
+import VersionsView from "./views/VersionsView.vue";
 import SettingsView from "./views/SettingsView.vue";
 import ProjectView from "./views/ProjectView.vue";
 import DiscoverView from "./views/DiscoverView.vue";
@@ -14,7 +15,9 @@ export const router = createRouter({
     return to.hash ? { el: to.hash, behavior: "smooth" } : { top: 0 };
   },
   routes: [
-    { path: "/", component: LibraryView },
+    { path: "/", component: HomeView },
+    { path: "/versions", component: VersionsView },
+    { path: "/library", redirect: "/versions?tab=setups" },
     { path: "/settings", component: SettingsView },
     { path: "/wardrobe", component: WardrobeView },
     { path: "/screenshots", component: ScreenshotsView },
