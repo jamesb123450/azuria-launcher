@@ -31,7 +31,7 @@ public static class AzuriaSingleInstanceWindow {
     }, IntPtr.Zero);
     return found;
   }
-  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int command);
+  [DllImport("user32.dll", SetLastError=true)] public static extern bool PostMessage(IntPtr h, uint message, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint processId);
@@ -59,14 +59,27 @@ try {
   Assert ($window -ne 0 -and [AzuriaSingleInstanceWindow]::IsWindowVisible($window)) 'The launcher did not create its visible main window.'
   Write-Output "Testing Azuria main window $window in original PID $($primary.Id)."
 
-  # Closing to tray hides this same window. Also cover minimised and visible states.
+  # Use application/window messages rather than ShowWindow(SW_HIDE): hiding
+  # behind Tauri's back leaves its cached VISIBLE flag set, so show() is a no-op.
+  # CloseRequested also waits for normal startup storage checks to finish;
+  # this test must not bypass the application's migration acknowledgement guard.
   foreach ($state in @('hidden', 'minimised', 'visible')) {
     switch ($state) {
       'hidden' {
-        [void][AzuriaSingleInstanceWindow]::ShowWindow($window, 0)
-        Assert (-not [AzuriaSingleInstanceWindow]::IsWindowVisible($window)) 'Could not hide the primary window.'
+        for ($i = 0; $i -lt 300; $i++) {
+          Assert ([AzuriaSingleInstanceWindow]::PostMessage($window, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)) 'Could not request close-to-tray.'
+          Start-Sleep -Milliseconds 200
+          $primary.Refresh()
+          Assert (-not $primary.HasExited) 'Closing the window exited Azuria instead of sending it to the tray.'
+          if (-not [AzuriaSingleInstanceWindow]::IsWindowVisible($window)) { break }
+        }
+        Assert (-not [AzuriaSingleInstanceWindow]::IsWindowVisible($window)) 'Azuria did not close to tray after startup.'
       }
-      'minimised' { [void][AzuriaSingleInstanceWindow]::ShowWindow($window, 6) }
+      'minimised' {
+        Assert ([AzuriaSingleInstanceWindow]::PostMessage($window, 0x0112, [IntPtr]0xF020, [IntPtr]::Zero)) 'Could not request minimise.'
+        for ($i = 0; $i -lt 100 -and -not [AzuriaSingleInstanceWindow]::IsIconic($window); $i++) { Start-Sleep -Milliseconds 100 }
+        Assert ([AzuriaSingleInstanceWindow]::IsIconic($window)) 'Azuria did not minimise before the restore check.'
+      }
     }
     # A different working directory must still find the original application.
     $secondary = Start-Process $Executable -WorkingDirectory $work -PassThru
