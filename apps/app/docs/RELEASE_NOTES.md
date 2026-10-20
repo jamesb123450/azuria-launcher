@@ -1,6 +1,8 @@
-# Profile content and Discover
+# Release notes
 
-- Give profile pages a compact content tab bar and a clearer installed-content list.
-- Add an Update all review showing current and proposed versions before compatible updates install in sequence.
-- Refresh Discover with a compact toolbar, provider switching, clearer project rows and a visible installation target.
-- Keep the selected profile and content type when opening Discover or a project from a profile.
+- Add a separate Azuria account section with browser sign-in and a one-use launcher connection code.
+- Keep saved Azuria sessions in Windows Credential Manager, independently of Minecraft accounts.
+- Add shared account pages for registration, email verification, password recovery, profile settings and account deletion.
+- Include Supabase database migrations and setup instructions for accounts.azuriasmp.org.
+
+Azuria accounts require the hosted service and public build configuration to be set up. Minecraft sign-in and local launcher features remain available independently.

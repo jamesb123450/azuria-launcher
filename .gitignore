@@ -11,3 +11,7 @@ playwright-report/
 .wrangler/
 *.log
 apps/app/update-build.json
+
+# Supabase CLI project references and local runtime state
+**/supabase/.temp/
+**/supabase/.branches/

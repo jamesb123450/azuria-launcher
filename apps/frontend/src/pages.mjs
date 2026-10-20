@@ -195,6 +195,7 @@ export function render(
       <div>
         <h2>Azuria Studios</h2>
         <a href="${link("contact/")}">Contact</a
+        ><a href="https://accounts.azuriasmp.org/">Azuria account</a
         ><a href="${link("privacy/")}">Privacy policy</a
         ><a href="${link("terms/")}">Terms of service</a
         ><a href="${repository}/issues">Report an issue</a
