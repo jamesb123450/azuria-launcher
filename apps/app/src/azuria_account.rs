@@ -325,6 +325,180 @@ pub fn azuria_manage() -> Result<(), String> {
     }
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FriendAction {
+    Snapshot,
+    Find,
+    Send,
+    Accept,
+    Decline,
+    Cancel,
+    Remove,
+    Block,
+    Unblock,
+}
+#[derive(Deserialize, Serialize)]
+pub struct Relationship {
+    kind: String,
+    account_id: String,
+    username: String,
+    display_name: String,
+    since: String,
+}
+#[derive(Deserialize, Serialize)]
+pub struct FriendMatch {
+    id: String,
+    username: String,
+    display_name: String,
+    relationship: String,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FriendsView {
+    account_id: String,
+    entries: Option<Vec<Relationship>>,
+    matches: Vec<FriendMatch>,
+    mutation_applied: bool,
+    warning: Option<String>,
+}
+fn valid_friend_target(value: &str) -> bool {
+    value.len() == 36
+        && value.bytes().enumerate().all(|(i, c)| {
+            if [8, 13, 18, 23].contains(&i) {
+                c == b'-'
+            } else {
+                c.is_ascii_hexdigit()
+            }
+        })
+}
+fn friend_call(
+    action: &FriendAction,
+    target: Option<&str>,
+    username: Option<&str>,
+) -> Result<(&'static str, serde_json::Value), String> {
+    use FriendAction::*;
+    match action {
+        Snapshot => Ok(("friend_snapshot", serde_json::json!({}))),
+        Find => {
+            let name = username.unwrap_or_default().trim().to_ascii_lowercase();
+            if !(3..=24).contains(&name.len())
+                || !name
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+            {
+                return Err(
+                    "Enter a full Azuria username using 3–24 letters, numbers or underscores."
+                        .into(),
+                );
+            }
+            Ok(("find_friend", serde_json::json!({"p_username": name})))
+        }
+        _ => {
+            let target = target
+                .filter(|value| valid_friend_target(value))
+                .ok_or("Choose a valid Azuria account.")?;
+            match action {
+                Send => Ok((
+                    "send_friend_request",
+                    serde_json::json!({"p_target":target}),
+                )),
+                Accept | Decline => Ok((
+                    "respond_friend_request",
+                    serde_json::json!({"p_sender":target,"p_accept":matches!(action, Accept)}),
+                )),
+                Cancel => Ok((
+                    "cancel_friend_request",
+                    serde_json::json!({"p_target":target}),
+                )),
+                Remove => Ok(("remove_friend", serde_json::json!({"p_target":target}))),
+                Block => Ok(("block_user", serde_json::json!({"p_target":target}))),
+                Unblock => Ok(("unblock_user", serde_json::json!({"p_target":target}))),
+                _ => unreachable!(),
+            }
+        }
+    }
+}
+async fn friends_rpc(
+    config: &Config,
+    access: &str,
+    name: &str,
+    body: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let mut response = client()?.post(format!("{}/rest/v1/rpc/{name}", config.url))
+        .header("apikey", config.key).bearer_auth(access).json(body).send().await
+        .map_err(|_| "Could not confirm the request. Check your connection and refresh Friends before trying again.".to_string())?;
+    let status = response.status();
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(|_| {
+        "Could not read the friends response. Refresh Friends before retrying.".to_string()
+    })? {
+        if bytes.len() + chunk.len() > 2 * 1024 * 1024 {
+            return Err("The friends response is too large. Try again later.".into());
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    let value: serde_json::Value =
+        serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null);
+    if !status.is_success() {
+        let message = match value.get("code").and_then(|v| v.as_str()) {
+            Some("P0001") => "Too many requests. Wait a little before trying again.",
+            Some("42501") => "Reconnect your Azuria account and make sure your email and profile are set up.",
+            Some("22023" | "23505") => "This request is no longer available, is already pending or cannot be sent. Refresh Friends.",
+            Some("PGRST202" | "42883") => "Friends are not configured on the account service yet.",
+            _ => "Could not complete the friends request. Refresh Friends and try again.",
+        };
+        return Err(message.into());
+    }
+    Ok(value)
+}
+#[tauri::command]
+pub async fn azuria_friends(
+    state: State<'_, AzuriaAccounts>,
+    action: FriendAction,
+    target: Option<String>,
+    username: Option<String>,
+) -> Result<FriendsView, String> {
+    let (name, body) = friend_call(&action, target.as_deref(), username.as_deref())?;
+    let _operation = state.operation()?;
+    let config = config().ok_or("Azuria accounts are not configured in this build.")?;
+    let token = saved()?.ok_or("Sign in to your Azuria account first.")?;
+    let tokens = refresh(&config, token).await?;
+    if tokens.user.email_confirmed_at.is_none() {
+        return Err("Verify your email first.".into());
+    }
+    save(&tokens.refresh_token)?;
+    let value = friends_rpc(&config, &tokens.access_token, name, &body).await?;
+    let mut result = FriendsView {
+        account_id: tokens.user.id,
+        entries: None,
+        matches: vec![],
+        mutation_applied: false,
+        warning: None,
+    };
+    match action {
+        FriendAction::Snapshot => {
+            result.entries = Some(
+                serde_json::from_value(value)
+                    .map_err(|_| "Could not read your friends list.".to_string())?,
+            )
+        }
+        FriendAction::Find => {
+            result.matches = serde_json::from_value(value)
+                .map_err(|_| "Could not read the search result.".to_string())?
+        }
+        _ => {
+            result.mutation_applied = true;
+            match friends_rpc(&config, &tokens.access_token, "friend_snapshot", &serde_json::json!({})).await
+                .and_then(|value| serde_json::from_value(value).map_err(|_| "Could not read your friends list.".to_string())) {
+                Ok(entries) => result.entries = Some(entries),
+                Err(_) => result.warning = Some("Your change was saved, but the list could not refresh. Use Refresh to see the latest requests.".into()),
+            }
+        }
+    }
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -343,5 +517,17 @@ mod tests {
         assert_eq!(verifier.len(), 43);
         assert_eq!(challenge.len(), 43);
         assert_ne!(verifier, challenge);
+    }
+    #[test]
+    fn friend_commands_validate_targets_and_cannot_select_arbitrary_rpc_names() {
+        assert!(friend_call(&FriendAction::Remove, Some("../admin"), None).is_err());
+        assert!(friend_call(&FriendAction::Find, None, Some("%")).is_err());
+        let id = "22222222-2222-4222-8222-222222222222";
+        let (name, body) = friend_call(&FriendAction::Accept, Some(id), None).unwrap();
+        assert_eq!(name, "respond_friend_request");
+        assert_eq!(body["p_accept"], true);
+        assert_eq!(body["p_sender"], id);
+        let (_, body) = friend_call(&FriendAction::Find, None, Some(" Player_1 ")).unwrap();
+        assert_eq!(body["p_username"], "player_1");
     }
 }

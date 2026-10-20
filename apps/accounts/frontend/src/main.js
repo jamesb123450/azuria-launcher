@@ -437,7 +437,7 @@ async function accountScreen() {
     profileForm,
     actions,
     paragraph(
-      "Minecraft accounts are managed separately in the launcher. Friends and messaging are coming later.",
+      "Minecraft accounts and friends are managed in the launcher. Messaging is coming later.",
       "fine",
     ),
   );
@@ -539,6 +539,10 @@ function legalPage(type) {
           "Connecting the launcher creates a short-lived, single-use authorization code. The server stores a hash of that code for at least five minutes to limit repeated requests. Codes expire after two minutes; older records are removed when new codes are issued.",
         ],
         [
+          "Friends",
+          "We store friend requests, accepted friendships and accounts you block. Other people can see your Azuria username and display name when finding or connecting with you. Your email address is not shared with friends. Online status and messaging are not included yet.",
+        ],
+        [
           "Administration",
           "Authorised Azuria administrators can view account identifiers, email addresses, verification and suspension status to manage accounts and investigate abuse. Account changes record the administrator and affected account IDs, reason, action and outcome. This history may remain after account deletion for security and accountability.",
         ],
@@ -562,7 +566,7 @@ function legalPage(type) {
         ],
         [
           "Availability",
-          "Features may change and the service may be interrupted for maintenance or faults. Friends and messaging are not included in this initial account release.",
+          "Features may change and the service may be interrupted for maintenance or faults. Some features are introduced gradually. Messaging is not available yet.",
         ],
         [
           "Minecraft",

@@ -245,14 +245,18 @@ test("navigation highlights only the current page and screenshot tab matches its
 
   await library.click();
 });
-test("community sidebar has friends coming soon and two square ad slots", async ({
+test("community sidebar shows signed-out friends guidance and two square ad slots", async ({
   page,
 }) => {
   await page.goto("/");
   const sidebar = page.getByRole("complementary", {
     name: "Friends and advertisements",
   });
-  await expect(sidebar.getByText("Coming soon", { exact: true })).toBeVisible();
+  await expect(
+    sidebar.getByText("Sign in to your Azuria account to add friends.", {
+      exact: true,
+    }),
+  ).toBeVisible();
   for (const width of [900, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const slot of [1, 2]) {
