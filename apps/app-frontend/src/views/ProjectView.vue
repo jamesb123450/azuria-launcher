@@ -66,7 +66,12 @@ const number = (n: number) =>
 </script>
 <template>
   <section class="project-page">
-    <RouterLink to="/discover" class="text-link project-back"
+    <RouterLink
+      :to="{
+        path: '/discover',
+        query: { instance: route.query.instance, kind },
+      }"
+      class="text-link project-back"
       ><ArrowLeft :size="16" />Discover</RouterLink
     >
     <p v-if="loading" role="status" class="muted">Loading project…</p>
@@ -178,7 +183,15 @@ const number = (n: number) =>
           </p></template
         >
       </div>
-      <ContentInstaller ref="installer" :provider="provider" :kind="kind"
+      <ContentInstaller
+        ref="installer"
+        :provider="provider"
+        :kind="kind"
+        :instance-id="
+          typeof route.query.instance === 'string'
+            ? route.query.instance
+            : undefined
+        "
     /></template>
   </section>
 </template>

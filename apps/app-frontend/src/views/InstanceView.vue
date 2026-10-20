@@ -13,6 +13,7 @@ import {
   Boxes,
   Globe,
   ScrollText,
+  SlidersHorizontal,
   Camera,
   Search,
   RefreshCw,
@@ -595,11 +596,60 @@ const prettySize = (size: number) =>
               >
             </p>
           </div>
+          <nav class="instance-tabs" aria-label="Instance sections">
+            <button
+              v-if="instance.loader !== 'vanilla'"
+              :aria-pressed="sectionView === 'content' && tab === 'mods'"
+              @click="
+                sectionView = 'content';
+                tab = 'mods';
+              "
+            >
+              <Boxes :size="15" />Mods
+            </button>
+            <button
+              :aria-pressed="
+                sectionView === 'content' && tab === 'resourcePacks'
+              "
+              @click="
+                sectionView = 'content';
+                tab = 'resourcePacks';
+              "
+            >
+              <FolderOpen :size="15" />Resource packs
+            </button>
+            <button
+              :aria-pressed="sectionView === 'content' && tab === 'shaderPacks'"
+              @click="
+                sectionView = 'content';
+                tab = 'shaderPacks';
+              "
+            >
+              <SlidersHorizontal :size="15" />Shaders
+            </button>
+            <button
+              :aria-pressed="sectionView === 'worlds'"
+              @click="sectionView = 'worlds'"
+            >
+              <Globe :size="15" />Worlds
+            </button>
+            <RouterLink class="instance-section-link" :to="`/monitor/${id}`"
+              ><ScrollText :size="15" />Logs</RouterLink
+            >
+            <RouterLink
+              class="instance-section-link"
+              :to="`/screenshots?instance=${id}`"
+              ><Camera :size="15" />Gallery</RouterLink
+            >
+            <button @click="openSettings()">
+              <Settings :size="15" />Settings
+            </button>
+          </nav>
           <div class="instance-inline-actions">
             <button
               class="icon-button instance-settings-shortcut"
               title="Settings"
-              aria-label="Settings"
+              aria-label="Profile settings"
               @click="openSettings()"
             >
               <Settings :size="19" />
@@ -1060,31 +1110,13 @@ const prettySize = (size: number) =>
           </p>
         </dialog>
         <template v-if="true">
-          <nav class="instance-tabs" aria-label="Instance sections">
-            <button
-              v-for="view in [
-                { id: 'content', label: 'Content', icon: Boxes },
-                { id: 'worlds', label: 'Worlds', icon: Globe },
-                { id: 'logs', label: 'Logs', icon: ScrollText },
-              ]"
-              :key="view.id"
-              :aria-pressed="sectionView === view.id"
-              @click="sectionView = view.id as 'content' | 'worlds' | 'logs'"
-            >
-              <component :is="view.icon" :size="17" />{{ view.label }}
-            </button>
-            <RouterLink
-              class="instance-section-link"
-              :to="`/screenshots?instance=${id}`"
-              ><Camera :size="17" />Screenshots</RouterLink
-            >
-          </nav>
           <LiveLogs v-if="showLiveLogs" :id="id" />
           <InstanceContent
             v-else-if="sectionView === 'content'"
             :key="id"
             :id="id"
             :loader="instance.loader"
+            :section="tab"
             :inventory="inventory"
             :checking="inventoryBusy"
             :check-error="inventoryError"

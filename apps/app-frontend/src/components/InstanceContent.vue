@@ -13,12 +13,14 @@ import {
   MoreVertical,
   X,
   Boxes,
+  Download,
 } from "@lucide/vue";
 import { desktop } from "../api";
 import { instanceApi, type FileEntry, type Section } from "../instance-api";
 import { type Inventory, type InstalledProject } from "../content-api";
 import { useContent } from "../stores/content";
 import ContentIcon from "./ContentIcon.vue";
+import ContentUpdateReview from "./ContentUpdateReview.vue";
 import ContentVersionSwitcher from "./ContentVersionSwitcher.vue";
 import ReleaseBadge from "./ReleaseBadge.vue";
 import VersionPicker from "./VersionPicker.vue";
@@ -28,10 +30,12 @@ const props = defineProps<{
   inventory: Inventory;
   checking: boolean;
   checkError: string;
+  section?: string;
 }>();
 const emit = defineEmits<{ check: []; settings: [] }>();
 const content = useContent(),
   switcher = ref<InstanceType<typeof ContentVersionSwitcher>>(),
+  updateReview = ref<InstanceType<typeof ContentUpdateReview>>(),
   packDialog = ref<HTMLDialogElement>(),
   confirm = ref<HTMLDialogElement>();
 type Row = FileEntry & { section: Section; path: string };
@@ -39,7 +43,7 @@ const rows = ref<Row[]>([]),
   busy = ref(false),
   error = ref(""),
   query = ref(""),
-  category = ref("all"),
+  category = ref(props.section ?? "all"),
   sort = ref("az"),
   packQuery = ref(""),
   packCategory = ref("all"),
@@ -107,6 +111,50 @@ const updateFor = (r: Row) =>
       p.project.id === metadata(r)?.project.id &&
       p.provider === (metadata(r)?.provider ?? "modrinth"),
   );
+const updates = computed(() => {
+  const result = new Map<string, InstalledProject>();
+  for (const row of additional.value) {
+    const item = updateFor(row);
+    if (
+      item?.latest &&
+      (!selected.value.length || selected.value.includes(row.path))
+    )
+      result.set(`${item.provider}:${item.project.id}`, item);
+  }
+  return [...result.values()];
+});
+const discoverKind = computed(() =>
+  category.value === "resourcePacks"
+    ? "resourcepacks"
+    : category.value === "shaderPacks"
+      ? "resourcepacks"
+      : props.loader === "vanilla"
+        ? "resourcepacks"
+        : "mods",
+);
+const discoverQuery = computed(() => ({
+  instance: props.id,
+  kind: discoverKind.value,
+  ...(category.value === "shaderPacks" ? { query: "shader" } : {}),
+}));
+watch(
+  () => props.section,
+  (value) => {
+    if (value) {
+      category.value = value;
+      query.value = "";
+      selected.value = [];
+    }
+  },
+);
+function openCurrentFolder() {
+  void instanceApi
+    .open(
+      props.id,
+      category.value === "all" ? "root" : (category.value as Section),
+    )
+    .catch((e) => (error.value = String(e)));
+}
 function selectAll(event: Event) {
   if ((event.target as HTMLInputElement).checked)
     selected.value = [
@@ -214,7 +262,7 @@ watch(
   () => {
     rows.value = [];
     query.value = "";
-    category.value = "all";
+    category.value = props.section ?? "all";
     selected.value = [];
     closePack();
     void refresh();
@@ -282,64 +330,126 @@ defineExpose({ refresh });
         </button>
       </footer>
     </section>
-    <div class="content-title">
+    <div class="content-title" v-if="!section">
       <h2>{{ inventory.pack ? "Additional content" : "Instance content" }}</h2>
-      <span v-if="checking" class="muted" role="status">Checking versions…</span
-      ><button
-        class="icon-button"
-        aria-label="Check content updates"
-        title="Check updates"
-        :disabled="checking || content.busy"
-        @click="emit('check')"
-      >
-        <RefreshCw :size="16" />
-      </button>
     </div>
-    <div class="additional-toolbar">
+    <div class="additional-toolbar content-command-bar">
+      <input
+        type="checkbox"
+        aria-label="Select all additional content"
+        :checked="
+          additional.length > 0 &&
+          additional.every((r) => selected.includes(r.path))
+        "
+        :disabled="!additional.length || busy || content.busy"
+        @change="selectAll"
+      />
       <label class="search-box"
         ><Search :size="17" /><input
           v-model="query"
           aria-label="Search additional content"
-          placeholder="Search projects…" /></label
-      ><button
-        class="button secondary"
-        :disabled="!desktop || busy || content.busy"
-        @click="importFile"
-      >
-        <Upload :size="15" />Upload files</button
-      ><RouterLink class="button primary" :to="`/discover?instance=${id}`"
-        ><Compass :size="16" />Browse content</RouterLink
-      >
-    </div>
-    <div class="content-filter-row">
+          :placeholder="`Search ${additional.length} ${category === 'mods' ? 'mods' : 'files'}…`"
+      /></label>
       <VersionPicker
         v-model="sort"
         label="Sort content"
         :options="[
-          { value: 'az', label: 'Name (A–Z)' },
-          { value: 'za', label: 'Name (Z–A)' },
+          { value: 'az', label: 'A–Z' },
+          { value: 'za', label: 'Z–A' },
         ]"
       />
-      <div class="content-filter-tabs" role="group" aria-label="Content type">
-        <button
-          v-for="c in categories"
-          :key="c.id"
-          :aria-pressed="category === c.id"
-          @click="category = c.id"
-        >
-          {{ c.label }}
-        </button>
-      </div>
+      <button
+        class="button update-all-button"
+        :disabled="
+          !desktop || busy || content.busy || checking || !updates.length
+        "
+        @click="updateReview?.open(updates)"
+      >
+        <Download :size="15" />{{
+          selected.length ? "Update selected" : "Update all"
+        }}<span v-if="updates.length">({{ updates.length }})</span>
+      </button>
+      <RouterLink
+        v-if="category !== 'shaderPacks'"
+        class="button primary"
+        :to="{ path: '/discover', query: discoverQuery }"
+        ><Compass :size="16" />Add content</RouterLink
+      ><button
+        v-else
+        class="button primary"
+        :disabled="!desktop || busy || content.busy"
+        @click="importFile"
+      >
+        <Upload :size="16" />Add shaders
+      </button>
       <button
         class="icon-button"
-        aria-label="Refresh instance files"
-        title="Refresh files"
-        :disabled="busy"
-        @click="refresh"
+        :disabled="!desktop"
+        aria-label="Open content folder"
+        @click="openCurrentFolder"
       >
-        <RefreshCw :size="16" />
+        <FolderOpen :size="18" />
+      </button>
+      <details class="content-overflow">
+        <summary class="icon-button" aria-label="Content tools">
+          <MoreVertical :size="18" />
+        </summary>
+        <div>
+          <button
+            :disabled="!desktop || busy || content.busy"
+            @click="importFile"
+          >
+            <Upload :size="15" />Upload files</button
+          ><button :disabled="checking || content.busy" @click="emit('check')">
+            <RefreshCw :size="15" />Check content updates</button
+          ><button :disabled="busy" @click="refresh">
+            <RefreshCw :size="15" />Refresh instance files
+          </button>
+        </div>
+      </details>
+    </div>
+    <div
+      v-if="!section"
+      class="content-filter-tabs"
+      role="group"
+      aria-label="Content type"
+    >
+      <button
+        v-for="c in categories"
+        :key="c.id"
+        :aria-pressed="category === c.id"
+        @click="category = c.id"
+      >
+        {{ c.label }}
       </button>
     </div>
+    <p v-if="checking" class="muted content-check-status" role="status">
+      Checking for updates…
+    </p>
+    <div v-if="content.batchActive" class="content-batch-status" role="status">
+      <span>Updating profile content…</span
+      ><button
+        class="text-link"
+        :disabled="content.job?.stage === 'installing' || content.batchStopped"
+        @click="content.cancel"
+      >
+        {{ content.batchStopped ? "Stopping…" : "Cancel remaining updates" }}
+      </button>
+    </div>
+    <p
+      v-if="
+        !content.batchActive &&
+        content.batchResult &&
+        content.batchInstance === id
+      "
+      class="content-batch-result"
+      role="status"
+    >
+      {{ content.batchResult }}
+    </p>
+    <p v-if="content.error" class="inline-error" role="alert">
+      {{ content.error }}
+    </p>
     <div v-if="selected.length" class="content-bulk">
       <span>{{ selected.length }} selected</span
       ><button
@@ -371,18 +481,6 @@ defineExpose({ refresh });
       Local content is available in the desktop app.
     </p>
     <div class="content-table" role="table" aria-label="Additional content">
-      <div class="content-table-head" role="row">
-        <input
-          type="checkbox"
-          aria-label="Select all additional content"
-          :checked="
-            additional.length > 0 &&
-            additional.every((r) => selected.includes(r.path))
-          "
-          :disabled="!additional.length"
-          @change="selectAll"
-        /><span>Project</span><span>Version</span><span>Actions</span>
-      </div>
       <article
         v-for="row in additional"
         :key="row.path"
@@ -396,38 +494,54 @@ defineExpose({ refresh });
           :aria-label="'Select ' + title(row)"
         />
         <div class="content-project">
-          <RouterLink v-if="projectPath(row)" :to="projectPath(row)"
+          <RouterLink
+            v-if="projectPath(row)"
+            :to="{ path: projectPath(row), query: { instance: id } }"
             ><ContentIcon :url="metadata(row)?.project.iconUrl" /></RouterLink
           ><ContentIcon v-else />
           <div>
-            <RouterLink v-if="projectPath(row)" :to="projectPath(row)">{{
-              title(row)
-            }}</RouterLink
-            ><strong v-else>{{ title(row) }}</strong
-            ><small>{{ metadata(row)?.project.author || "Local file" }}</small>
+            <RouterLink
+              v-if="projectPath(row)"
+              :to="{ path: projectPath(row), query: { instance: id } }"
+              >{{ title(row) }}</RouterLink
+            ><strong v-else>{{ title(row) }}</strong>
+            <small class="installed-content-meta"
+              ><img
+                v-if="metadata(row)"
+                :src="`/providers/${metadata(row)?.provider ?? 'modrinth'}.svg`"
+                alt=""
+              />{{ metadata(row)?.project.author || "Local file" }}<span>·</span
+              ><span :title="row.name">{{
+                metadata(row)?.versionName ||
+                row.name.replace(/\.disabled$/, "")
+              }}</span></small
+            >
           </div>
-        </div>
-        <div class="content-file-version">
-          <strong>{{ metadata(row)?.versionName || "Local file" }}</strong
-          ><span>{{ row.name.replace(/\.disabled$/, "") }}</span
-          ><ReleaseBadge
-            v-if="metadata(row)?.releaseType"
-            :type="metadata(row)?.releaseType"
-          />
         </div>
         <div class="content-row-actions">
           <button
             v-if="updateFor(row)"
             class="icon-button"
             :class="{ 'has-update': updateFor(row)?.latest }"
-            :aria-label="'Switch version of ' + title(row)"
+            :aria-label="
+              (updateFor(row)?.latest
+                ? 'Review update for '
+                : 'Switch version of ') + title(row)
+            "
             :title="
               updateFor(row)?.latest ? 'Update available' : 'Switch version'
             "
             :disabled="content.busy"
-            @click="switchVersion(updateFor(row)!)"
+            @click="
+              updateFor(row)?.latest
+                ? updateReview?.open([updateFor(row)!])
+                : switchVersion(updateFor(row)!)
+            "
           >
-            <ArrowLeftRight :size="16" /></button
+            <Download v-if="updateFor(row)?.latest" :size="16" /><ArrowLeftRight
+              v-else
+              :size="16"
+            /></button
           ><button
             class="content-switch"
             role="switch"
@@ -436,15 +550,7 @@ defineExpose({ refresh });
             :disabled="busy || content.busy"
             @click="toggle(row)"
           >
-            <span /></button
-          ><button
-            class="icon-button danger"
-            :aria-label="'Remove ' + row.name"
-            title="Remove"
-            :disabled="busy || content.busy"
-            @click="remove([row])"
-          >
-            <Trash2 :size="16" />
+            <span />
           </button>
           <details
             class="content-overflow"
@@ -462,9 +568,23 @@ defineExpose({ refresh });
               :aria-label="'More actions for ' + title(row)"
               title="More actions"
             >
-              <MoreVertical :size="17" />
+              <Settings :size="17" />
             </summary>
             <div>
+              <button
+                v-if="updateFor(row)"
+                :disabled="content.busy"
+                @click="switchVersion(updateFor(row)!)"
+              >
+                <ArrowLeftRight :size="15" />Switch version
+              </button>
+              <button
+                :disabled="busy || content.busy"
+                :aria-label="'Remove ' + row.name"
+                @click="remove([row])"
+              >
+                <Trash2 :size="15" />Remove file
+              </button>
               <button
                 @click="
                   instanceApi
@@ -586,6 +706,7 @@ defineExpose({ refresh });
         {{ inventory.pack?.resourcePacks }} resource packs
       </footer>
     </dialog>
+    <ContentUpdateReview ref="updateReview" :id="id" />
     <ContentVersionSwitcher ref="switcher" :id="id" />
     <dialog
       ref="confirm"
@@ -951,6 +1072,124 @@ defineExpose({ refresh });
   .additional-toolbar .button {
     padding-inline: 10px;
     font-size: 12px;
+  }
+}
+</style>
+<style scoped>
+.content-command-bar {
+  gap: 9px;
+  margin: 12px 0 22px;
+  flex-wrap: wrap;
+}
+.content-command-bar > input {
+  flex: 0 0 15px;
+  accent-color: var(--pink);
+}
+.content-command-bar .search-box {
+  flex: 1 1 180px;
+  min-width: 150px;
+}
+.content-command-bar :deep(.version-picker) {
+  width: 82px;
+  min-width: 82px;
+}
+.content-command-bar .button {
+  font-size: 11px;
+  gap: 6px;
+  min-height: 38px;
+  padding: 9px 11px;
+  white-space: nowrap;
+}
+.update-all-button {
+  background: color-mix(in srgb, var(--pink) 12%, var(--panel));
+  color: var(--pink);
+  border: 1px solid color-mix(in srgb, var(--pink) 20%, transparent);
+}
+.content-table {
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  border-radius: 0;
+}
+.content-table > .content-table-row:not(.pack) {
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  padding: 17px 4px;
+  gap: 15px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+.content-project :deep(.content-icon) {
+  width: 47px;
+  height: 47px;
+  border-radius: 10px;
+}
+.content-project {
+  gap: 15px;
+}
+.content-project > div > strong,
+.content-project > div > a {
+  font-size: 14px;
+  font-weight: 650;
+}
+.content-project .installed-content-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  margin-top: 7px;
+  min-width: 0;
+}
+.installed-content-meta > img {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.installed-content-meta > span:last-child {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.content-row-actions {
+  gap: 8px;
+}
+.content-row-actions .has-update {
+  color: var(--pink);
+  background: color-mix(in srgb, var(--pink) 12%, var(--panel));
+}
+.content-check-status {
+  font-size: 11px;
+}
+.content-batch-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 13px;
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+.content-batch-status button {
+  font-size: 11px;
+}
+@media (max-width: 1050px) {
+  .content-command-bar .search-box {
+    flex-basis: calc(100% - 35px);
+  }
+  .content-command-bar .button {
+    flex: 1;
+    justify-content: center;
+  }
+  .content-project {
+    gap: 9px;
+  }
+  .content-table > .content-table-row:not(.pack) {
+    gap: 9px;
+  }
+  .content-row-actions {
+    gap: 4px;
   }
 }
 </style>

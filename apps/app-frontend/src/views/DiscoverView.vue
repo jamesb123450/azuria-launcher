@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import "./discover.css";
+import { useRoute, useRouter } from "vue-router";
+import InstanceIcon from "../components/InstanceIcon.vue";
 import ContentInstaller from "../components/ContentInstaller.vue";
 import ContentIcon from "../components/ContentIcon.vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -17,6 +19,8 @@ import {
   ChevronRight,
   RotateCcw,
   ExternalLink,
+  Eye,
+  ArrowLeft,
 } from "@lucide/vue";
 import VersionPicker from "../components/VersionPicker.vue";
 import {
@@ -29,6 +33,8 @@ import { useLauncher } from "../stores/launcher";
 import { useContent } from "../stores/content";
 import { desktop } from "../api";
 import { gameVersions } from "../lib/game-versions";
+const route = useRoute(),
+  router = useRouter();
 const store = useLauncher(),
   content = useContent();
 const tabs = [
@@ -37,9 +43,15 @@ const tabs = [
   { id: "datapacks" as const, label: "Datapacks", icon: FileCode2 },
   { id: "resourcepacks" as const, label: "Resource packs", icon: Paintbrush },
 ];
-const kind = ref<Kind>("modpacks"),
+const kind = ref<Kind>(
+    ["mods", "modpacks", "datapacks", "resourcepacks"].includes(
+      String(route.query.kind),
+    )
+      ? (route.query.kind as Kind)
+      : "modpacks",
+  ),
   source = ref<Provider>("modrinth"),
-  query = ref(""),
+  query = ref(typeof route.query.query === "string" ? route.query.query : ""),
   category = ref(""),
   loader = ref(""),
   version = ref(""),
@@ -51,6 +63,59 @@ const projects = ref<Project[]>([]),
   loading = ref(false),
   error = ref(""),
   gameChoices = ref<string[]>([]);
+const targetId = ref(
+  typeof route.query.instance === "string" ? route.query.instance : "",
+);
+const targetInstance = computed(() =>
+  store.instances.find((i) => i.id === targetId.value),
+);
+const targetOptions = computed(() => [
+  { value: "", label: "Choose a profile" },
+  ...store.instances
+    .filter((i) => kind.value !== "mods" || i.loader !== "vanilla")
+    .map((i) => ({
+      value: i.id,
+      label: i.name,
+      detail: `${i.minecraftVersion} · ${i.loader}`,
+    })),
+]);
+function applyTarget() {
+  const item = targetInstance.value;
+  if (kind.value === "mods" && item?.loader === "vanilla") {
+    targetId.value = "";
+    version.value = "";
+    loader.value = "";
+    return;
+  }
+  if (kind.value === "modpacks") {
+    version.value = "";
+    loader.value = "";
+    return;
+  }
+  version.value = item?.minecraftVersion ?? "";
+  loader.value = kind.value === "mods" ? (item?.loader ?? "") : "";
+}
+watch(
+  [
+    targetId,
+    kind,
+    () =>
+      store.instances
+        .map((i) => `${i.id}:${i.minecraftVersion}:${i.loader}`)
+        .join(","),
+  ],
+  applyTarget,
+  { immediate: true },
+);
+watch(
+  () => route.query,
+  (q) => {
+    if (typeof q.kind === "string" && tabs.some((t) => t.id === q.kind))
+      kind.value = q.kind as Kind;
+    if (typeof q.instance === "string") targetId.value = q.instance;
+  },
+  { deep: true },
+);
 const selectedTab = computed(() => tabs.find((t) => t.id === kind.value)!);
 const categories = computed(() =>
   [...new Set([category.value, ...projects.value.flatMap((p) => p.categories)])]
@@ -78,6 +143,7 @@ function reset() {
   category.value = "";
   loader.value = "";
   version.value = "";
+  applyTarget();
 }
 function changeKind(value: Kind) {
   kind.value = value;
@@ -141,8 +207,13 @@ onMounted(() => {
     .catch(() => {});
 });
 const installer = ref<InstanceType<typeof ContentInstaller>>();
-const projectPath = (p: Project) =>
-  `/discover/${source.value}/${kind.value}/${p.id}`;
+const projectPath = (p: Project) => ({
+  path: `/discover/${source.value}/${kind.value}/${p.id}`,
+  query:
+    targetInstance.value && kind.value !== "modpacks"
+      ? { instance: targetId.value }
+      : {},
+});
 async function openProvider(p: Project) {
   try {
     await contentApi.open(p.url);
@@ -164,42 +235,49 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div class="discover-page">
-    <section class="discover-heading">
+    <div class="discover-title-row">
       <div>
+        <span class="discover-eyebrow">EXPLORE</span>
         <h1>Discover</h1>
-        <p class="muted">Find content for your next Minecraft instance.</p>
       </div>
-      <span class="discovery-preview-badge">{{
-        source === "modrinth" ? "Modrinth" : "CurseForge"
-      }}</span>
-    </section>
-    <div class="discover-tabs" role="group" aria-label="Content type">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        :aria-pressed="kind === tab.id"
-        :class="{ active: kind === tab.id }"
-        @click="changeKind(tab.id)"
+      <RouterLink
+        v-if="targetInstance"
+        class="text-link discover-back"
+        :to="`/instances/${targetId}`"
+        ><ArrowLeft :size="14" />{{ targetInstance.name }}</RouterLink
       >
-        <component :is="tab.icon" :size="17" />{{ tab.label }}
-      </button>
     </div>
     <div class="discover-layout">
       <section class="discover-results" aria-label="Project catalogue">
-        <label class="search-box discover-search"
-          ><Search :size="20" /><input
-            v-model="query"
-            :aria-label="'Search ' + selectedTab.label.toLowerCase()"
-            :placeholder="
-              'Search ' + selectedTab.label.toLowerCase() + '…'
-            " /><button
-            v-if="query"
-            class="icon-button"
-            aria-label="Clear discovery search"
-            @click="query = ''"
+        <div class="discover-command-bar">
+          <label class="discover-type-picker"
+            ><select
+              aria-label="Content type"
+              :value="kind"
+              @change="
+                changeKind(($event.target as HTMLSelectElement).value as Kind)
+              "
+            >
+              <option v-for="tab in tabs" :key="tab.id" :value="tab.id">
+                {{ tab.label }}
+              </option>
+            </select></label
           >
-            <X :size="16" /></button
-        ></label>
+          <label class="search-box discover-search"
+            ><Search :size="20" /><input
+              v-model="query"
+              :aria-label="'Search ' + selectedTab.label.toLowerCase()"
+              :placeholder="
+                'Search ' + selectedTab.label.toLowerCase() + '…'
+              " /><button
+              v-if="query"
+              class="icon-button"
+              aria-label="Clear discovery search"
+              @click="query = ''"
+            >
+              <X :size="16" /></button
+          ></label>
+        </div>
         <div class="discover-toolbar">
           <div class="discover-sort">
             <span>Sort by</span
@@ -282,6 +360,11 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="discover-project-meta">
+              <RouterLink
+                class="discover-view button secondary"
+                :to="projectPath(p)"
+                ><Eye :size="14" />View</RouterLink
+              >
               <button
                 class="discover-install"
                 :disabled="!desktop || content.busy"
@@ -332,10 +415,6 @@ onBeforeUnmount(() => {
         </footer>
       </section>
       <aside class="discover-filters" aria-label="Discovery filters">
-        <div class="discover-filter-heading">
-          <SlidersHorizontal :size="17" />
-          <h2>Filters</h2>
-        </div>
         <fieldset>
           <legend>Source</legend>
           <button
@@ -362,6 +441,30 @@ onBeforeUnmount(() => {
             />{{ p.label }}
           </button>
         </fieldset>
+        <section v-if="kind !== 'modpacks'" class="discover-target">
+          <h2>Installing to</h2>
+          <VersionPicker
+            v-model="targetId"
+            label="Discovery target profile"
+            :options="targetOptions"
+          />
+          <div v-if="targetInstance" class="discover-target-identity">
+            <InstanceIcon
+              :loader="targetInstance.loader"
+              :seed="targetInstance.id"
+              :icon="targetInstance.icon"
+            /><span
+              >Minecraft {{ targetInstance.minecraftVersion
+              }}<small>{{ targetInstance.loader }}</small></span
+            ><RouterLink
+              class="icon-button"
+              :to="`/instances/${targetId}?settings=files`"
+              aria-label="Target profile settings"
+              ><SlidersHorizontal :size="15"
+            /></RouterLink>
+          </div>
+          <p v-else class="muted">Choose where to install content.</p>
+        </section>
         <div class="discover-filter-field">
           <span>Game version</span
           ><VersionPicker
@@ -425,7 +528,12 @@ onBeforeUnmount(() => {
         </p>
       </aside>
     </div>
-    <ContentInstaller ref="installer" :provider="source" :kind="kind" />
+    <ContentInstaller
+      ref="installer"
+      :provider="source"
+      :kind="kind"
+      :instance-id="targetId"
+    />
   </div>
 </template>
 <style scoped>

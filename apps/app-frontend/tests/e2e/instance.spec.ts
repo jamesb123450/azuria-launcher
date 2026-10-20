@@ -38,18 +38,19 @@ test("instance navigation, general settings, defaults and overrides persist", as
     page.getByRole("button", { name: "Launch unavailable" }),
   ).toBeDisabled();
   await expect(
-    page.getByRole("button", { name: "Upload files" }),
+    page.getByRole("button", { name: "Open content folder" }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Worlds", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "No worlds yet" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Logs", exact: true }).click();
+  await page.getByRole("link", { name: "Logs", exact: true }).click();
   await expect(
     page.getByRole("heading", {
       name: "Logs are available in the desktop app",
     }),
   ).toBeVisible();
+  await page.goto(`/#/instances/${id}`);
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
     .getByLabel("Instance name", { exact: true })
@@ -231,8 +232,8 @@ test("navigation highlights only the current page and screenshot tab matches its
 
   await expect(library).not.toHaveClass(/router-link-exact-active/);
   const tabs = page.getByRole("navigation", { name: "Instance sections" });
-  const content = tabs.getByRole("button", { name: "Content", exact: true });
-  const shots = tabs.getByRole("link", { name: "Screenshots", exact: true });
+  const content = tabs.getByRole("button", { name: "Mods", exact: true });
+  const shots = tabs.getByRole("link", { name: "Gallery", exact: true });
   expect(await shots.evaluate((e) => getComputedStyle(e).fontWeight)).toBe(
     await content.evaluate((e) => getComputedStyle(e).fontWeight),
   );
