@@ -1,25 +1,10 @@
 <script setup lang="ts">
-import {
-  Gamepad2,
-  Shirt,
-  ChevronRight,
-  Newspaper,
-  UserRound,
-  LogIn,
-} from "@lucide/vue";
-import { useRouter } from "vue-router";
+import { Newspaper } from "@lucide/vue";
 import HeroSettingsMenu from "../components/HeroSettingsMenu.vue";
 import QuickLaunch from "../components/QuickLaunch.vue";
-import SkinHead from "../components/SkinHead.vue";
-import { useAccount } from "../stores/account";
+import CommunitySidebar from "../components/CommunitySidebar.vue";
 import { useLauncher } from "../stores/launcher";
-import { desktop } from "../api";
-const account = useAccount(),
-  store = useLauncher(),
-  router = useRouter();
-function openAccount() {
-  void router.push("/settings#account");
-}
+const store = useLauncher();
 </script>
 <template>
   <div class="home-page">
@@ -69,60 +54,7 @@ function openAccount() {
           </button>
         </div>
       </div>
-      <aside class="home-context" aria-label="Minecraft account and shortcuts">
-        <section>
-          <h2>Minecraft account</h2>
-          <div class="home-account-card">
-            <div class="home-account-portrait">
-              <SkinHead v-if="account.view.account" /><UserRound
-                v-else
-                :size="46"
-                :stroke-width="1"
-              />
-            </div>
-            <h3>
-              {{ account.view.account ? account.label : "Sign in to play" }}
-            </h3>
-            <p v-if="account.view.account">
-              {{
-                account.view.verified
-                  ? "Minecraft Java Edition"
-                  : "Reconnect to verify your account"
-              }}
-            </p>
-            <button
-              class="button secondary"
-              :disabled="account.busy || !account.ready"
-              @click="openAccount"
-            >
-              <LogIn v-if="!account.view.account" :size="16" />{{
-                account.busy
-                  ? "Connecting…"
-                  : account.view.account
-                    ? "Manage account"
-                    : "Continue with Microsoft"
-              }}
-            </button>
-          </div>
-        </section>
-        <section class="home-shortcuts">
-          <h2>Quick access</h2>
-          <RouterLink to="/versions"
-            ><span><Gamepad2 :size="19" />Versions</span
-            ><ChevronRight :size="16" /></RouterLink
-          ><RouterLink to="/wardrobe"
-            ><span><Shirt :size="19" />Skins &amp; capes</span
-            ><ChevronRight :size="16"
-          /></RouterLink>
-        </section>
-        <div class="home-ad" aria-label="Advertisement space">
-          <span>Advertisement</span>
-        </div>
-        <p v-if="!desktop" class="home-preview-note">
-          Interface preview. Microsoft sign-in and Minecraft launching require
-          the Windows app.
-        </p>
-      </aside>
+      <CommunitySidebar />
     </div>
   </div>
 </template>

@@ -6,6 +6,7 @@ import ProjectView from "./views/ProjectView.vue";
 import DiscoverView from "./views/DiscoverView.vue";
 import WardrobeView from "./views/WardrobeView.vue";
 import ScreenshotsView from "./views/ScreenshotsView.vue";
+import GameMonitor from "./views/GameMonitor.vue";
 import InstanceView from "./views/InstanceView.vue";
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -15,6 +16,7 @@ export const router = createRouter({
   },
   routes: [
     { path: "/", component: HomeView },
+    { path: "/monitor/:id", component: GameMonitor },
     { path: "/versions", component: VersionsView },
     { path: "/library", redirect: "/versions?tab=setups" },
     { path: "/settings", component: SettingsView },

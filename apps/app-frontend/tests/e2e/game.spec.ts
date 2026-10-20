@@ -156,7 +156,8 @@ async function setup(page: Page, denied = false, loader = "vanilla") {
                 throw "Minecraft Services denied access. Sign in again after app approval.";
               return;
             }
-            if (cmd === "prepare_instance") return;
+            if (cmd === "prepare_instance" || cmd === "open_game_monitor")
+              return;
             if (cmd === "cancel_launch") {
               emit(
                 "cancelled",
@@ -298,12 +299,18 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     ),
   ).toBe(1);
   await expect(page.locator(".topbar").getByRole("status")).toHaveText(
-    "Vanilla test",
+    "1 instance running",
   );
   await page
-    .getByRole("link", { name: "Open logs for Vanilla test", exact: true })
+    .getByRole("button", { name: "Open logs for Vanilla test", exact: true })
     .click();
-  await expect(page).toHaveURL(/tab=logs/);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).gameCalls.includes("open_game_monitor"),
+      ),
+    )
+    .toBe(true);
   await page.screenshot({
     path: test.info().outputPath("vanilla-running.png"),
   });
@@ -324,7 +331,7 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
   await expect(page.locator(".topbar").getByRole("status")).toHaveText(
-    "No games running",
+    "0 instances running",
   );
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await page.getByRole("button", { name: "Stop", exact: true }).click();
@@ -439,11 +446,13 @@ test("live log updates can be paused and resumed", async ({ page }) => {
   await page.screenshot({ path: test.info().outputPath("console-logs.png") });
 });
 
-test("the account sidebar shows the player skin head", async ({ page }) => {
+test("the account menu shows the player skin head", async ({ page }) => {
   await setup(page);
   await page.goto("/#/versions?tab=setups");
-  await expect(page.locator(".account-portrait canvas")).toBeVisible();
-  await page.locator(".account-identity").click();
+  await expect(page.locator(".topbar-account canvas")).toBeVisible();
+  await page
+    .getByRole("link", { name: "Skins and capes", exact: true })
+    .click();
   await expect(
     page.getByRole("img", { name: "Current Minecraft skin preview" }),
   ).toBeVisible();
@@ -755,6 +764,10 @@ test("topbar Stop reaches the native cancellation command", async ({
     (window as any).emitGame("running", "Minecraft running"),
   );
   await page
+    .getByRole("button", { name: "Running instances", exact: true })
+    .click();
+  page.once("dialog", (d) => d.accept());
+  await page
     .getByRole("button", { name: "Stop Vanilla test", exact: true })
     .click();
   await expect
@@ -802,4 +815,109 @@ test("Home creates one automatic setup without background preparation and reuses
   );
   expect(calls.filter((c) => c === "create_instance")).toHaveLength(1);
   expect(calls.filter((c) => c === "launch_instance")).toHaveLength(2);
+});
+
+test("task panel retains completed work and notifications without inventing downloads", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto("/#/versions?tab=setups");
+  await page
+    .getByRole("button", { name: "Downloads and tasks", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "No tasks yet", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await page.evaluate(() =>
+    (window as any).emitGame("assets", "Downloading Minecraft", 5, 10),
+  );
+  await page
+    .getByRole("button", { name: "Downloads and tasks", exact: true })
+    .click();
+  const tasks = page.getByRole("region", { name: "Tasks", exact: true });
+  await expect(
+    tasks.getByText("Downloading Minecraft", { exact: true }),
+  ).toBeVisible();
+  await expect(tasks.getByRole("progressbar")).toHaveAttribute("value", "50");
+  await page.evaluate(() =>
+    (window as any).emitGame("prepared", "Files ready", 10, 10, null, true),
+  );
+  await expect(
+    tasks.getByRole("heading", { name: "Complete", exact: true }),
+  ).toBeVisible();
+  await expect(tasks.getByText("Files ready", { exact: true })).toBeVisible();
+  await tasks.getByRole("button", { name: "Clear all", exact: true }).click();
+  await expect(
+    tasks.getByRole("heading", { name: "No tasks yet", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "Notifications", exact: true })
+    .click();
+  const notices = page.getByRole("region", {
+    name: "Notifications",
+    exact: true,
+  });
+  await expect(notices).toContainText("Vanilla test: Files ready");
+  await notices.getByRole("button", { name: "Clear all", exact: true }).click();
+  await expect(
+    notices.getByRole("heading", { name: "You’re all caught up", exact: true }),
+  ).toBeVisible();
+});
+
+test("game monitor separates live logs and screenshots with two ad slots", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.goto(`/#/monitor/${id}`);
+  await expect(
+    page.getByRole("heading", { name: "Game logs", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Live game log output")).toContainText(
+    "Live line",
+  );
+  await expect(page.locator(".square-ad")).toHaveCount(2);
+  for (const width of [900, 1280]) {
+    await page.setViewportSize({ width, height: 650 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.screenshot({ path: test.info().outputPath("monitor-logs.png") });
+  await page
+    .getByRole("button", { name: "Game screenshots", exact: true })
+    .click();
+  await page.getByRole("button", { name: /2026-10-17.png/ }).click();
+  const preview = page.getByRole("dialog", { name: "Screenshot preview" });
+  await expect(preview).toBeVisible();
+  await preview
+    .getByRole("button", { name: "Export PNG", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).gameCalls.includes("screenshot_export"),
+      ),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: test.info().outputPath("monitor-screenshot-preview.png"),
+  });
+  await preview
+    .getByRole("button", { name: "Close screenshot", exact: true })
+    .click();
+  await page
+    .getByRole("searchbox", { name: "Search screenshots", exact: true })
+    .fill("missing");
+  await expect(
+    page.getByText("No matching screenshots.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Game logs", exact: true }).click();
+  await expect(page.getByLabel("Live game log output")).toContainText(
+    "Live line",
+  );
 });

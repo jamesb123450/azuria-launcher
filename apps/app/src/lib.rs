@@ -6,6 +6,7 @@ mod discord;
 mod game;
 mod instances;
 mod media;
+mod monitor;
 mod privacy;
 mod profile;
 mod resources;
@@ -316,6 +317,10 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            // Closing a monitor leaves the main launcher and Minecraft running.
+            if window.label().starts_with("monitor-") {
+                return;
+            }
             if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
                 skin_library::dropped(window.app_handle().clone(), paths.clone());
             }
@@ -373,6 +378,7 @@ pub fn run() {
             game::prepare_instance,
             game::cancel_launch,
             game::game_launches,
+            monitor::open_game_monitor,
             profile::instance_directory,
             profile::get_instance_notes,
             profile::save_instance_notes,

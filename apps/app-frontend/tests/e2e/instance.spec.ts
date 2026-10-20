@@ -244,25 +244,24 @@ test("navigation highlights only the current page and screenshot tab matches its
 
   await library.click();
 });
-test("ad placeholder fits the bottom of the information sidebar", async ({
+test("community sidebar has friends coming soon and two square ad slots", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/#/versions?tab=setups");
-  const ad = page.getByRole("region", { name: "Advertisement placeholder" });
-  await expect(ad).toBeVisible();
-  const sidebar = await page
-    .getByRole("complementary", { name: "Launcher information" })
-    .boundingBox();
-  const box = await ad.boundingBox();
-  expect(box!.x).toBeGreaterThanOrEqual(sidebar!.x);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(
-    sidebar!.x + sidebar!.width + 1,
-  );
-  expect(
-    Math.abs(box!.y + box!.height - sidebar!.y - sidebar!.height),
-  ).toBeLessThan(2);
-  await page.screenshot({ path: test.info().outputPath("sidebar-ad.png") });
+  await page.goto("/");
+  const sidebar = page.getByRole("complementary", {
+    name: "Friends and advertisements",
+  });
+  await expect(sidebar.getByText("Coming soon", { exact: true })).toBeVisible();
+  for (const width of [900, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const slot of [1, 2]) {
+      const ad = sidebar.getByRole("region", {
+        name: `Advertisement slot ${slot}`,
+      });
+      const box = await ad.boundingBox();
+      expect(Math.abs(box!.height - box!.width)).toBeLessThan(2);
+    }
+  }
 });
 
 test("profile popup keeps notes and exports only portable setup preferences", async ({
@@ -323,9 +322,9 @@ test("Home launch arrow and hero settings route to saved setups and memory", asy
   );
   await page.goto("/");
   await page
-    .getByRole("link", { name: "Open saved instances", exact: true })
+    .getByRole("link", { name: "Open Minecraft versions", exact: true })
     .click();
-  await expect(page).toHaveURL(/versions\?tab=setups/);
+  await expect(page).toHaveURL(/#\/versions$/);
   await page.getByRole("link", { name: "Home", exact: true }).click();
   await page
     .getByRole("button", { name: "Launch settings", exact: true })

@@ -84,13 +84,9 @@ function move(event: KeyboardEvent) {
         :disabled="busy"
         @click="choose(false)"
       >
-        <SlidersHorizontal :size="17" /><span
-          >Global settings<small>Launcher memory defaults</small></span
-        ></button
+        <SlidersHorizontal :size="17" /><span>Global settings</span></button
       ><button role="menuitem" :disabled="busy" @click="choose(true)">
-        <FolderCog :size="17" /><span
-          >Profile settings<small>Memory for this setup</small></span
-        >
+        <FolderCog :size="17" /><span>Profile settings</span>
       </button>
       <p v-if="busy" role="status">Opening settings…</p>
       <p v-if="error" role="alert">{{ error }}</p>

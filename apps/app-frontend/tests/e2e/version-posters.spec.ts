@@ -110,7 +110,7 @@ test("poster catalogue filters patches and snapshots without losing the selected
     "Minecraft 1.21",
   );
   await page.getByLabel("Search Minecraft versions").fill("24w14a");
-  await page.getByLabel("Include snapshots & older builds").check();
+  await page.getByLabel("Snapshots & older builds").check();
   await page.getByRole("button", { name: "Choose Minecraft 24w14a" }).click();
   await expect(page.locator(".version-context h2")).toHaveText(
     "Minecraft 24w14a",

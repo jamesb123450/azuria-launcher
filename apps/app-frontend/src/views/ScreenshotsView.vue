@@ -13,9 +13,12 @@ import { desktop } from "../api";
 import { instanceApi } from "../instance-api";
 import { useLauncher } from "../stores/launcher";
 import VersionPicker from "../components/VersionPicker.vue";
+const props = defineProps<{ instanceId?: string; embedded?: boolean }>();
 const store = useLauncher();
 const route = useRoute();
-const selected = ref(String(route.query.instance ?? "all"));
+const selected = ref(props.instanceId ?? String(route.query.instance ?? "all"));
+const search = ref("");
+const order = ref("newest");
 const shots = ref<
   {
     id: string;
@@ -36,7 +39,16 @@ const options = computed(() => [
   { value: "all", label: "All instances" },
   ...store.instances.map((i) => ({ value: i.id, label: i.name })),
 ]);
-const visible = computed(() => shots.value.slice(0, limit.value));
+const matching = computed(() =>
+  shots.value
+    .filter((s) => s.name.toLowerCase().includes(search.value.toLowerCase()))
+    .sort((a, b) =>
+      order.value === "newest"
+        ? b.name.localeCompare(a.name)
+        : a.name.localeCompare(b.name),
+    ),
+);
+const visible = computed(() => matching.value.slice(0, limit.value));
 async function load() {
   const ticket = ++generation;
   busy.value = true;
@@ -149,13 +161,23 @@ watch(
     void load();
   },
 );
+watch(
+  () => props.instanceId,
+  (value) => {
+    if (value) selected.value = value;
+  },
+);
+watch([search, order], () => {
+  limit.value = 24;
+  void thumbs();
+});
 onMounted(() => {
   void load();
 });
 onBeforeUnmount(() => generation++);
 </script>
 <template>
-  <section class="page-heading">
+  <section v-if="!embedded" class="page-heading">
     <div>
       <h1>Screenshots</h1>
       <p class="muted">
@@ -166,7 +188,27 @@ onBeforeUnmount(() => generation++);
       Refresh
     </button>
   </section>
+  <div class="screenshots-toolbar">
+    <input
+      v-model="search"
+      type="search"
+      aria-label="Search screenshots"
+      placeholder="Search screenshots…"
+    /><select v-model="order" aria-label="Screenshot order">
+      <option value="newest">Newest</option>
+      <option value="oldest">Oldest</option></select
+    ><button
+      v-if="embedded"
+      class="icon-button"
+      aria-label="Refresh screenshots"
+      :disabled="busy"
+      @click="load"
+    >
+      ↻
+    </button>
+  </div>
   <VersionPicker
+    v-if="!instanceId"
     v-model="selected"
     label="Screenshot instance"
     :options="options"
@@ -183,6 +225,9 @@ onBeforeUnmount(() => generation++);
       screenshots folder appear here.
     </p>
   </div>
+  <p v-if="shots.length && !matching.length" class="muted">
+    No matching screenshots.
+  </p>
   <div class="screenshot-grid">
     <button
       v-for="shot in visible"
@@ -204,7 +249,7 @@ onBeforeUnmount(() => generation++);
     </button>
   </div>
   <button
-    v-if="shots.length > limit"
+    v-if="matching.length > limit"
     class="button secondary"
     @click="
       limit += 24;
