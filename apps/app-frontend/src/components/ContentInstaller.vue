@@ -13,7 +13,11 @@ import {
 import { useLauncher } from "../stores/launcher";
 import { useContent } from "../stores/content";
 import { instanceApi, type FileEntry } from "../instance-api";
-const props = defineProps<{ provider: Provider; kind: Kind }>();
+const props = defineProps<{
+  provider: Provider;
+  kind: Kind;
+  instanceId?: string;
+}>();
 const store = useLauncher(),
   content = useContent();
 const dialog = ref<HTMLDialogElement>(),
@@ -41,6 +45,7 @@ async function open(projectValue: Project, versionId = "") {
   project.value = projectValue;
   name.value = projectValue.name;
   instanceId.value =
+    eligible.value.find((i) => i.id === props.instanceId)?.id ??
     eligible.value.find((i) => i.id === store.selectedId)?.id ??
     eligible.value[0]?.id ??
     "";

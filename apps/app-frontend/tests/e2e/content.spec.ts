@@ -6,6 +6,7 @@ async function setup(page: Page, mode = "default") {
     const callbacks: Record<number, (event: unknown) => void> = {};
     const handlers: Record<string, number> = {};
     const calls: { cmd: string; args: any }[] = [];
+    let currentJob: any = null;
     const target = {
       minecraft: "1.21.1",
       loader: "fabric",
@@ -61,7 +62,7 @@ async function setup(page: Page, mode = "default") {
                   completed: 100,
                   total: 1000,
                 }
-              : null;
+              : currentJob;
           if (cmd === "content_cancel") {
             emit("content-progress", {
               id: "plan",
@@ -194,6 +195,16 @@ async function setup(page: Page, mode = "default") {
               ],
             };
           }
+          if (cmd === "content_versions" && args.project === "addon")
+            return [
+              {
+                id: "a2",
+                name: "Extra 2.0",
+                gameVersions: ["1.21.1"],
+                loaders: ["fabric"],
+                releaseType: "release",
+              },
+            ];
           if (cmd === "content_versions")
             return mode === "pack"
               ? [
@@ -289,6 +300,13 @@ async function setup(page: Page, mode = "default") {
               },
             };
           if (cmd === "content_install") {
+            currentJob = {
+              id: args.planId,
+              stage: "installed",
+              message: "Content installed successfully.",
+              completed: 2048,
+              total: 2048,
+            };
             emit("content-progress", {
               id: "plan",
               stage: "installed",
@@ -323,7 +341,9 @@ test("compatible mod install requires a reviewed native plan", async ({
   page,
 }) => {
   await setup(page);
-  await page.getByRole("button", { name: "Mods", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Content type", exact: true })
+    .selectOption("mods");
   await page
     .getByRole("button", { name: "Install Test project", exact: true })
     .click();
@@ -364,7 +384,9 @@ test("modpacks create a new instance and datapacks select a world", async ({
   await dialog.getByRole("button", { name: "Review installation" }).click();
   await expect(dialog.getByText("Ready to install")).toBeVisible();
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await page.getByRole("button", { name: "Datapacks", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Content type", exact: true })
+    .selectOption("datapacks");
   await page
     .getByRole("button", { name: "Install Test project", exact: true })
     .click();
@@ -463,7 +485,7 @@ test("pack instance separates managed and extra content and reviews updates", as
     exact: true,
   });
   await expect(additional.locator(".content-table-row")).toHaveCount(1);
-  await expect(additional.locator("img")).toHaveAttribute(
+  await expect(additional.locator(".content-icon img")).toHaveAttribute(
     "src",
     /cdn.modrinth.com/,
   );
@@ -541,7 +563,7 @@ test("Vanilla instances do not show or open a mods section", async ({
   await page.goto("/#/instances/fabric");
   await expect(
     page
-      .getByRole("group", { name: "Content type" })
+      .getByRole("navigation", { name: "Instance sections" })
       .getByRole("button", { name: "Mods", exact: true }),
   ).toHaveCount(0);
   expect(
@@ -571,4 +593,69 @@ test("installation notification has a compact one-line cancel action", async ({
   await expect(
     page.getByText("Installation cancelled.", { exact: true }),
   ).toBeVisible();
+});
+
+test("profile content reviews exact updates and carries the destination into Discover", async ({
+  page,
+}) => {
+  await setup(page, "pack");
+  await page.goto("/#/instances/fabric");
+  await page.getByRole("button", { name: /^Update all\s*\(1\)$/ }).click();
+  const review = page.getByRole("dialog", { name: "Update all", exact: true });
+  await expect(review.getByText("Extra 1.0", { exact: true })).toBeVisible();
+  await expect(review.getByText("Extra 2.0", { exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as any).contentCalls.filter(
+          (c: any) => c.cmd === "content_install",
+        ).length,
+    ),
+  ).toBe(0);
+  await page.screenshot({
+    path: test.info().outputPath("update-all-review.png"),
+  });
+  await review
+    .getByRole("button", { name: "Update all (1)", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as any).contentCalls
+            .filter((c: any) => c.cmd === "content_update_plan")
+            .at(-1)?.args.requestedVersion,
+      ),
+    )
+    .toBe("a2");
+  await expect(review).not.toBeVisible();
+  await expect(
+    page.getByText("1 project updated.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Add content", exact: true }).click();
+  await expect(page).toHaveURL(/instance=fabric/);
+  await expect(
+    page.getByRole("combobox", { name: "Content type", exact: true }),
+  ).toHaveValue("mods");
+  await expect(
+    page.getByRole("combobox", { name: "Discovery target profile" }),
+  ).toContainText("Fabric instance");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as any).contentCalls
+            .filter((c: any) => c.cmd === "content_search")
+            .at(-1)?.args.query,
+      ),
+    )
+    .toMatchObject({ gameVersion: "1.21.1", loader: "fabric", kind: "mods" });
+  await page
+    .getByRole("button", { name: "Install Test project", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("combobox", { name: "Install into instance" }),
+  ).toContainText("Fabric instance");
 });

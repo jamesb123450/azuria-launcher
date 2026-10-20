@@ -151,6 +151,9 @@ async function setup(page: Page, denied = false, loader = "vanilla") {
             }
             if (cmd === "plugin:event|unlisten") return;
             if (cmd === "game_launches") return [];
+            if (cmd === "content_job") return null;
+            if (cmd === "content_inventory")
+              return { pack: null, projects: [], files: [] };
             if (cmd === "launch_instance") {
               if (denied)
                 throw "Minecraft Services denied access. Sign in again after app approval.";
@@ -345,9 +348,12 @@ test("account failure stays actionable and does not invent a running process", a
   await setup(page, true);
   await page.goto(`/#/instances/${id}`);
   await page.getByRole("button", { name: "Play", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "Minecraft Services denied access",
-  );
+  await expect(
+    page
+      .locator(".launch-status")
+      .getByRole("alert")
+      .or(page.locator(".launch-status[role=alert]")),
+  ).toContainText("Minecraft Services denied access");
   await expect(
     page.getByRole("button", { name: "Retry launch", exact: true }),
   ).toBeEnabled();
