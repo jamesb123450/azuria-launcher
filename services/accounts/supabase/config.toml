@@ -14,3 +14,7 @@ secure_password_change = true
 # Redeem is a public PKCE exchange; the handler verifies all authenticated actions.
 [functions.account-action]
 verify_jwt = false
+
+# The handler and database verify the caller JWT, live role, MFA and recent password.
+[functions.admin-action]
+verify_jwt = false

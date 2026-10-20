@@ -17,3 +17,7 @@ than pretending accounts work.
 
 See [the setup guide](../../../docs/ACCOUNTS_SETUP.md) for database migration,
 email templates, server-function deployment, DNS and credential storage.
+
+Administration is available at `/admin` after the admin migration and role setup.
+See [admin setup](../../../docs/ADMIN_SETUP.md). Admin data requires authenticator
+MFA; account changes additionally require recent password verification.

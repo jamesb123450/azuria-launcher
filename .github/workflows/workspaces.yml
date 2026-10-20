@@ -27,3 +27,5 @@ jobs:
           deno-version: v2.x
       - run: deno check services/accounts/supabase/functions/account-action/index.ts
       - run: deno test --allow-env services/accounts/supabase/functions/account-action/index.test.ts
+      - run: deno check services/accounts/supabase/functions/admin-action/index.ts
+      - run: deno test --allow-env services/accounts/supabase/functions/admin-action/index.test.ts

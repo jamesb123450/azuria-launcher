@@ -19,3 +19,10 @@ The second migration adds authenticated friend requests, friendships, blocks and
 request limits, and includes the profile-upsert permission correction. Follow
 [the friends database guide](../../docs/FRIENDS_DATABASE.md) to apply it to an
 existing project. No launcher UI, presence or messaging is enabled by this migration.
+
+## Administration
+
+The third migration and separate `admin-action` function protect the shared account
+website’s admin area. Follow [the admin setup guide](../../docs/ADMIN_SETUP.md) for
+role assignment, function deployment and authenticator setup. No administrator is
+created automatically; roles are granted only through trusted Supabase access.
