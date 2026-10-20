@@ -1,3 +1,4 @@
+mod azuria_account;
 mod behaviour;
 mod browser;
 mod content;
@@ -338,10 +339,17 @@ pub fn run() {
                 }
             }
         })
+        .manage(azuria_account::AzuriaAccounts::default())
         .manage(discord::Discord::default())
         .manage(content::ContentState::default())
         .manage(resources::Resources::default())
         .invoke_handler(tauri::generate_handler![
+            azuria_account::azuria_configuration,
+            azuria_account::azuria_status,
+            azuria_account::azuria_begin,
+            azuria_account::azuria_complete,
+            azuria_account::azuria_sign_out,
+            azuria_account::azuria_manage,
             privacy::get_privacy,
             privacy::save_privacy,
             privacy::physical_memory_limit,

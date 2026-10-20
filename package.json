@@ -7,7 +7,8 @@
     "apps/*",
     "packages/*",
     "services/*",
-    "apps/azuria-studios/*"
+    "apps/azuria-studios/*",
+    "apps/accounts/*"
   ],
   "engines": {
     "node": ">=24"
@@ -27,6 +28,8 @@
     "format": "prettier --write README.md docs tests .github package.json packages services && npm run format --workspace=azuria-launcher && npm run format --workspace=azuria-launcher-frontend",
     "format:check": "prettier --check README.md docs tests .github package.json packages services && npm run format:check --workspace=azuria-launcher && npm run format:check --workspace=azuria-launcher-frontend",
     "studios:build": "npm run build --workspace=azuria-studios-website",
-    "studios:preview": "npm run preview --workspace=azuria-studios-website"
+    "studios:preview": "npm run preview --workspace=azuria-studios-website",
+    "accounts:build": "npm run build --workspace=azuria-accounts-website",
+    "accounts:test": "npm run test --workspace=azuria-accounts-website"
   }
 }

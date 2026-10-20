@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AzuriaAccountPanel from "./AzuriaAccountPanel.vue";
 import { UserRound } from "@lucide/vue";
 import { useAccount } from "../stores/account";
 import type { AuthStage } from "../auth";
@@ -14,6 +15,7 @@ const steps: Record<AuthStage, string> = {
 };
 </script>
 <template>
+  <AzuriaAccountPanel />
   <section id="account" class="settings-panel">
     <div class="settings-title">
       <UserRound :size="22" />

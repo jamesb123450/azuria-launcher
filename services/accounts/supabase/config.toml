@@ -1,0 +1,16 @@
+project_id = "azuria-accounts"
+
+[auth]
+site_url = "https://accounts.azuriasmp.org"
+additional_redirect_urls = ["https://accounts.azuriasmp.org/confirm/", "https://accounts.azuriasmp.org/reset/", "http://localhost:1421/confirm/", "http://localhost:1421/reset/"]
+minimum_password_length = 12
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+secure_password_change = true
+
+# Redeem is a public PKCE exchange; the handler verifies all authenticated actions.
+[functions.account-action]
+verify_jwt = false

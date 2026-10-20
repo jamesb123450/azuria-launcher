@@ -20,3 +20,10 @@ jobs:
       - run: node --test tests/*.test.mjs
       - run: npm run test --workspace=@azuria/release-tools
       - run: npm run service:test
+      - run: npm run accounts:build
+      - run: npm run accounts:test
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check services/accounts/supabase/functions/account-action/index.ts
+      - run: deno test --allow-env services/accounts/supabase/functions/account-action/index.test.ts

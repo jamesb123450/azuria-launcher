@@ -7,6 +7,8 @@ Private monorepo for Azuria Studios products, services and shared code.
 | Launcher native app    | [`apps/app`](apps/app)                             | `npm run launcher:dev`                                 |
 | Launcher Vue interface | [`apps/app-frontend`](apps/app-frontend)           | `npm run dev`                                          |
 | Launcher website       | [`apps/frontend`](apps/frontend)                   | `npm run website:build` then `npm run website:preview` |
+| Azuria account website | [`apps/accounts/frontend`](apps/accounts/frontend) | `npm run accounts:build`                               |
+| Azuria account service | [`services/accounts`](services/accounts)           | See [account setup](docs/ACCOUNTS_SETUP.md)            |
 | CurseForge service     | [`services/curseforge`](services/curseforge)       | `npm run service:test`                                 |
 | Shared release tools   | [`packages/release-tools`](packages/release-tools) | `npm run test --workspace=@azuria/release-tools`       |
 
@@ -36,3 +38,10 @@ Products have separate build/deployment workflows. Launcher releases retain thei
 The website lives at [launcher.azuriasmp.org](https://launcher.azuriasmp.org/). For Vercel, set **Root Directory** to `apps/frontend` and keep the build/output settings in the [migration guide](docs/MONOREPO.md). The GitHub website workflow retains the existing public distribution copy.
 
 See [monorepo layout, adding products and migration checks](docs/MONOREPO.md). No repository rename, domain change or deployment is performed by this migration.
+
+## Azuria accounts
+
+Account pages are prepared for **accounts.azuriasmp.org**, backed by Supabase.
+Follow [the account setup guide](docs/ACCOUNTS_SETUP.md) for database migrations,
+email delivery, Vercel deployment and credential storage. The launcher’s Azuria
+account is separate from its Microsoft/Minecraft account.
