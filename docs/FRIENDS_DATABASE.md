@@ -1,7 +1,10 @@
 # Friends database
 
-This change prepares the Supabase database only. It does not enable friends in the
-launcher, add notifications, connect realtime presence or introduce messaging.
+The launcher now uses these operations for username lookup, requests, friend lists,
+remove/block/unblock controls and pending-request notifications. It requires a
+signed-in Azuria account and the existing friends migration. No new migration or
+Edge Function is required for the launcher integration. Live presence and messaging
+are not included yet.
 
 ## Apply it to your existing Supabase project
 
@@ -115,3 +118,22 @@ blocking, removal, rate limits, snapshots and deletion cascades. They also repro
 the profile upsert permission issue. Concurrent multi-connection behavior and live
 Supabase integration still need verification in the deployed environment; the
 local tests do not simulate a production realtime service.
+
+## Launcher refresh and session handling
+
+The native `azuria_friends` command accepts only a fixed set of actions and calls
+these RPCs with the signed-in user's session. It refreshes the session and saves
+rotated credentials in Windows Credential Manager before making authenticated
+requests. Tokens never cross the Vue IPC boundary. Requests from the browser
+preview do not call the live service.
+
+The list loads after Azuria sign-in and refreshes on opening Friends, opening
+Notifications, explicit refresh and successful relationship changes. There is no
+background polling. Requests sent by someone else become visible on the next
+refresh; realtime delivery and online status are a later stage.
+
+Snapshots are kept only in memory and cleared on account changes/sign-out. Late
+responses are discarded if they belong to an earlier account. If a mutation
+succeeds but the follow-up snapshot fails, the UI reports that the change was saved
+and asks for a refresh. It does not automatically repeat the mutation. A transport
+failure may have an uncertain outcome; refresh before retrying.

@@ -18,6 +18,8 @@ import {
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import FriendsPanel from "./components/FriendsPanel.vue";
+import { useFriends } from "./stores/friends";
 import ActivityMenus from "./components/ActivityMenus.vue";
 import RunningGames from "./components/RunningGames.vue";
 import GameMonitor from "./views/GameMonitor.vue";
@@ -134,12 +136,14 @@ async function storagePrepared() {
   void game.init();
   void content.init();
   void account.init();
+  void useFriends().init();
   void updates.init();
 }
 </script>
 <template>
   <GameMonitor v-if="route.path.startsWith('/monitor/')" />
   <template v-else>
+    <FriendsPanel />
     <div
       v-if="booting"
       class="app-startup"

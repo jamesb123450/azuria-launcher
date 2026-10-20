@@ -9,6 +9,7 @@ import {
   Package,
   LoaderCircle,
 } from "@lucide/vue";
+import { useFriends } from "../stores/friends";
 import { useActivity, type Task } from "../stores/activity";
 import { useGame } from "../stores/game";
 import { useContent } from "../stores/content";
@@ -18,6 +19,7 @@ const activity = useActivity(),
   content = useContent(),
   updates = useUpdates();
 activity.init();
+const friends = useFriends();
 const open = ref<"tasks" | "notifications" | null>(null),
   host = ref<HTMLElement>(),
   notificationsButton = ref<HTMLButtonElement>(),
@@ -25,7 +27,10 @@ const open = ref<"tasks" | "notifications" | null>(null),
   panel = ref<HTMLElement>();
 async function toggle(menu: "tasks" | "notifications") {
   open.value = open.value === menu ? null : menu;
-  if (menu === "notifications") activity.markRead();
+  if (menu === "notifications") {
+    activity.markRead();
+    void friends.refresh();
+  }
   if (open.value) {
     await nextTick();
     panel.value?.focus();
@@ -65,7 +70,10 @@ async function cancel(task: Task) {
       aria-controls="notifications-panel"
       @click="toggle('notifications')"
     >
-      <Bell :size="16" /><i v-if="activity.unread" class="activity-dot" />
+      <Bell :size="16" /><i
+        v-if="activity.unread || friends.incoming.length"
+        class="activity-dot"
+      />
     </button>
     <button
       ref="tasksButton"
@@ -181,12 +189,27 @@ async function cancel(task: Task) {
         </section>
       </template>
       <template v-else
-        ><div v-if="!activity.notifications.length" class="activity-empty">
+        ><button
+          v-if="friends.incoming.length"
+          class="friend-notification"
+          @click="
+            close();
+            friends.show('requests');
+          "
+        >
+          {{ friends.incoming.length }} friend
+          {{ friends.incoming.length === 1 ? "request" : "requests" }} waiting ·
+          Review requests
+        </button>
+        <div
+          v-if="!activity.notifications.length && !friends.incoming.length"
+          class="activity-empty"
+        >
           <Bell :size="26" />
           <h3>You’re all caught up</h3>
           <p>Launcher updates will appear here.</p>
         </div>
-        <div v-else class="notification-list">
+        <div v-if="activity.notifications.length" class="notification-list">
           <button
             class="text-link clear-notifications"
             @click="activity.notifications = []"
@@ -212,3 +235,19 @@ async function cancel(task: Task) {
     </section>
   </div>
 </template>
+
+<style scoped>
+.friend-notification {
+  display: block;
+  width: calc(100% - 28px);
+  margin: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--hover);
+  color: var(--text);
+  padding: 13px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+</style>
