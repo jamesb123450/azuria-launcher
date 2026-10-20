@@ -1,3 +1,10 @@
+import {
+  adminSections,
+  plannedTools,
+  selectedAdminSection,
+  adminIcon,
+} from "./admin-dashboard.js";
+
 export function authenticatorQrSource(value) {
   const prefix = "data:image/svg+xml;utf-8,";
   const svg = value.startsWith(prefix) ? value.slice(prefix.length) : value;
@@ -49,6 +56,7 @@ export async function showAdmin({ client, user, ui }) {
     return data;
   }
   function verifyPassword() {
+    document.body.classList.remove("admin-dashboard-open");
     heading(
       "Verify admin access",
       "Confirm your password, then use your authenticator app.",
@@ -146,6 +154,7 @@ export async function showAdmin({ client, user, ui }) {
     );
     render(...nodes);
   }
+  let page = selectedAdminSection(location.hash);
   let search = "",
     offset = 0,
     auditOffset = 0;
@@ -164,9 +173,15 @@ export async function showAdmin({ client, user, ui }) {
   }
   async function dashboard() {
     const [stats, accounts, history] = await Promise.all([
-      rpc("admin_overview"),
-      rpc("admin_accounts", { p_search: search, p_offset: offset }),
-      rpc("admin_history", { p_offset: auditOffset }),
+      page === "overview" ? rpc("admin_overview") : Promise.resolve(null),
+      page === "accounts"
+        ? rpc("admin_accounts", { p_search: search, p_offset: offset })
+        : Promise.resolve([]),
+      ["overview", "activity"].includes(page)
+        ? rpc("admin_history", {
+            p_offset: page === "overview" ? 0 : auditOffset,
+          })
+        : Promise.resolve([]),
     ]);
     heading(
       "Administration",
@@ -174,9 +189,9 @@ export async function showAdmin({ client, user, ui }) {
     );
     const metrics = box("admin-metrics");
     for (const [label, value] of [
-      ["Accounts", stats.accounts],
-      ["Verified", stats.verified],
-      ["Suspended", stats.suspended],
+      ["Accounts", stats?.accounts ?? 0],
+      ["Verified", stats?.verified ?? 0],
+      ["Suspended", stats?.suspended ?? 0],
     ]) {
       const metric = box("admin-metric"),
         number = document.createElement("strong");
@@ -291,25 +306,177 @@ export async function showAdmin({ client, user, ui }) {
         }),
       );
     audit.append(auditPages);
-    const actions = box("row");
-    actions.append(
-      button("Refresh", dashboard),
-      button("Verify access again", verifyPassword),
+    const content = box("admin-workspace-content");
+    if (page === "overview") {
+      const welcome = box("admin-welcome");
+      welcome.append(
+        paragraph("AZURIA STUDIOS", "eyebrow"),
+        title("Your workspace, at a glance."),
+        paragraph("Manage accounts, review changes and keep Azuria moving."),
+      );
+      const shortcuts = box("admin-shortcuts");
+      for (const [label, destination, description] of [
+        [
+          "Manage accounts",
+          "accounts",
+          "Find a player or review account access.",
+        ],
+        ["Review activity", "activity", "See recent account changes."],
+        [
+          "Preview announcements",
+          "announcements",
+          "Explore upcoming publishing tools.",
+        ],
+      ]) {
+        const shortcut = box("admin-shortcut");
+        shortcut.append(
+          button(label, () => navigate(destination)),
+          paragraph(description, "fine"),
+        );
+        shortcuts.append(shortcut);
+      }
+      const recent = box("admin-panel");
+      recent.append(title("Recent account activity"));
+      if (!history.length)
+        recent.append(paragraph("No account changes have been recorded yet."));
+      for (const event of history.slice(0, 5))
+        recent.append(
+          paragraph(
+            `${event.action === "suspend" ? "Suspend" : "Restore"} · ${event.outcome === "pending" ? "Pending verification" : event.outcome} · ${date(event.created_at)}`,
+            "fine",
+          ),
+        );
+      recent.append(
+        button("View activity log", () => navigate("activity"), "text-button"),
+      );
+      const upcoming = box("admin-panel");
+      upcoming.append(
+        title("More tools on the way"),
+        paragraph(
+          "Reports, product management, announcements and analytics will live here. Explore each section to see what is planned.",
+          "muted",
+        ),
+      );
+      content.append(welcome, metrics, shortcuts, recent, upcoming);
+    } else if (page === "accounts")
+      content.append(
+        filter,
+        list,
+        paragraph(
+          "Suspension prevents Azuria sign-in and session renewal. Existing access tokens may work until expiry. Local Minecraft installations are unaffected.",
+          "fine",
+        ),
+      );
+    else if (page === "activity") content.append(audit);
+    else {
+      const section = plannedTools[page];
+      content.append(
+        paragraph(section.description),
+        paragraph(
+          "Coming soon · These tools are not connected yet.",
+          "admin-coming-soon",
+        ),
+      );
+      const tools = box("admin-tool-grid");
+      for (const [label, description, action] of section.tools) {
+        const tool = box("admin-tool");
+        tool.append(
+          adminIcon(adminSections.find((item) => item.id === page).icon),
+          title(label),
+          paragraph(description),
+        );
+        const control = button(action, null);
+        control.disabled = true;
+        control.dataset.unavailable = "true";
+        control.title = "Coming soon";
+        tool.append(control);
+        tools.append(tool);
+      }
+      content.append(tools);
+    }
+    const navigation = document.createElement("nav");
+    navigation.className = "admin-navigation";
+    navigation.setAttribute("aria-label", "Administration");
+    const identity = box("admin-workspace-brand");
+    const mark = document.createElement("img");
+    mark.src = "/azuria.png";
+    mark.alt = "";
+    identity.append(
+      mark,
+      title("Azuria"),
+      paragraph("STUDIO WORKSPACE", "fine"),
+    );
+    navigation.append(identity);
+    let group = "";
+    for (const item of adminSections) {
+      if (item.group !== group) {
+        navigation.append(paragraph(item.group, "admin-nav-group"));
+        group = item.group;
+      }
+      const control = button(
+        item.label,
+        () => navigate(item.id),
+        "admin-nav-item",
+      );
+      control.prepend(adminIcon(item.icon));
+      if (item.id === page) control.setAttribute("aria-current", "page");
+      if (item.soon) {
+        const badge = document.createElement("span");
+        badge.className = "admin-nav-badge";
+        badge.textContent = "Soon";
+        control.append(badge);
+      }
+      navigation.append(control);
+    }
+    const navFooter = box("admin-nav-footer");
+    navFooter.append(
+      paragraph("Signed in as", "fine"),
+      paragraph(user.email, "admin-identity"),
       back(),
     );
-    render(
-      metrics,
-      filter,
-      list,
-      audit,
-      paragraph(
-        "Suspension prevents Azuria sign-in and session renewal. Existing access tokens may work until expiry. Local Minecraft installations are unaffected.",
-        "fine",
-      ),
-      actions,
+    navigation.append(navFooter);
+    const workspace = box("admin-workspace"),
+      topbar = box("admin-workspace-topbar"),
+      pageTitle = box();
+    const section = adminSections.find((item) => item.id === page);
+    const currentHeading = document.createElement("h2");
+    currentHeading.textContent = section.label;
+    pageTitle.append(
+      paragraph(`Workspace / ${section.label}`, "fine"),
+      currentHeading,
     );
+    const controls = box("row");
+    if (!section.soon) controls.append(button("Refresh", dashboard));
+    controls.append(
+      button("Verify access", verifyPassword, "text-button"),
+      button(
+        "Your account",
+        () => {
+          location.href = "/";
+        },
+        "text-button",
+      ),
+    );
+    topbar.append(pageTitle, controls);
+    workspace.append(topbar, content);
+    const shell = box("admin-shell");
+    shell.append(navigation, workspace);
+    document.body.classList.add("admin-dashboard-open");
+    heading(section.label, "Azuria Studios administration");
+    render(shell);
+    // The dashboard has its own page heading; keep the shared heading for auth/error screens.
+    document
+      .querySelector(".admin-workspace-topbar h2")
+      ?.setAttribute("tabindex", "-1");
+  }
+  async function navigate(destination) {
+    page = destination;
+    history.replaceState(null, "", `/admin#${page}`);
+    await dashboard();
+    document.querySelector(".admin-workspace-topbar h2")?.focus();
   }
   function confirmAction(account, action) {
+    document.body.classList.remove("admin-dashboard-open");
     heading(
       action === "suspend" ? "Suspend this account?" : "Restore this account?",
       `${account.email || account.id} · ${account.username || "No username"}`,
