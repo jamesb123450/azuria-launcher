@@ -37,7 +37,3 @@ Use the GA4 web stream's measurement ID, not the whole Google script or a GTM co
 The static build validates the ID and includes it in the local consent script. Google is never contacted by this integration until a visitor accepts analytics (basic consent mode). Advertising consent remains denied; Google signals and ad personalisation are disabled. Initial page-view URLs omit query strings/fragments. Review GA4's enhanced-measurement settings before enabling features that could collect URLs or user-entered information. Analytics preferences are separate from AdSense's certified consent controls; accepting analytics does not authorise advertising.
 
 Changing the ID requests fresh consent. Cookie settings allows withdrawal. Preferences are local to each origin and website. Set an appropriate retention period in GA4; removing the tag does not delete data already held by Google. Google documentation: https://developers.google.com/tag-platform/security/guides/consent
-
-## Current interface captures
-
-The JPEG captures in `assets/` were refreshed from the launcher frontend after the portrait Versions catalogue and live appearance previews were added. Home is used for the hero, social preview and dark/light comparison; Versions shows the portrait cards and right launch panel. Captures are 1280×900 and use sample local setups. The skin screen uses the official Steve texture as sample data. No screenshot is generated or composited. Source credits are in `assets/MINECRAFT-CREDIT.txt`.

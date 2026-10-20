@@ -11,7 +11,6 @@ const types = {
   ".css": "text/css",
   ".js": "text/javascript",
   ".png": "image/png",
-  ".jpg": "image/jpeg",
   ".woff2": "font/woff2",
 };
 createServer(async (req, res) => {

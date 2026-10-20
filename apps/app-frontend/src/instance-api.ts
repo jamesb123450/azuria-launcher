@@ -28,6 +28,45 @@ function load<T>(key: string, fallback: T): T {
 }
 const prefKey = (id: string) => `azuria-instance-options-${id}`;
 export const instanceApi = {
+  directory: async (id: string): Promise<string | null> =>
+    desktop ? invoke("instance_directory", { id }) : null,
+  notes: async (id: string): Promise<string> =>
+    desktop
+      ? invoke("get_instance_notes", { id })
+      : (localStorage.getItem(`azuria-instance-notes-${id}`) ?? ""),
+  saveNotes: async (id: string, text: string): Promise<void> => {
+    if (new TextEncoder().encode(text).length > 65536)
+      throw Error("Keep instance notes within 64 KB.");
+    if (desktop) return invoke("save_instance_notes", { id, text });
+    localStorage.setItem(`azuria-instance-notes-${id}`, text);
+  },
+  openNotes: async (id: string): Promise<void> => {
+    if (desktop) return invoke("open_instance_notes_directory", { id });
+  },
+  export: async (
+    item: Instance,
+    format: "azuria" | "folder",
+  ): Promise<string | null> => {
+    if (desktop) return invoke("export_instance", { id: item.id, format });
+    if (format === "folder")
+      throw Error("Folder export is available in the Windows app.");
+    const overrides = await instanceApi.overrides(item.id);
+    const data = {
+      format: "azuria-setup",
+      formatVersion: 1,
+      instance: item,
+      overrides: { memoryMb: overrides.memoryMb, window: overrides.window },
+    };
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "azuria-setup.json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return "azuria-setup.json";
+  },
   defaults: async (): Promise<LaunchOptions> =>
     desktop
       ? invoke("get_launch_defaults")

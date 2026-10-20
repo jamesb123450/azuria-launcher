@@ -84,6 +84,18 @@ export const useQuickPlay = defineStore("quick-play", () => {
     error.value = "";
     persist();
   }
+  function adoptSetup(item: Instance) {
+    if (
+      !["vanilla", "fabric"].includes(item.loader) ||
+      !validVersion.test(item.minecraftVersion) ||
+      preparing.value
+    )
+      return;
+    saved.setups[`${item.loader}:${item.minecraftVersion}`] = item.id;
+    version.value = item.minecraftVersion;
+    loader.value = item.loader as QuickLoader;
+    persist();
+  }
   async function load() {
     if (pending) return pending;
     if (versions.value.length) return;
@@ -166,5 +178,6 @@ export const useQuickPlay = defineStore("quick-play", () => {
     choose,
     load,
     ensureSetup,
+    adoptSetup,
   };
 });

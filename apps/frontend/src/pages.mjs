@@ -975,7 +975,7 @@ export function render(
         <meta property="og:type" content="website" />
         <meta property="og:title" content="${e(titles[page])}" />
         <meta property="og:description" content="${e(descriptions[page])}" />
-        <meta property="og:image" content="${e(siteURL)}assets/home.jpg" />
+        <meta property="og:image" content="${e(siteURL)}assets/library.webp" />
         <meta property="og:url" content="${e(canonical)}" />
         <meta name="twitter:card" content="summary_large_image" />
         ${page === "404" ? '<meta name="robots" content="noindex"/>' : ""}

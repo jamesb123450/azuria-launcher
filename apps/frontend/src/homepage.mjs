@@ -68,14 +68,14 @@ export function renderHomepage({
         </p>
         <figure class="hero-shot">
           <img
-            src="${asset("home.jpg")}"
+            src="${asset("library.webp")}"
             width="1280"
             height="900"
             fetchpriority="high"
-            alt="Azuria’s updated Home screen with Play navigation, blurred Minecraft scenery and launch controls."
+            alt="Azuria’s current instance library with sample Vanilla and Fabric setups and a demo account."
           />
           <figcaption>
-            Current launcher interface preview · Sample saved setups
+            Current launcher interface · Sample library and demo account
           </figcaption>
         </figure>
       </div>
@@ -91,28 +91,11 @@ export function renderHomepage({
     <section
       id="features"
       class="premium-section"
-      aria-labelledby="versions-heading"
+      aria-labelledby="library-heading"
     >
       <div class="container premium-split" data-reveal>
         <div class="section-intro">
-          <p class="premium-kicker">Minecraft versions</p>
-          <h2 id="versions-heading">Choose a version.<br />Start playing.</h2>
-          <p>
-            Browse Minecraft releases with artwork, then choose a patch version
-            and Vanilla or Fabric in the panel beside them.
-          </p>
-          <p>
-            Launch from Home or Versions. Azuria keeps a separate setup for each
-            version and loader.
-          </p>
-        </div>
-        ${shot("versions.jpg", "Azuria’s portrait Minecraft version cards with patch selection, loader options and a launch panel on the right.")}
-      </div>
-    </section>
-    <section class="premium-section" aria-labelledby="library-heading">
-      <div class="container premium-split" data-reveal>
-        <div class="section-intro">
-          <p class="premium-kicker">Saved setups</p>
+          <p class="premium-kicker">Your instances</p>
           <h2 id="library-heading">Keep your setups<br />organised.</h2>
           <p>
             A vanilla world, a Fabric setup, or a modpack for your next weekend.
@@ -124,7 +107,7 @@ export function renderHomepage({
             <li>Open content, worlds and live logs in one place</li>
           </ul>
         </div>
-        ${shot("instance.jpg", "Azuria instance details with game, content, screenshot and log controls.")}
+        ${shot("instance.webp", "Azuria instance details with game, content, screenshot and log controls.")}
       </div>
     </section>
     <section
@@ -189,7 +172,7 @@ export function renderHomepage({
               >See supported features ${icon("arrow", 17)}</a
             >
           </div>
-          ${shot("create.jpg", "Azuria’s instance creation screen with its Custom setup option.")}
+          ${shot("create.webp", "Azuria’s instance creation screen with its Custom setup option.")}
         </div>
       </div>
     </section>
@@ -205,9 +188,8 @@ export function renderHomepage({
             <h2 id="appearance-heading">Choose your<br />appearance.</h2>
           </div>
           <p>
-            Preview dark, light, OLED or your system appearance in the launcher.
-            Save to keep your choice, or Reset to return to your saved settings.
-            Try the dark and light screenshots below.
+            Choose dark, light or OLED in the launcher. Try the dark and light
+            previews below.
           </p>
         </div>
         <div
@@ -218,16 +200,16 @@ export function renderHomepage({
           <button
             type="button"
             aria-pressed="true"
-            data-preview-image="${asset("home.jpg")}"
-            data-preview-alt="Azuria’s updated Home screen in dark appearance."
+            data-preview-image="${asset("library.webp")}"
+            data-preview-alt="Azuria’s dark library with sample instance configurations."
             data-preview-caption="Dark launcher appearance"
           >
             Dark</button
           ><button
             type="button"
             aria-pressed="false"
-            data-preview-image="${asset("home-light.jpg")}"
-            data-preview-alt="Azuria’s updated Home screen in light appearance."
+            data-preview-image="${asset("library-light.webp")}"
+            data-preview-alt="Azuria’s light library with the same sample instances."
             data-preview-caption="Light launcher appearance"
           >
             Light
@@ -237,11 +219,11 @@ export function renderHomepage({
           <div class="preview-stack">
             <img
               data-theme-preview
-              src="${asset("home.jpg")}"
+              src="${asset("library.webp")}"
               width="1280"
               height="900"
               loading="lazy"
-              alt="Azuria’s updated Home screen in dark appearance."
+              alt="Azuria’s dark library with sample instance configurations."
             />
           </div>
           <figcaption data-preview-caption aria-live="polite">
@@ -265,11 +247,11 @@ export function renderHomepage({
             the skins and capes available to your account.
           </p>
           <p class="small-note">
-            Official Steve texture shown in an interface preview. Cape choices
-            depend on your account.
+            Official Steve texture and a demo account shown. Cape choices depend
+            on your account.
           </p>
         </div>
-        ${shot("skins.jpg", "Azuria skin selector with a Steve character preview and saved skin collection.")}
+        ${shot("skins.webp", "Azuria skin selector with a Steve character preview and saved skin collection.")}
       </div>
     </section>
     <section class="premium-section" aria-labelledby="settings-heading">
@@ -285,7 +267,7 @@ export function renderHomepage({
             Save your changes when you’re ready, or reset them to start again.
           </p>
         </div>
-        ${shot("settings.jpg", "Azuria’s settings popup with category navigation and appearance controls.")}
+        ${shot("settings.webp", "Azuria’s settings popup with category navigation and appearance controls.")}
       </div>
     </section>
     <section class="premium-section" aria-labelledby="steps-heading">
@@ -293,7 +275,7 @@ export function renderHomepage({
         <div class="premium-center" data-reveal>
           <p class="premium-kicker">Getting started</p>
           <h2 id="steps-heading">
-            Your next world,<br />in a few simple steps.
+            Your next instance,<br />in a few simple steps.
           </h2>
         </div>
         <ol class="premium-steps">
@@ -305,7 +287,7 @@ export function renderHomepage({
           <li data-reveal>
             <span>Step 2</span>
             <h3>Pick your version.</h3>
-            <p>Choose a release and Vanilla or Fabric on Home or Versions.</p>
+            <p>Create a Vanilla or Fabric instance and choose your settings.</p>
           </li>
           <li data-reveal>
             <span>Step 3</span>

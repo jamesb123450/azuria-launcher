@@ -279,13 +279,12 @@ test("scenery assets stay packaged and the homepage uses a static fallback", asy
 test("product pages describe current features and use refreshed captures", async () => {
   const home = await readFile(resolve(root, "index.html"), "utf8");
   for (const image of [
-    "versions.jpg",
-    "home.jpg",
-    "home-light.jpg",
-    "create.jpg",
-    "skins.jpg",
-    "settings.jpg",
-    "instance.jpg",
+    "library.webp",
+    "library-light.webp",
+    "create.webp",
+    "skins.webp",
+    "settings.webp",
+    "instance.webp",
   ]) {
     assert.ok(home.includes(image), image);
     assert.ok((await stat(resolve(root, "assets", image))).size > 1000);

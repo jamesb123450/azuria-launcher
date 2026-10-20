@@ -1215,3 +1215,68 @@ html[data-theme="light"] .settings-version {
 ::-webkit-scrollbar-button {
   display: none;
 }
+.launch-dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  padding: 0 16px;
+  border-left: 1px solid #ffffff30;
+}
+.hero-settings-menu {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+}
+.hero-settings-menu .hero-settings {
+  position: static;
+}
+.hero-settings-popover {
+  position: absolute;
+  right: 0;
+  bottom: 46px;
+  width: 250px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  text-align: left;
+}
+.hero-settings-popover button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.hero-settings-popover button:hover,
+.hero-settings-popover button:focus-visible {
+  background: var(--panel-soft);
+}
+.hero-settings-popover small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.hero-settings-popover p {
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.quick-version-trigger {
+  background: #10121a99;
+  color: #eee8f3;
+  border: 1px solid #ffffff30;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 11px;
+}

@@ -111,13 +111,20 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
           />Custom memory allocation</label
         >
       </div>
-      <div v-if="active('memoryMb')" class="memory-controls">
+      <div
+        :class="[
+          'memory-controls',
+          { 'inherited-preview': !active('memoryMb') },
+        ]"
+        :inert="!active('memoryMb')"
+        :aria-disabled="!active('memoryMb')"
+      >
         <input
           v-model.number="form.memoryMb"
           type="range"
           min="512"
           :max="memoryLimit"
-          :disabled="!memoryLimit"
+          :disabled="!memoryLimit || !active('memoryMb')"
           step="256"
           aria-label="Memory allocation slider"
         /><label
@@ -126,14 +133,14 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
             type="number"
             min="512"
             :max="memoryLimit"
-            :disabled="!memoryLimit"
+            :disabled="!memoryLimit || !active('memoryMb')"
             step="256"
             aria-label="Memory allocation in MB"
           />
           MB</label
         >
       </div>
-      <p v-else class="inherited-value">
+      <p v-if="!active('memoryMb')" class="inherited-value">
         Using launcher default: {{ inherited.memoryMb }} MB
       </p>
       <p v-if="memoryError" class="inline-error" role="alert">
@@ -147,6 +154,57 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
           desktop ? "Physical memory limit" : "Browser preview memory estimate"
         }}: {{ memoryLimit ? `${memoryLimit} MB` : "Detecting…" }}. Leave room
         for Windows and other apps.
+      </p>
+    </section>
+    <section v-if="section !== 'java'" class="option-section">
+      <div class="option-heading">
+        <div>
+          <h3>Game window</h3>
+          <p>Fullscreen and initial window resolution.</p>
+        </div>
+        <label v-if="inheritance" class="override-toggle"
+          ><input v-model="flags.window" type="checkbox" role="switch" />Custom
+          window settings</label
+        >
+      </div>
+      <div
+        :class="['window-options', { 'inherited-preview': !active('window') }]"
+        :inert="!active('window')"
+        :aria-disabled="!active('window')"
+      >
+        <label
+          ><input
+            v-model="form.window.fullscreen"
+            :disabled="!active('window')"
+            type="checkbox"
+          />Start in fullscreen</label
+        >
+        <div class="resolution-inputs">
+          <label
+            >Width<input
+              v-model.number="form.window.width"
+              :disabled="!active('window')"
+              type="number"
+              min="320"
+              max="16384" /></label
+          ><span>×</span
+          ><label
+            >Height<input
+              v-model.number="form.window.height"
+              :disabled="!active('window')"
+              type="number"
+              min="240"
+              max="8640"
+          /></label>
+        </div>
+      </div>
+      <p v-if="!active('window')" class="inherited-value">
+        Using launcher default:
+        {{
+          inherited.window.fullscreen
+            ? "Fullscreen"
+            : `${inherited.window.width} × ${inherited.window.height}`
+        }}
       </p>
     </section>
     <section v-if="section !== 'window'" class="option-section">
@@ -283,48 +341,6 @@ const inherited = computed(() => props.defaults ?? defaultLaunchOptions());
       <p v-else class="inherited-value">
         Using launcher default:
         {{ Object.keys(inherited.environment).length }} variables
-      </p>
-    </section>
-    <section v-if="section !== 'java'" class="option-section">
-      <div class="option-heading">
-        <div>
-          <h3>Game window</h3>
-          <p>Fullscreen and initial window resolution.</p>
-        </div>
-        <label v-if="inheritance" class="override-toggle"
-          ><input v-model="flags.window" type="checkbox" role="switch" />Custom
-          window settings</label
-        >
-      </div>
-      <div v-if="active('window')" class="window-options">
-        <label
-          ><input v-model="form.window.fullscreen" type="checkbox" />Start in
-          fullscreen</label
-        >
-        <div class="resolution-inputs">
-          <label
-            >Width<input
-              v-model.number="form.window.width"
-              type="number"
-              min="320"
-              max="16384" /></label
-          ><span>×</span
-          ><label
-            >Height<input
-              v-model.number="form.window.height"
-              type="number"
-              min="240"
-              max="8640"
-          /></label>
-        </div>
-      </div>
-      <p v-else class="inherited-value">
-        Using launcher default:
-        {{
-          inherited.window.fullscreen
-            ? "Fullscreen"
-            : `${inherited.window.width} × ${inherited.window.height}`
-        }}
       </p>
     </section>
   </fieldset>

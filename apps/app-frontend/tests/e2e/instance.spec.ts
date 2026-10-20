@@ -58,7 +58,9 @@ test("instance navigation, general settings, defaults and overrides persist", as
   await expect(page.locator(".instance-feedback")).toContainText(
     "Instance details saved",
   );
-  await page.getByRole("button", { name: "Overrides", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Java Environment", exact: true })
+    .click();
   await page.getByLabel("Memory allocation in MB").fill("8192");
   await page.getByRole("button", { name: "Save overrides" }).click();
   await expect(page.locator(".instance-feedback")).toContainText(
@@ -67,7 +69,9 @@ test("instance navigation, general settings, defaults and overrides persist", as
   await page.getByRole("button", { name: "Close instance settings" }).click();
   await page.reload();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Overrides", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Java Environment", exact: true })
+    .click();
   await expect(page.getByLabel("Memory allocation in MB")).toHaveValue("8192");
   await page
     .getByRole("switch", { name: "Custom memory allocation", exact: true })
@@ -79,7 +83,10 @@ test("instance navigation, general settings, defaults and overrides persist", as
   await page
     .getByRole("link", { name: "Launcher defaults", exact: true })
     .click();
-  await page.getByLabel("Memory allocation in MB").fill("6144");
+  await page
+    .getByRole("dialog", { name: "Settings", exact: true })
+    .getByLabel("Memory allocation in MB")
+    .fill("6144");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     page
@@ -122,7 +129,7 @@ test("minimum window settings fit and missing instances have an exit", async ({
   await page.setViewportSize({ width: 900, height: 650 });
   await page.goto(`/#/instances/${id}/settings/overrides`);
   await expect(
-    page.getByRole("heading", { name: "Overrides", exact: true }),
+    page.getByRole("heading", { name: "Java Environment", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -256,4 +263,86 @@ test("ad placeholder fits the bottom of the information sidebar", async ({
     Math.abs(box!.y + box!.height - sidebar!.y - sidebar!.height),
   ).toBeLessThan(2);
   await page.screenshot({ path: test.info().outputPath("sidebar-ad.png") });
+});
+
+test("profile popup keeps notes and exports only portable setup preferences", async ({
+  page,
+}) => {
+  await page.goto(`/#/instances/${id}?settings=notes`);
+  const popup = page.getByRole("dialog", {
+    name: "Instance settings",
+    exact: true,
+  });
+  await popup
+    .getByLabel("Instance notes", { exact: true })
+    .fill("# My world\nRemember the village.");
+  await popup.getByRole("button", { name: "Save notes", exact: true }).click();
+  await expect(page.locator(".instance-feedback")).toContainText("Notes saved");
+  await page.reload();
+  await expect(popup.getByLabel("Instance notes", { exact: true })).toHaveValue(
+    "# My world\nRemember the village.",
+  );
+  await popup.getByRole("button", { name: "Export", exact: true }).click();
+  const download = page.waitForEvent("download");
+  await popup
+    .getByRole("button", { name: "Export instance", exact: true })
+    .click();
+  const file = await download;
+  const stream = await file.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  const data = JSON.parse(Buffer.concat(chunks).toString());
+  expect(data.format).toBe("azuria-setup");
+  expect(data.instance.id).toBe(id);
+  expect(Object.keys(data.overrides)).toEqual(["memoryMb"]);
+  await popup.getByLabel("Export format").selectOption("folder");
+  await expect(
+    popup.getByRole("button", { name: "Export instance", exact: true }),
+  ).toBeDisabled();
+  await popup
+    .getByRole("button", { name: "Java Environment", exact: true })
+    .click();
+  await popup
+    .getByRole("switch", { name: "Custom memory allocation", exact: true })
+    .uncheck();
+  await expect(popup.getByLabel("Memory allocation in MB")).toBeDisabled();
+  await expect(popup.locator(".memory-controls")).toHaveClass(
+    /inherited-preview/,
+  );
+  await popup
+    .getByRole("switch", { name: "Custom memory allocation", exact: true })
+    .check();
+  await expect(popup.getByLabel("Memory allocation in MB")).toBeEnabled();
+});
+
+test("Home launch arrow and hero settings route to saved setups and memory", async ({
+  page,
+}) => {
+  await page.route("https://piston-meta.mojang.com/**", (r) =>
+    r.fulfill({ json: { versions: [{ id: "1.21.1", type: "release" }] } }),
+  );
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "Open saved instances", exact: true })
+    .click();
+  await expect(page).toHaveURL(/versions\?tab=setups/);
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Launch settings", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: /Global settings/ }).click();
+  await expect(page).toHaveURL(/settings#launch-defaults/);
+  await page
+    .getByRole("button", { name: "Close settings", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Launch settings", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: /Profile settings/ }).click();
+  await expect(page).toHaveURL(/instances\/[^?]+\?settings=java/);
+  await expect(
+    page
+      .getByRole("dialog", { name: "Instance settings", exact: true })
+      .getByRole("heading", { name: "Java Environment", exact: true }),
+  ).toBeVisible();
 });
