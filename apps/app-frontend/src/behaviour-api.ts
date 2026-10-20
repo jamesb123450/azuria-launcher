@@ -43,6 +43,4 @@ export const behaviourApi = {
     if (desktop) await invoke("save_behaviour", { options: checked });
     else localStorage.setItem(key, JSON.stringify(checked));
   },
-  discordConfigured: async (): Promise<boolean> =>
-    desktop ? invoke("discord_presence_configured") : false,
 };

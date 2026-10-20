@@ -3,7 +3,6 @@ mod behaviour;
 mod browser;
 mod content;
 mod cosmetics;
-mod discord;
 mod game;
 mod instances;
 mod media;
@@ -340,7 +339,7 @@ pub fn run() {
             }
         })
         .manage(azuria_account::AzuriaAccounts::default())
-        .manage(discord::Discord::default())
+        .manage(behaviour::RunningSessions::default())
         .manage(content::ContentState::default())
         .manage(resources::Resources::default())
         .invoke_handler(tauri::generate_handler![
@@ -356,7 +355,6 @@ pub fn run() {
             privacy::physical_memory_limit,
             behaviour::get_behaviour,
             behaviour::save_behaviour,
-            behaviour::discord_presence_configured,
             resources::resource_options,
             resources::save_resource_options,
             resources::storage_usage,

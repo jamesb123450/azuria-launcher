@@ -34,7 +34,7 @@ Modpack instances keep additional content on the instance page. **View content**
 
 ## Privacy, settings and window behaviour
 
-Settings → Privacy controls automatic account reconnection, hiding your account name and skin head in the launcher, and Discord activity sharing. Discord is the same saved preference in Privacy and Behaviour. Azuria has no analytics or automatic log-upload service; authentication, update checks and content requests still contact their providers. Hiding account details does not conceal information inside Minecraft or the skin editor.
+Settings → Privacy controls automatic account reconnection and hiding your account name and skin head in the launcher. Azuria has no analytics or automatic log-upload service; authentication, update checks and content requests still contact their providers. Hiding account details does not conceal information inside Minecraft or the skin editor.
 
 Memory controls detect the computer’s physical RAM and use it as the allocation ceiling, including computers above 64 GiB. Allocations use 256 MiB steps; leave memory for Windows and other applications. Storage download concurrency ranges from 1 to 10; existing larger saved limits are reduced to 10. Browser previews use an approximate memory estimate; the installed Windows app reads and validates physical memory natively.
 
@@ -44,18 +44,9 @@ The topbar shows each running instance by name, with Stop and Open logs controls
 
 ## Behaviour and Discord activity
 
-Settings → Behaviour provides saved defaults for minimising when Minecraft starts, refocusing after the last game closes, hiding the right sidebar and using the compact library. Save applies edits; Reset restores the last saved choices. Library layout and sidebar controls remain available for temporary changes.
+Behaviour settings control minimising when Minecraft starts, refocusing when the last game closes, the default right sidebar visibility and the compact library view.
 
-Configured Windows builds can show generic **Playing Minecraft** activity in Discord while Minecraft is running. Preparation alone does not publish activity. The launcher clears activity when the last game exits or Discord Rich Presence is turned off in Behaviour. No account, instance, world or server names are sent; activity includes the game start time. Discord being unavailable never prevents launching.
-
-### Enable Discord in distributed builds
-
-1. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications). Its display name appears in Discord alongside the Playing Minecraft activity.
-2. Copy its **Application ID**. This is a public numeric identifier; do not use a bot token, client secret or Microsoft client ID.
-3. In the **azuria-launcher source repository**, open **Settings → Secrets and variables → Actions → Variables → New repository variable**. Name it `AZURIA_DISCORD_APPLICATION_ID` and paste the Application ID as its value.
-4. Build a new Windows release after adding the variable. Existing installers cannot gain this build-time setting without an update. For local builds, set the same environment variable before running `npm run desktop:build`.
-
-Discord must be running with activity sharing enabled. Builds without a valid Application ID retain the preference but do not connect to Discord. Users can disable it in **Settings → Behaviour → Discord Rich Presence**.
+Azuria does not publish custom Discord activity. Discord can detect Minecraft independently; users manage this in Discord's activity settings. No Discord Application ID or bot token is required. Existing saved `discordPresence` fields remain readable for compatibility but are ignored by the native launcher.
 
 ## Download and update
 

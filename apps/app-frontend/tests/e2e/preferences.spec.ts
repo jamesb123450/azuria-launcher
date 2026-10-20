@@ -22,9 +22,6 @@ test("privacy and OLED persist, actions only appear for edits, sidebar version s
   await expect(save).toHaveCount(0);
   await reconnect.uncheck();
   await hidden.check();
-  await dialog
-    .getByRole("switch", { name: "Discord Rich Presence", exact: true })
-    .uncheck();
   await save.click();
   await expect(save).toHaveCount(0);
   await dialog.getByRole("button", { name: "Appearance", exact: true }).click();
@@ -42,7 +39,7 @@ test("privacy and OLED persist, actions only appear for edits, sidebar version s
   await dialog.getByRole("button", { name: "Behaviour", exact: true }).click();
   await expect(
     dialog.getByRole("switch", { name: "Discord Rich Presence", exact: true }),
-  ).not.toBeChecked();
+  ).toHaveCount(0);
   const version = await dialog.locator(".settings-version").boundingBox();
   const box = await dialog.boundingBox();
   expect(

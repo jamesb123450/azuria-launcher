@@ -259,7 +259,6 @@ const behaviourForm = ref(defaultBehaviour());
 const behaviourSnapshot = ref(JSON.stringify(behaviourForm.value));
 const behaviourLoaded = ref(false);
 const behaviourError = ref("");
-const discordConfigured = ref(false);
 const behaviourChanged = computed(
   () =>
     behaviourLoaded.value &&
@@ -288,12 +287,6 @@ const behaviourItems = [
     description:
       "Open your instances in the compact list view. The grid and list buttons remain available.",
   },
-  {
-    key: "discordPresence",
-    title: "Discord Rich Presence",
-    description:
-      "Show that you are playing Minecraft while a game is running. Account details, server addresses and world names are never included.",
-  },
 ] as const;
 async function loadBehaviour() {
   behaviourError.value = "";
@@ -305,11 +298,6 @@ async function loadBehaviour() {
   behaviourForm.value = { ...behaviourStore.options };
   behaviourSnapshot.value = JSON.stringify(behaviourForm.value);
   behaviourLoaded.value = true;
-  try {
-    discordConfigured.value = await behaviourApi.discordConfigured();
-  } catch {
-    discordConfigured.value = false;
-  }
 }
 watch(
   section,
@@ -568,7 +556,7 @@ onBeforeUnmount(() => {
             Choose how Azuria behaves while you play. Changes apply after Save.
           </p>
           <p v-if="!desktop" class="muted">
-            Window actions and Discord presence work in the Windows app.
+            Window actions work in the Windows app.
           </p>
           <label
             v-for="item in behaviourItems"
@@ -590,14 +578,6 @@ onBeforeUnmount(() => {
               :disabled="!behaviourLoaded || busy"
             />
           </label>
-          <p v-if="!discordConfigured" class="settings-inheritance">
-            Discord presence is unavailable in this build. Your preference is
-            kept for builds that support it.
-          </p>
-          <p v-else class="muted">
-            Discord must be running with activity sharing enabled. No Discord
-            sign-in is needed in Azuria.
-          </p>
           <p v-if="behaviourError" class="inline-error" role="alert">
             {{ behaviourError }}
           </p>
@@ -664,21 +644,6 @@ onBeforeUnmount(() => {
               role="switch"
               aria-label="Hide account details"
               :disabled="!privacyLoaded || busy"
-          /></label>
-          <label class="settings-behaviour-row"
-            ><span
-              ><strong>Discord Rich Presence</strong
-              ><span
-                >Share generic Minecraft activity and its start time with your
-                local Discord client. This is the same preference as
-                Behaviour.</span
-              ></span
-            ><input
-              v-model="behaviourForm.discordPresence"
-              type="checkbox"
-              role="switch"
-              aria-label="Discord Rich Presence"
-              :disabled="!behaviourLoaded || busy"
           /></label>
           <div class="settings-privacy-note">
             <h3>Your data stays yours</h3>
