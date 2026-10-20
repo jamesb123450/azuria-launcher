@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import "./style.css";
+import { showAdmin } from "./admin.js";
 import {
   profileError,
   passwordError,
@@ -226,7 +227,7 @@ function authScreen(mode = "signin") {
           });
           check(error);
           user = result.user;
-          await accountScreen();
+          await signedInScreen();
         }
       } finally {
         clearSensitiveFields();
@@ -290,6 +291,26 @@ async function edge(body) {
   if (data?.error) fail(data.error);
   return data;
 }
+async function signedInScreen() {
+  if (location.pathname.replace(/\/$/, "") === "/admin") {
+    return showAdmin({
+      client,
+      user,
+      ui: {
+        heading,
+        render,
+        paragraph,
+        button,
+        form,
+        field,
+        message,
+        fail,
+        check,
+      },
+    });
+  }
+  return accountScreen();
+}
 async function accountScreen() {
   await loadProfile();
   heading("Your account", user.email || "Signed in to Azuria");
@@ -343,6 +364,13 @@ async function accountScreen() {
   );
   const actions = document.createElement("div");
   actions.className = "stack";
+  const { data: isAdmin } = await client.rpc("admin_access");
+  if (isAdmin)
+    actions.append(
+      button("Administration", () => {
+        location.href = "/admin";
+      }),
+    );
   if (handoff && profile)
     actions.append(
       button(
@@ -503,6 +531,10 @@ function legalPage(type) {
           "Connecting the launcher creates a short-lived, single-use authorization code. The server stores a hash of that code for at least five minutes to limit repeated requests. Codes expire after two minutes; older records are removed when new codes are issued.",
         ],
         [
+          "Administration",
+          "Authorised Azuria administrators can view account identifiers, email addresses, verification and suspension status to manage accounts and investigate abuse. Account changes record the administrator and affected account IDs, reason, action and outcome. This history may remain after account deletion for security and accountability.",
+        ],
+        [
           "Your choices",
           "You can edit your profile, revoke other sessions or delete your account from these pages. Deletion removes your active account and profile; service security records and backups may follow the providers’ retention schedules.",
         ],
@@ -605,7 +637,7 @@ async function boot() {
   const { data, error } = await client.auth.getUser();
   if (!error && data.user) {
     user = data.user;
-    await accountScreen();
+    await signedInScreen();
   } else authScreen();
 }
 boot().catch((error) => {
