@@ -21,6 +21,21 @@ import { versionArt } from "../lib/version-art";
 const route = useRoute(),
   router = useRouter(),
   quick = useQuickPlay();
+const profileBusy = ref(false),
+  profileError = ref("");
+async function openProfile() {
+  if (profileBusy.value) return;
+  profileBusy.value = true;
+  profileError.value = "";
+  try {
+    const setup = await quick.ensureSetup();
+    await router.push(`/instances/${setup.id}`);
+  } catch (e) {
+    profileError.value = String(e instanceof Error ? e.message : e);
+  } finally {
+    profileBusy.value = false;
+  }
+}
 const search = ref(""),
   snapshots = ref(false);
 const saved = computed(() => route.query.tab === "setups");
@@ -272,13 +287,19 @@ function tab(setups: boolean) {
               <p class="version-setup-note">
                 Each version and loader keeps its own setup.
               </p>
+              <p v-if="profileError" class="inline-error" role="alert">
+                {{ profileError }}
+              </p>
               <div class="version-launch-row">
-                <RouterLink
+                <button
                   class="icon-button"
-                  to="/settings#launch-defaults"
-                  aria-label="Launch settings"
-                  ><Settings :size="18" /></RouterLink
-                ><QuickLaunch compact />
+                  :disabled="profileBusy"
+                  @click="openProfile"
+                  aria-label="Open instance page"
+                >
+                  <Settings :size="18" />
+                </button>
+                <QuickLaunch compact />
               </div>
             </div>
           </template>

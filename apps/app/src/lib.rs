@@ -7,6 +7,7 @@ mod game;
 mod instances;
 mod media;
 mod privacy;
+mod profile;
 mod resources;
 mod skin_library;
 use azuria_auth::{AccountView, AuthError, AuthService, NativeVault, Progress, Stage, WebProvider};
@@ -372,6 +373,11 @@ pub fn run() {
             game::prepare_instance,
             game::cancel_launch,
             game::game_launches,
+            profile::instance_directory,
+            profile::get_instance_notes,
+            profile::save_instance_notes,
+            profile::open_instance_notes_directory,
+            profile::export_instance,
             instances::get_launch_defaults,
             instances::save_launch_defaults,
             instances::get_instance_overrides,

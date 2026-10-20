@@ -3,12 +3,12 @@ import {
   Gamepad2,
   Shirt,
   ChevronRight,
-  Settings,
   Newspaper,
   UserRound,
   LogIn,
 } from "@lucide/vue";
 import { useRouter } from "vue-router";
+import HeroSettingsMenu from "../components/HeroSettingsMenu.vue";
 import QuickLaunch from "../components/QuickLaunch.vue";
 import SkinHead from "../components/SkinHead.vue";
 import { useAccount } from "../stores/account";
@@ -33,13 +33,7 @@ function openAccount() {
             width="1024"
             height="1024"
             alt=""
-          /><QuickLaunch /><RouterLink
-            class="hero-settings"
-            to="/settings#launch-defaults"
-            aria-label="Launch settings"
-            title="Launch settings"
-            ><Settings :size="19"
-          /></RouterLink>
+          /><QuickLaunch /><HeroSettingsMenu />
         </section>
         <section class="home-news" aria-labelledby="home-news-heading">
           <h2 id="home-news-heading">Latest from Azuria</h2>

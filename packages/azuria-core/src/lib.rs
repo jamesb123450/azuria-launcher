@@ -4,6 +4,7 @@ mod folders;
 pub mod instance_files;
 pub mod memory;
 pub mod migration;
+pub mod notes;
 pub mod preferences;
 pub mod privacy;
 pub mod resources;

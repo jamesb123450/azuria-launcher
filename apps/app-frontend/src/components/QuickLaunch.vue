@@ -123,18 +123,25 @@ async function launch() {
             · {{ loaderName(quick.loader) }}</template
           ></span
         ></button
-      ><button
+      ><RouterLink
         v-if="!compact"
-        ref="picker"
         class="launch-dropdown"
-        :disabled="quick.preparing || !!active"
-        aria-label="Choose version and loader"
-        aria-haspopup="dialog"
-        @click="dialog?.showModal()"
-      >
-        <ChevronDown :size="19" />
-      </button>
+        to="/versions?tab=setups"
+        aria-label="Open saved instances"
+        ><ChevronDown :size="19"
+      /></RouterLink>
     </div>
+    <button
+      v-if="!compact"
+      ref="picker"
+      class="quick-version-trigger"
+      :disabled="quick.preparing || !!active"
+      aria-label="Choose version and loader"
+      aria-haspopup="dialog"
+      @click="dialog?.showModal()"
+    >
+      Change version
+    </button>
     <p v-if="progress && active" class="home-launch-status" role="status">
       {{ progress.message }}
     </p>
