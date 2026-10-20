@@ -29,7 +29,9 @@ users’ computers. The database is not hosted by Vercel.
 `profiles` stores the account ID, username, display name and creation time.
 Authentication data and password hashes stay in Supabase Auth. Profile creation
 happens after verification: a taken username never breaks email registration.
-There are no friends or messaging tables yet.
+For the friends database and profile-upsert correction, also apply
+`202610200002_friends.sql` using [the friends database guide](FRIENDS_DATABASE.md).
+Messaging and presence are not included.
 
 Alternatively, with the Supabase CLI, run `supabase db push` from `services/accounts`
 after linking the project. **Use either the SQL Editor or CLI for the initial
