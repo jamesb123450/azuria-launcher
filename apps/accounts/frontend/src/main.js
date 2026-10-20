@@ -37,7 +37,14 @@ const tokenHash = link.searchParams.get("token_hash");
 const tokenType = link.searchParams.get("type");
 const oauthCode = link.searchParams.get("code");
 // Remove transient credentials before showing links or loading account data.
-history.replaceState(null, "", location.pathname);
+const adminHash =
+  location.pathname.replace(/\/$/, "") === "/admin" &&
+  /^#(overview|accounts|activity|reports|products|announcements|analytics|settings)$/.test(
+    location.hash,
+  )
+    ? location.hash
+    : "";
+history.replaceState(null, "", location.pathname + adminHash);
 $("year").textContent = new Date().getFullYear();
 
 function message(text = "", error = false) {
@@ -123,7 +130,7 @@ async function run(action) {
   } finally {
     busy = false;
     document.querySelectorAll("button").forEach((element) => {
-      element.disabled = false;
+      element.disabled = element.dataset.unavailable === "true";
     });
   }
 }
@@ -150,6 +157,7 @@ function legalNote() {
   return p;
 }
 function authScreen(mode = "signin") {
+  document.body.classList.remove("admin-dashboard-open");
   heading(
     mode === "signup"
       ? "Make yourself at home"

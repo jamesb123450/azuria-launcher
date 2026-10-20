@@ -2,7 +2,14 @@
 
 The administration area is **https://accounts.azuriasmp.org/admin**. It supports
 account counts, paginated account search, suspension/restoration and an audit
-history. Passwords, private messages, role promotion and account deletion are not
+history. The sidebar separates Overview, Accounts and Activity Log. Reports,
+Products, Announcements, Analytics and Settings show planned tools marked Coming
+soon; their action controls are disabled and do not save or publish anything.
+Overview totals and recent activity come from the existing authenticated RPCs.
+There are no fabricated charts or placeholder user counts. Navigation fetches
+only the data used by that section, without background polling.
+
+Passwords, private messages, role promotion and account deletion are not
 available in this admin area. Reports will be added when reporting exists.
 
 ## 1. Apply the new SQL migration
