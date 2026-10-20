@@ -28,7 +28,7 @@ test("Home matches the launch-first design, with honest preview and no generated
     page.getByRole("heading", { name: "Welcome to Azuria" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Coming soon", exact: true }),
+    page.getByRole("heading", { name: "No news yet", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".home-scenery")).toHaveJSProperty(
     "naturalWidth",

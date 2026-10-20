@@ -1,3 +1,4 @@
+@import "../../../frontend/src/news.css";
 @font-face {
   font-family: Inter;
   src: url("/inter.woff2") format("woff2");
@@ -817,4 +818,48 @@ dialog::backdrop {
   .admin-welcome {
     padding: 22px;
   }
+}
+
+.news-workspace {
+  min-width: 0;
+}
+.news-list-row {
+  margin-block: 1rem;
+}
+.news-editor {
+  display: grid;
+  gap: 1.2rem;
+  padding-block: 1rem;
+}
+.news-editor label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--text);
+}
+.news-editor textarea,
+.news-editor select {
+  width: 100%;
+  padding: 0.85rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface, #191b27);
+  border: 1px solid var(--border, #383947);
+  border-radius: 12px;
+}
+.news-editor textarea {
+  resize: vertical;
+  line-height: 1.65;
+}
+.news-editor input[readonly] {
+  opacity: 0.65;
+}
+.news-editor-preview {
+  margin-top: 1rem;
+  border: 1px solid var(--border, #ffffff18);
+  border-radius: 24px;
+  padding: 1rem;
+  overflow: hidden;
+}
+.news-editor-preview .news-reading h1 {
+  font-size: clamp(1.7rem, 3vw, 3rem);
 }

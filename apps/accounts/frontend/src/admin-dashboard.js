@@ -22,11 +22,10 @@ export const adminSections = [
     soon: true,
   },
   {
-    id: "announcements",
-    label: "Announcements",
+    id: "news",
+    label: "News",
     group: "Manage",
     icon: "speaker",
-    soon: true,
   },
   {
     id: "analytics",
@@ -79,27 +78,6 @@ export const plannedTools = {
         "New projects",
         "Prepare a new product before it is announced.",
         "Add project",
-      ],
-    ],
-  },
-  announcements: {
-    title: "Announcements",
-    description: "Prepare updates for the launcher and Azuria websites.",
-    tools: [
-      [
-        "Write an announcement",
-        "Draft news and choose where it will appear.",
-        "Create draft",
-      ],
-      [
-        "Scheduled posts",
-        "Choose when an announcement goes live.",
-        "View schedule",
-      ],
-      [
-        "Launcher news",
-        "Manage the news shown on the launcher home page.",
-        "Manage news",
       ],
     ],
   },

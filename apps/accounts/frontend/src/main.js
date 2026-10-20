@@ -39,7 +39,7 @@ const oauthCode = link.searchParams.get("code");
 // Remove transient credentials before showing links or loading account data.
 const adminHash =
   location.pathname.replace(/\/$/, "") === "/admin" &&
-  /^#(overview|accounts|activity|reports|products|announcements|analytics|settings)$/.test(
+  /^#(overview|accounts|activity|reports|products|news|analytics|settings)$/.test(
     location.hash,
   )
     ? location.hash

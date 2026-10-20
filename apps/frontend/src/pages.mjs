@@ -93,6 +93,7 @@ export function render(
     home: "Azuria Launcher — Minecraft instances, organised",
     downloads: "Download Azuria Launcher for Windows",
     changelog: "Changelog — Azuria Launcher",
+    news: "News — Azuria Launcher",
     help: "Help & current status — Azuria Launcher",
     privacy: "Privacy policy — Azuria Launcher",
     terms: "Terms of service — Azuria Launcher",
@@ -103,6 +104,7 @@ export function render(
     home: "A Windows Minecraft Java launcher with Vanilla and Fabric launching, saved skins, instance controls and automatic updates.",
     downloads:
       "Download the Azuria development preview for Windows x64. Installation instructions, requirements and in-app update guidance.",
+    news: "News and updates from Azuria Studios and Azuria Launcher.",
     changelog:
       "Published Azuria Launcher releases, changes and update information.",
     help: "Help with Azuria installation, signed updates, Microsoft sign-in and current development limitations.",
@@ -161,7 +163,7 @@ export function render(
         </button>
         <nav id="site-navigation" aria-label="Main navigation">
           ${page === "home" ? html`<a class="section-nav" href="#features">Launcher</a><a class="section-nav" href="#appearance">Appearance</a><a class="section-nav" href="#updates">Updates</a>` : html`<a href="${link("")}">Home</a>${nav("Downloads", "downloads/")}${nav("Changelog", "changelog/")}`}
-          ${nav("Help", "help/")}${nav("Contact", "contact/")}<a
+          ${nav("News", "news/")}${nav("Help", "help/")}${nav("Contact", "contact/")}<a
             class="github-link"
             href="${repository}"
             >GitHub ${icon("external", 13)}</a
@@ -629,11 +631,14 @@ export function render(
               details or launcher data to website analytics.
             </p>
             <p>
-              This website does not provide user accounts. Fonts and images are
-              hosted with the website. Hosting and download providers process
-              technical request information, including IP addresses, browser
-              details and requested pages, to deliver and protect their
-              services. The main website uses
+              This website does not provide user accounts. Fonts and interface
+              images are hosted with the website. News articles and their cover
+              images are served through Supabase, which receives technical
+              request information to deliver that content. Admin usernames and
+              publication dates are shown publicly with their stories. Hosting
+              and download providers process technical request information,
+              including IP addresses, browser details and requested pages, to
+              deliver and protect their services. The main website uses
               <a href="https://vercel.com/legal/privacy-notice">Vercel</a>;
               copies served through GitHub Pages and downloads use
               <a
@@ -955,6 +960,32 @@ export function render(
         ><a class="text-link" href="${link("help/")}">Help & information</a>
       </div>
     </section>`;
+  if (page === "news")
+    content = html`<section class="news-page container">
+      <header data-news-intro>
+        <span class="section-kicker">FROM THE STUDIO</span>
+        <h1>Azuria news</h1>
+        <p>Updates, stories and what’s next.</p>
+      </header>
+      <div data-news-feed="page">
+        <p role="status">Loading news…</p>
+        <noscript>Enable JavaScript to read the latest news.</noscript>
+      </div>
+    </section>`;
+  if (page === "home")
+    content += html`<section
+      class="news-section container"
+      aria-labelledby="news-heading"
+    >
+      <div class="news-section-heading">
+        <div>
+          <span class="section-kicker">FROM THE STUDIO</span>
+          <h2 id="news-heading">Latest from Azuria</h2>
+        </div>
+        <a class="text-link" href="${link("news/")}">All news →</a>
+      </div>
+      <div data-news-feed="home"><p role="status">Loading news…</p></div>
+    </section>`;
   const canonical =
     page === "home"
       ? siteURL
@@ -970,7 +1001,7 @@ export function render(
         <meta name="color-scheme" content="dark" />
         <meta
           http-equiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self'${analyticsEnabled ? " https://www.googletagmanager.com" : ""}; style-src 'self'; img-src 'self'${analyticsEnabled ? " https://*.google-analytics.com https://*.googletagmanager.com" : ""}; font-src 'self'; connect-src https://api.github.com${analyticsEnabled ? " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com" : ""}; object-src 'none'; base-uri 'none'; form-action 'none'"
+          content="default-src 'self'; script-src 'self'${analyticsEnabled ? " https://www.googletagmanager.com" : ""}; style-src 'self'; img-src 'self' https://*.supabase.co${analyticsEnabled ? " https://*.google-analytics.com https://*.googletagmanager.com" : ""}; font-src 'self'; connect-src 'self' https://*.supabase.co https://api.github.com${analyticsEnabled ? " https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com" : ""}; object-src 'none'; base-uri 'none'; form-action 'none'"
         />
         <link rel="canonical" href="${e(canonical)}" />
         <meta property="og:type" content="website" />
@@ -998,8 +1029,10 @@ export function render(
         />
         <link rel="stylesheet" href="${link("site.css")}" />
         <link rel="stylesheet" href="${link("premium.css")}" />
+        <link rel="stylesheet" href="${link("news.css")}" />
         <link rel="stylesheet" href="${link("analytics.css")}" />
         <script type="module" src="${link("site.js")}"></script>
+        <script type="module" src="${link("news.js")}"></script>
       </head>
       <body class="${page === "home" ? "home-page" : "inner-page"}">
         ${header}

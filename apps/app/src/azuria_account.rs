@@ -531,3 +531,48 @@ mod tests {
         assert_eq!(body["p_username"], "player_1");
     }
 }
+
+#[derive(Deserialize, Serialize)]
+pub struct NewsStory {
+    slug: String,
+    title: String,
+    summary: String,
+    cover_path: String,
+    cover_alt: String,
+    image_position: String,
+    published_at: String,
+}
+#[derive(Serialize)]
+pub struct NewsFeed {
+    url: String,
+    stories: Vec<NewsStory>,
+}
+/// Published news is public and never refreshes or reads an account session.
+#[tauri::command]
+pub async fn azuria_news() -> Result<NewsFeed, String> {
+    let Some(config) = config() else {
+        return Ok(NewsFeed {
+            url: String::new(),
+            stories: vec![],
+        });
+    };
+    let response = client()?
+        .post(format!("{}/rest/v1/rpc/news_public", config.url))
+        .header("apikey", config.key)
+        .json(&serde_json::json!({}))
+        .send()
+        .await
+        .map_err(|_| "News could not be loaded. Check your connection.")?;
+    if !response.status().is_success() {
+        return Err("News could not be loaded. Please try again later.".into());
+    }
+    let mut stories: Vec<NewsStory> = response
+        .json()
+        .await
+        .map_err(|_| "News could not be read.")?;
+    stories.truncate(3);
+    Ok(NewsFeed {
+        url: config.url,
+        stories,
+    })
+}
