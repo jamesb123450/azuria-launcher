@@ -126,8 +126,8 @@ async function launch() {
       ><RouterLink
         v-if="!compact"
         class="launch-dropdown"
-        to="/versions?tab=setups"
-        aria-label="Open saved instances"
+        to="/versions"
+        aria-label="Open Minecraft versions"
         ><ChevronDown :size="19"
       /></RouterLink>
     </div>

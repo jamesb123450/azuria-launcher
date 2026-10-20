@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "monitor",
+  "description": "Local game monitor with event access and native titlebar controls. No remote pages, filesystem plugin, shell or updater permission.",
+  "windows": ["monitor-*"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging"
+  ]
+}

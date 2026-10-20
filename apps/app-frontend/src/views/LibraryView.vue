@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useAccount } from "../stores/account";
-const account = useAccount();
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import {
   Plus,
@@ -12,21 +10,17 @@ import {
   SlidersHorizontal,
   Copy,
   Trash2,
-  ArrowUpRight,
   Layers3,
   LayoutGrid,
   List,
   ChevronDown,
-  Check,
-  Circle,
-  UserRound,
   X,
   Folder,
 } from "@lucide/vue";
-import SkinHead from "../components/SkinHead.vue";
 import LaunchControl from "../components/LaunchControl.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import VersionPicker from "../components/VersionPicker.vue";
+import CommunitySidebar from "../components/CommunitySidebar.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
 import { useBehaviour } from "../stores/behaviour";
 import { useLauncher } from "../stores/launcher";
@@ -61,9 +55,6 @@ watch(
   () => (contextOverride.value = undefined),
 );
 const actionMenu = ref<string>();
-const setupComplete = computed(
-  () => !!store.instances.length && account.view.verified,
-);
 const layoutOverride = ref<"grid" | "list">();
 const layout = computed({
   get: () =>
@@ -182,7 +173,7 @@ onBeforeUnmount(closeDelete);
             v-else
             :size="16"
           />
-          Account &amp; setup
+          Friends &amp; ads
         </button>
       </div>
       <section
@@ -567,91 +558,7 @@ onBeforeUnmount(closeDelete);
         </section>
       </section>
     </div>
-    <aside
-      v-if="contextOpen"
-      id="launcher-context"
-      class="context-panel"
-      aria-label="Launcher information"
-    >
-      <div class="context-content">
-        <section class="account-panel">
-          <h2>Minecraft account</h2>
-          <RouterLink class="account-identity" to="/wardrobe"
-            ><span class="account-portrait"><SkinHead /></span>
-            <div>
-              <strong>{{ account.label }}</strong
-              ><span>{{
-                account.view.verified
-                  ? "Minecraft Java verified"
-                  : "Minecraft account"
-              }}</span>
-            </div>
-            <ChevronDown :size="16"
-          /></RouterLink>
-        </section>
-        <details class="setup-panel" :open="!setupComplete">
-          <summary class="context-heading">
-            <h2>Getting started</h2>
-            <span
-              >{{
-                Number(!!store.instances.length) + Number(account.view.verified)
-              }}
-              / 2</span
-            >
-          </summary>
-          <button
-            class="setup-item"
-            :disabled="!!store.instances.length"
-            @click="open()"
-          >
-            <span :class="['check-ring', { done: store.instances.length }]"
-              ><Check v-if="store.instances.length" :size="14" /><Circle
-                v-else
-                :size="14" /></span
-            ><span>{{
-              store.instances.length
-                ? "Instance created"
-                : "Create your first instance"
-            }}</span></button
-          ><RouterLink to="/settings#account" class="setup-item"
-            ><span class="check-ring"><UserRound :size="14" /></span
-            ><span
-              >Sign in to Minecraft<span class="setup-subtitle">{{
-                account.view.verified ? "Connected" : "Microsoft account"
-              }}</span></span
-            ></RouterLink
-          >
-        </details>
-        <section class="development-panel">
-          <h2>Azuria {{ updates.version }}</h2>
-
-          <h3>What’s available</h3>
-          <p class="muted">
-            Launch Vanilla or Fabric, manage your saved setups and connect your
-            Minecraft account. Other loaders are still in development.
-          </p>
-          <RouterLink class="text-link" to="/roadmap"
-            >View roadmap <ArrowUpRight :size="14"
-          /></RouterLink>
-        </section>
-        <RouterLink class="context-settings text-link" to="/settings"
-          >{{
-            updates.update
-              ? "Update available · Launcher settings"
-              : "Launcher settings"
-          }}
-          <ArrowUpRight :size="14"
-        /></RouterLink>
-      </div>
-      <div
-        class="sidebar-ad"
-        role="region"
-        aria-label="Advertisement placeholder"
-      >
-        <span>Advertisement</span>
-        <div class="sidebar-ad-space"></div>
-      </div>
-    </aside>
+    <CommunitySidebar v-if="contextOpen" id="launcher-context" />
   </div>
   <InstanceDialog
     v-if="showDialog"

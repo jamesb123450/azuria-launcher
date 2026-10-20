@@ -99,15 +99,15 @@ test("populated library remains readable at desktop size", async ({ page }) => {
   );
   await page.reload();
   await expect(page.locator(".instance-card")).toHaveCount(4);
-  await expect(page.locator(".context-panel")).toBeVisible();
+  await expect(page.locator(".community-sidebar")).toBeVisible();
   await page
-    .getByRole("button", { name: "Account & setup", exact: true })
+    .getByRole("button", { name: "Friends & ads", exact: true })
     .click();
-  await expect(page.locator(".context-panel")).toHaveCount(0);
+  await expect(page.locator(".community-sidebar")).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Account & setup", exact: true })
+    .getByRole("button", { name: "Friends & ads", exact: true })
     .click();
-  await expect(page.locator(".context-panel")).toBeVisible();
+  await expect(page.locator(".community-sidebar")).toBeVisible();
   await page
     .getByRole("button", { name: "Filters & sorting", exact: true })
     .click();

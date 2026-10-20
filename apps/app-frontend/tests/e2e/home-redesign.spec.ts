@@ -43,7 +43,7 @@ test("Home matches the launch-first design, with honest preview and no generated
       ),
     ).toBe(true);
     const hero = await page.locator(".home-hero").boundingBox();
-    const context = await page.locator(".home-context").boundingBox();
+    const context = await page.locator(".community-sidebar").boundingBox();
     expect(hero!.x + hero!.width).toBeLessThanOrEqual(context!.x);
     await page.screenshot({
       path: test.info().outputPath(`home-${width}.png`),
@@ -92,7 +92,7 @@ test("version and loader picker persists selection, restores focus and supports 
   await expect(
     page.getByRole("button", { name: "Choose Minecraft 24w14a" }),
   ).toHaveCount(0);
-  await page.getByLabel("Include snapshots & older builds").check();
+  await page.getByLabel("Snapshots & older builds").check();
   await page.getByRole("button", { name: "Choose Minecraft 24w14a" }).click();
   await expect(page.locator(".launch-main")).toContainText("24w14a");
   await page.getByRole("link", { name: "Home", exact: true }).click();

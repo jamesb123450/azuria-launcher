@@ -8,7 +8,9 @@ import {
   Play,
   Settings,
   FolderOpen,
+  Plus,
 } from "@lucide/vue";
+import InstanceDialog from "../components/InstanceDialog.vue";
 import LibraryView from "./LibraryView.vue";
 import QuickLaunch from "../components/QuickLaunch.vue";
 import { useQuickPlay } from "../stores/quick-play";
@@ -36,6 +38,7 @@ async function openProfile() {
     profileBusy.value = false;
   }
 }
+const create = ref(false);
 const search = ref(""),
   snapshots = ref(false);
 const saved = computed(() => route.query.tab === "setups");
@@ -83,14 +86,32 @@ function tab(setups: boolean) {
 </script>
 <template>
   <div class="versions-page">
-    <div class="versions-heading">
-      <h1>Versions</h1>
-      <p>Choose what to play.</p>
-    </div>
-    <div class="versions-tabs" role="group" aria-label="Version pages">
-      <button :aria-pressed="!saved" @click="tab(false)">
-        Minecraft versions</button
-      ><button :aria-pressed="saved" @click="tab(true)">Saved setups</button>
+    <div class="versions-browser-toolbar">
+      <label class="catalogue-mode"
+        ><select
+          aria-label="Version library"
+          :value="saved ? 'profiles' : 'minecraft'"
+          @change="
+            tab(($event.target as HTMLSelectElement).value === 'profiles')
+          "
+        >
+          <option value="minecraft">Minecraft versions</option>
+          <option value="profiles">Saved profiles</option>
+        </select></label
+      >
+      <label v-if="!saved" class="search-box"
+        ><Search :size="17" /><input
+          v-model="search"
+          aria-label="Search Minecraft versions"
+          placeholder="Search Minecraft versions…"
+      /></label>
+      <label v-if="!saved" class="version-snapshots"
+        ><input v-model="snapshots" type="checkbox" />Snapshots &amp; older
+        builds</label
+      >
+      <button class="button primary" @click="create = true">
+        <Plus :size="16" />New profile
+      </button>
     </div>
     <LibraryView v-if="saved" />
     <template v-else>
@@ -99,17 +120,6 @@ function tab(setups: boolean) {
           class="versions-catalogue"
           aria-label="Minecraft version catalogue"
         >
-          <div class="versions-toolbar">
-            <label class="search-box"
-              ><Search :size="18" /><input
-                v-model="search"
-                placeholder="Search Minecraft versions"
-                aria-label="Search Minecraft versions" /></label
-            ><label class="version-snapshots"
-              ><input v-model="snapshots" type="checkbox" />Include snapshots
-              &amp; older builds</label
-            >
-          </div>
           <div
             v-if="quick.loading"
             class="version-loading"
@@ -285,7 +295,7 @@ function tab(setups: boolean) {
                 }}</RouterLink
               >
               <p class="version-setup-note">
-                Each version and loader keeps its own setup.
+                Your worlds and settings stay with this profile.
               </p>
               <p v-if="profileError" class="inline-error" role="alert">
                 {{ profileError }}
@@ -311,5 +321,6 @@ function tab(setups: boolean) {
         </aside>
       </div>
     </template>
+    <InstanceDialog v-if="create" @close="create = false" />
   </div>
 </template>

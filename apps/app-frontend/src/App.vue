@@ -6,8 +6,6 @@ import {
   Play,
   Gamepad2,
   Plus,
-  Square,
-  Terminal,
   Settings,
   Compass,
   GitBranch,
@@ -20,6 +18,9 @@ import {
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import ActivityMenus from "./components/ActivityMenus.vue";
+import RunningGames from "./components/RunningGames.vue";
+import GameMonitor from "./views/GameMonitor.vue";
 import RouteSurface from "./components/RouteSurface.vue";
 import SettingsView from "./views/SettingsView.vue";
 import SkinHead from "./components/SkinHead.vue";
@@ -51,14 +52,6 @@ watch(
       typeof router.options.history.state.forward === "string";
   },
   { immediate: true, flush: "post" },
-);
-const runningInstances = computed(() =>
-  Object.values(game.launches).filter((l) => l.stage === "running"),
-);
-const runningCount = computed(
-  () =>
-    Object.values(game.launches).filter((launch) => launch.stage === "running")
-      .length,
 );
 const pageIcon = computed(() =>
   route.path.startsWith("/discover")
@@ -145,276 +138,249 @@ async function storagePrepared() {
 }
 </script>
 <template>
-  <div
-    v-if="booting"
-    class="app-startup"
-    role="status"
-    aria-label="Starting Azuria"
-  >
-    <img src="/branding/app-icon.png" alt="" />
-    <h1>Azuria Launcher</h1>
-    <div class="startup-line" aria-hidden="true" />
-    <p>Opening your library…</p>
-  </div>
-  <StorageMigration v-if="!storageReady" @ready="storagePrepared" />
-  <div v-if="storageReady && !booting" class="app-shell">
-    <SettingsView v-if="route.path === '/settings'" @close="closeSettings" />
-    <StartupUpdate v-if="desktop" />
-    <a class="skip-link" href="#main-content" @click.prevent="focusMain"
-      >Skip to content</a
+  <GameMonitor v-if="route.path.startsWith('/monitor/')" />
+  <template v-else>
+    <div
+      v-if="booting"
+      class="app-startup"
+      role="status"
+      aria-label="Starting Azuria"
     >
-    <header
-      class="topbar"
-      :inert="route.path === '/settings'"
-      data-tauri-drag-region
-    >
-      <div class="topbar-brand" data-tauri-drag-region>
-        <RouterLink to="/" class="header-home" aria-label="Azuria home"
-          ><img
-            class="header-mark"
-            src="/branding/app-icon.png"
-            alt=""
-            aria-hidden="true"
-          />azuria<span class="brand-caption">Launcher</span></RouterLink
-        >
-        <nav class="history-controls" aria-label="Page history">
-          <button
-            aria-label="Go back"
-            title="Go back"
-            :disabled="!canGoBack"
-            @click="router.back()"
+      <img src="/branding/app-icon.png" alt="" />
+      <h1>Azuria Launcher</h1>
+      <div class="startup-line" aria-hidden="true" />
+      <p>Opening your library…</p>
+    </div>
+    <StorageMigration v-if="!storageReady" @ready="storagePrepared" />
+    <div v-if="storageReady && !booting" class="app-shell">
+      <SettingsView v-if="route.path === '/settings'" @close="closeSettings" />
+      <StartupUpdate v-if="desktop" />
+      <a class="skip-link" href="#main-content" @click.prevent="focusMain"
+        >Skip to content</a
+      >
+      <header
+        class="topbar"
+        :inert="route.path === '/settings'"
+        data-tauri-drag-region
+      >
+        <div class="topbar-brand" data-tauri-drag-region>
+          <RouterLink to="/" class="header-home" aria-label="Azuria home"
+            ><img
+              class="header-mark"
+              src="/branding/app-icon.png"
+              alt=""
+              aria-hidden="true"
+            />azuria<span class="brand-caption">Launcher</span></RouterLink
           >
-            <ChevronLeft :size="16" />
-          </button>
-          <button
-            aria-label="Go forward"
-            title="Go forward"
-            :disabled="!canGoForward"
-            @click="router.forward()"
-          >
-            <ChevronRight :size="16" />
-          </button>
-        </nav>
-        <span class="current-page" data-tauri-drag-region
-          ><component :is="pageIcon" :size="17" /><span class="breadcrumb">{{
-            page
-          }}</span></span
-        >
-      </div>
-      <div class="topbar-right">
-        <RouterLink
-          to="/settings#account"
-          class="topbar-account"
-          :aria-label="
-            account.view.account
-              ? 'Manage Minecraft account'
-              : 'Sign in to Minecraft'
-          "
-          ><SkinHead v-if="account.view.account" /><UserRound
-            v-else
-            :size="16"
-          /><span>{{
-            account.view.account ? account.label : "Sign in"
-          }}</span></RouterLink
-        >
-        <RouterLink
-          v-if="updates.update"
-          to="/settings"
-          class="text-link update-chip"
-          ><Download :size="13" /> Update available</RouterLink
-        >
-        <span
-          v-if="!runningCount"
-          class="game-status"
-          role="status"
-          aria-live="polite"
-          ><span class="game-status-dot" aria-hidden="true" />No games
-          running</span
-        >
-        <div v-else class="running-instances" aria-label="Running instances">
-          <div
-            v-for="launch in runningInstances"
-            :key="launch.id"
-            class="running-instance"
-          >
-            <i class="game-status-dot" aria-hidden="true" />
-            <span
-              role="status"
-              :title="
-                store.instances.find((i) => i.id === launch.id)?.name ??
-                'Minecraft'
-              "
-              >{{
-                store.instances.find((i) => i.id === launch.id)?.name ??
-                "Minecraft"
-              }}</span
-            >
+          <nav class="history-controls" aria-label="Page history">
             <button
-              :aria-label="`Stop ${store.instances.find((i) => i.id === launch.id)?.name ?? 'Minecraft'}`"
-              title="Stop Minecraft"
-              :disabled="game.stopping[launch.id]"
-              @click="game.cancel(launch.id)"
+              aria-label="Go back"
+              title="Go back"
+              :disabled="!canGoBack"
+              @click="router.back()"
             >
-              <Square :size="12" />
+              <ChevronLeft :size="16" />
             </button>
-            <RouterLink
-              :to="{ path: `/instances/${launch.id}`, query: { tab: 'logs' } }"
-              :aria-label="`Open logs for ${store.instances.find((i) => i.id === launch.id)?.name ?? 'Minecraft'}`"
-              title="Open logs"
-              ><Terminal :size="15"
-            /></RouterLink>
-          </div>
+            <button
+              aria-label="Go forward"
+              title="Go forward"
+              :disabled="!canGoForward"
+              @click="router.forward()"
+            >
+              <ChevronRight :size="16" />
+            </button>
+          </nav>
+          <span class="current-page" data-tauri-drag-region
+            ><component :is="pageIcon" :size="17" /><span class="breadcrumb">{{
+              page
+            }}</span></span
+          >
+        </div>
+        <div class="topbar-right">
+          <ActivityMenus />
+          <RouterLink
+            to="/settings#account"
+            class="topbar-account"
+            :aria-label="
+              account.view.account
+                ? 'Manage Minecraft account'
+                : 'Sign in to Minecraft'
+            "
+            ><SkinHead v-if="account.view.account" /><UserRound
+              v-else
+              :size="16"
+            /><span>{{
+              account.view.account ? account.label : "Sign in"
+            }}</span></RouterLink
+          >
+          <RouterLink
+            v-if="updates.update"
+            to="/settings"
+            class="text-link update-chip"
+            ><Download :size="13" /> Update available</RouterLink
+          >
+          <RunningGames />
+        </div>
+        <WindowControls />
+      </header>
+      <aside class="sidebar" :inert="route.path === '/settings'">
+        <nav aria-label="Main navigation">
+          <RouterLink to="/" class="rail-link" aria-label="Home" title="Home"
+            ><Play :size="23" /><span class="rail-tooltip"
+              >Home</span
+            ></RouterLink
+          >
+          <RouterLink
+            to="/versions"
+            class="rail-link"
+            aria-label="Versions"
+            title="Versions"
+            ><Gamepad2 :size="21" /><span class="rail-tooltip"
+              >Versions</span
+            ></RouterLink
+          >
+          <RouterLink
+            to="/discover"
+            :class="{
+              'router-link-active': route.path.startsWith('/discover'),
+            }"
+            class="rail-link"
+            aria-label="Discover"
+            title="Discover"
+            ><Compass :size="22" /><span class="rail-tooltip"
+              >Discover</span
+            ></RouterLink
+          >
+          <RouterLink
+            to="/wardrobe"
+            class="rail-link"
+            aria-label="Skins and capes"
+            title="Skins and capes"
+            ><Shirt :size="21"
+          /></RouterLink>
+          <RouterLink
+            to="/screenshots"
+            class="rail-link"
+            aria-label="Screenshots"
+            title="Screenshots"
+            ><Camera :size="21"
+          /></RouterLink>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="rail-divider" />
+          <RouterLink
+            to="/versions?tab=setups"
+            exact-active-class=""
+            active-class=""
+            class="rail-link"
+            aria-label="Saved setups"
+            title="Saved setups"
+            ><Plus :size="21" /><span class="rail-tooltip"
+              >Saved setups</span
+            ></RouterLink
+          >
+          <a
+            class="rail-link"
+            href="https://github.com/jamesb123450/azuria-releases"
+            @click.prevent="store.openProject"
+            aria-label="Project on GitHub"
+            title="Project on GitHub"
+            ><GitBranch :size="20" /></a
+          ><RouterLink
+            to="/settings"
+            class="rail-link"
+            aria-label="Settings"
+            title="Settings"
+            ><Settings :size="21" /><span
+              v-if="updates.update"
+              class="update-dot"
+              aria-label="Update available"
+            /><span class="rail-tooltip">Settings</span></RouterLink
+          >
+          <RouterLink
+            to="/settings#account"
+            class="rail-avatar"
+            :title="account.label"
+            aria-label="Minecraft account"
+          >
+            <SkinHead />
+          </RouterLink>
+        </div>
+      </aside>
+      <div class="main-shell" :inert="route.path === '/settings'">
+        <main
+          id="main-content"
+          tabindex="-1"
+          :class="{
+            'is-library':
+              route.path === '/versions' && route.query.tab === 'setups',
+          }"
+        >
+          <RouteSurface
+            :key="instanceSettingsRevision"
+            :route="displayedRoute"
+          />
+        </main>
+        <div
+          v-if="content.job"
+          :class="[
+            'alert',
+            'content-notification',
+            content.job.stage === 'error' ? 'error' : 'success',
+          ]"
+          role="status"
+        >
+          <span
+            >{{ content.job.message
+            }}<template v-if="content.busy && content.job.total">
+              ·
+              {{
+                Math.min(
+                  100,
+                  Math.round((content.job.completed / content.job.total) * 100),
+                )
+              }}%</template
+            ></span
+          >
+          <button
+            v-if="content.busy"
+            :disabled="content.job.stage === 'installing'"
+            @click="content.cancel"
+          >
+            Cancel install
+          </button>
+          <button
+            v-else
+            aria-label="Dismiss content status"
+            @click="content.job = null"
+          >
+            ×
+          </button>
+        </div>
+        <div v-else-if="game.error" class="alert error" role="alert">
+          {{ game.error
+          }}<button @click="game.error = ''" aria-label="Dismiss game error">
+            ×
+          </button>
+        </div>
+        <div v-else-if="store.error" class="alert error" role="alert">
+          {{ store.error
+          }}<button @click="store.error = ''" aria-label="Dismiss error">
+            ×
+          </button>
+        </div>
+        <div v-else-if="store.notice" class="alert success" role="status">
+          {{ store.notice
+          }}<button
+            @click="store.notice = ''"
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
         </div>
       </div>
-      <WindowControls />
-    </header>
-    <aside class="sidebar" :inert="route.path === '/settings'">
-      <nav aria-label="Main navigation">
-        <RouterLink to="/" class="rail-link" aria-label="Home" title="Home"
-          ><Play :size="23" /><span class="rail-tooltip">Home</span></RouterLink
-        >
-        <RouterLink
-          to="/versions"
-          class="rail-link"
-          aria-label="Versions"
-          title="Versions"
-          ><Gamepad2 :size="21" /><span class="rail-tooltip"
-            >Versions</span
-          ></RouterLink
-        >
-        <RouterLink
-          to="/discover"
-          :class="{ 'router-link-active': route.path.startsWith('/discover') }"
-          class="rail-link"
-          aria-label="Discover"
-          title="Discover"
-          ><Compass :size="22" /><span class="rail-tooltip"
-            >Discover</span
-          ></RouterLink
-        >
-        <RouterLink
-          to="/wardrobe"
-          class="rail-link"
-          aria-label="Skins and capes"
-          title="Skins and capes"
-          ><Shirt :size="21"
-        /></RouterLink>
-        <RouterLink
-          to="/screenshots"
-          class="rail-link"
-          aria-label="Screenshots"
-          title="Screenshots"
-          ><Camera :size="21"
-        /></RouterLink>
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="rail-divider" />
-        <RouterLink
-          to="/versions?tab=setups"
-          exact-active-class=""
-          active-class=""
-          class="rail-link"
-          aria-label="Saved setups"
-          title="Saved setups"
-          ><Plus :size="21" /><span class="rail-tooltip"
-            >Saved setups</span
-          ></RouterLink
-        >
-        <a
-          class="rail-link"
-          href="https://github.com/jamesb123450/azuria-releases"
-          @click.prevent="store.openProject"
-          aria-label="Project on GitHub"
-          title="Project on GitHub"
-          ><GitBranch :size="20" /></a
-        ><RouterLink
-          to="/settings"
-          class="rail-link"
-          aria-label="Settings"
-          title="Settings"
-          ><Settings :size="21" /><span
-            v-if="updates.update"
-            class="update-dot"
-            aria-label="Update available"
-          /><span class="rail-tooltip">Settings</span></RouterLink
-        >
-        <RouterLink
-          to="/settings#account"
-          class="rail-avatar"
-          :title="account.label"
-          aria-label="Minecraft account"
-        >
-          <SkinHead />
-        </RouterLink>
-      </div>
-    </aside>
-    <div class="main-shell" :inert="route.path === '/settings'">
-      <main
-        id="main-content"
-        tabindex="-1"
-        :class="{
-          'is-library':
-            route.path === '/versions' && route.query.tab === 'setups',
-        }"
-      >
-        <RouteSurface :key="instanceSettingsRevision" :route="displayedRoute" />
-      </main>
-      <div
-        v-if="content.job"
-        :class="[
-          'alert',
-          'content-notification',
-          content.job.stage === 'error' ? 'error' : 'success',
-        ]"
-        role="status"
-      >
-        <span
-          >{{ content.job.message
-          }}<template v-if="content.busy && content.job.total">
-            ·
-            {{
-              Math.min(
-                100,
-                Math.round((content.job.completed / content.job.total) * 100),
-              )
-            }}%</template
-          ></span
-        >
-        <button
-          v-if="content.busy"
-          :disabled="content.job.stage === 'installing'"
-          @click="content.cancel"
-        >
-          Cancel install
-        </button>
-        <button
-          v-else
-          aria-label="Dismiss content status"
-          @click="content.job = null"
-        >
-          ×
-        </button>
-      </div>
-      <div v-else-if="game.error" class="alert error" role="alert">
-        {{ game.error
-        }}<button @click="game.error = ''" aria-label="Dismiss game error">
-          ×
-        </button>
-      </div>
-      <div v-else-if="store.error" class="alert error" role="alert">
-        {{ store.error
-        }}<button @click="store.error = ''" aria-label="Dismiss error">
-          ×
-        </button>
-      </div>
-      <div v-else-if="store.notice" class="alert success" role="status">
-        {{ store.notice
-        }}<button @click="store.notice = ''" aria-label="Dismiss notification">
-          ×
-        </button>
-      </div>
     </div>
-  </div>
+  </template>
 </template>
 
 <style scoped>
