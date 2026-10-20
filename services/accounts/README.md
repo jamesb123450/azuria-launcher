@@ -12,3 +12,10 @@ The browser must already be authenticated with a verified email to issue a grant
 Account deletion requires a verified session and fresh password authentication.
 
 No database or function is provisioned by a source-code build.
+
+## Friends database
+
+The second migration adds authenticated friend requests, friendships, blocks and
+request limits, and includes the profile-upsert permission correction. Follow
+[the friends database guide](../../docs/FRIENDS_DATABASE.md) to apply it to an
+existing project. No launcher UI, presence or messaging is enabled by this migration.
