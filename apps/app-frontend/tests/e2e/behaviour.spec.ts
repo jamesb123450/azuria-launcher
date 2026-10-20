@@ -56,9 +56,6 @@ test("Behaviour stages edits, resets, persists and applies library defaults", as
   await refocus.check();
   await sidebar.check();
   await compact.check();
-  await dialog
-    .getByRole("switch", { name: "Discord Rich Presence", exact: true })
-    .uncheck();
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     dialog.getByText("Settings saved.", { exact: true }),
@@ -95,7 +92,7 @@ test("Behaviour stages edits, resets, persists and applies library defaults", as
   await expect(refocus).toBeChecked();
   await expect(
     dialog.getByRole("switch", { name: "Discord Rich Presence", exact: true }),
-  ).not.toBeChecked();
+  ).toHaveCount(0);
   await page.screenshot({ path: test.info().outputPath("behaviour.png") });
 });
 test("failed behaviour saves retain staged edits for retry", async ({

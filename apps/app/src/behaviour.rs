@@ -1,23 +1,34 @@
-use crate::{discord::Discord, with_store, AppState};
+use crate::{with_store, AppState};
 use azuria_core::behaviour::Behaviour;
+use std::{collections::BTreeSet, sync::Mutex};
 use tauri::{Manager, State};
 #[tauri::command]
 pub fn get_behaviour(state: State<'_, AppState>) -> Result<Behaviour, String> {
     with_store(&state, |store| store.behaviour())
 }
 #[tauri::command]
-pub fn save_behaviour(
-    state: State<'_, AppState>,
-    discord: State<'_, Discord>,
-    options: Behaviour,
-) -> Result<(), String> {
-    with_store(&state, |store| store.save_behaviour(options.clone()))?;
-    discord.enabled(options.discord_presence);
+pub fn save_behaviour(state: State<'_, AppState>, options: Behaviour) -> Result<(), String> {
+    with_store(&state, |store| store.save_behaviour(options))?;
     Ok(())
 }
-#[tauri::command]
-pub fn discord_presence_configured(discord: State<'_, Discord>) -> bool {
-    discord.configured()
+// Game lifetimes only; Discord manages automatic Minecraft detection independently.
+#[derive(Default)]
+pub struct RunningSessions(Mutex<BTreeSet<String>>);
+impl RunningSessions {
+    fn started(&self, id: &str) {
+        if let Ok(mut games) = self.0.lock() {
+            games.insert(id.into());
+        }
+    }
+    fn stopped(&self, id: &str) -> bool {
+        self.0
+            .lock()
+            .map(|mut games| {
+                games.remove(id);
+                games.is_empty()
+            })
+            .unwrap_or(false)
+    }
 }
 /// Exists only after a real game process has started, never during preparation.
 pub struct RunningSession {
@@ -31,8 +42,7 @@ impl RunningSession {
                 discord_presence: false,
                 ..Behaviour::default()
             });
-        app.state::<Discord>().enabled(options.discord_presence);
-        app.state::<Discord>().started(&id);
+        app.state::<RunningSessions>().started(&id);
         if options.minimise_on_start {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.minimize();
@@ -43,7 +53,7 @@ impl RunningSession {
 }
 impl Drop for RunningSession {
     fn drop(&mut self) {
-        let idle = self.app.state::<Discord>().stopped(&self.id);
+        let idle = self.app.state::<RunningSessions>().stopped(&self.id);
         let refocus = with_store(&self.app.state::<AppState>(), |store| store.behaviour())
             .map(|options| options.refocus_on_exit)
             .unwrap_or(false);
@@ -54,5 +64,18 @@ impl Drop for RunningSession {
                 let _ = window.set_focus();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn refocus_waits_for_the_last_game_to_close() {
+        let sessions = RunningSessions::default();
+        sessions.started("first");
+        sessions.started("second");
+        assert!(!sessions.stopped("first"));
+        assert!(sessions.stopped("second"));
     }
 }
