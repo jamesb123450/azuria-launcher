@@ -260,14 +260,11 @@ test("public policies, contact route and real screenshot credit are present", as
     assert.ok((await stat(resolve(root, asset))).isFile(), asset);
 });
 
-test("scenery assets stay packaged and the homepage uses a static fallback", async () => {
-  const { mountPanorama } = await import("../src/panorama.js");
-  await mountPanorama({ getContext: () => null });
-  for (let index = 0; index < 6; index++) {
-    assert.ok(
-      (await stat(resolve(root, `assets/panorama-${index}.webp`))).size > 1000,
-    );
-  }
+test("the homepage packages its active static scenery", async () => {
+  assert.ok(
+    (await stat(resolve(root, "assets/minecraft-cherry-grove.webp"))).size >
+      1000,
+  );
   const html = await readFile(resolve(root, "index.html"), "utf8");
   assert.match(html, /class="premium-scenery"/);
   assert.doesNotMatch(html, /<canvas|data-panorama-base/);

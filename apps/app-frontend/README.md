@@ -26,7 +26,7 @@ Notes are plain Markdown, saved per instance with a 64 KB limit. Export supports
 
 ## Activity and game monitor
 
-Versions uses one toolbar: switch between the Minecraft catalogue and saved profiles, search, include older builds, or create a profile. Home and the profile library share a Friends coming-soon panel with two square advertisement placeholders. No live advertising or friends data is simulated.
+Versions uses one toolbar: switch between the Minecraft catalogue and saved profiles, search, include older builds, or create a profile. Home and the profile library share the signed-in Friends panel and two square advertisement placeholders. Friend requests and account relationships use the live Azuria service; advertising placeholders do not serve ads.
 
 The titlebar includes Notifications, Downloads and tasks, the account menu, and a compact running-instance count. Tasks track real game preparation, content installs and updater events, retain completed results for the current session, and support cancelling supported active operations or clearing finished entries. Notifications retain launcher notices and task results for the current session. Downloads cannot be paused by the native backend, so the interface offers cancellation rather than a cosmetic pause control.
 

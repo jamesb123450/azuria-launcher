@@ -236,16 +236,7 @@
   margin: 6px 0 20px;
 }
 .instance-settings-content h3,
-.launch-defaults-panel h3 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 6px;
-}
 .instance-settings-content p,
-.launch-defaults-panel p {
-  font-size: 13px;
-  line-height: 1.7;
-}
 .instance-settings-content fieldset,
 .launch-options {
   border: 0;

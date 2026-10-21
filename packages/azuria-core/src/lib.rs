@@ -1,5 +1,4 @@
 pub mod behaviour;
-pub mod discord_presence;
 mod folders;
 pub mod instance_files;
 pub mod memory;

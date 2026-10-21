@@ -5,7 +5,12 @@ PostgreSQL and the `account-action` server function. The production account addr
 is **https://accounts.azuriasmp.org**. Neither PostgreSQL nor Docker is needed on
 users’ computers. The database is not hosted by Vercel.
 
-## 1. Create the database
+The existing deployment is already migrated. This guide is a reference for fresh
+environments and ongoing service configuration; do not rerun applied migrations.
+The ordered SQL history remains in `services/accounts/supabase/migrations/` for
+reproducible setup and automated tests.
+
+## 1. Create a fresh database
 
 1. Create a project at https://supabase.com/dashboard. Choose a suitable region
    (for example London), and generate a strong database password. Save that password
@@ -22,15 +27,18 @@ users’ computers. The database is not hosted by Vercel.
    - `https://accounts.azuriasmp.org/reset/`
 5. For development only, also allow `http://localhost:1421/confirm/` and
    `http://localhost:1421/reset/`. Do not broadly allow all Vercel preview domains.
-6. Keep the default API-exposed schemas; do not expose `auth`. Both application
+6. Keep the default API-exposed schemas; do not expose `auth`. Application
    tables have row-level security. Ordinary users can read/edit only their own
    profile and cannot access desktop connection records or privileged functions.
 
 `profiles` stores the account ID, username, display name and creation time.
 Authentication data and password hashes stay in Supabase Auth. Profile creation
 happens after verification: a taken username never breaks email registration.
-For the friends database and profile-upsert correction, also apply
-`202610200002_friends.sql` using [the friends database guide](FRIENDS_DATABASE.md).
+A fresh environment also needs the remaining migrations in filename order:
+`202610200002_friends.sql`, `202610200003_admin.sql`, `202610210001_news.sql`
+and `202610210002_signup_consent.sql`. These add friends, administration, news
+and signup consent respectively. See the feature sections below and the
+[service reference](../services/accounts/README.md#friends) for operational details.
 Messaging and presence are not included.
 
 Alternatively, with the Supabase CLI, run `supabase db push` from `services/accounts`

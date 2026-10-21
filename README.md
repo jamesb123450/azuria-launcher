@@ -1,16 +1,17 @@
 # Azuria Studios
 
-Private monorepo for Azuria Studios products, services and shared code.
+Monorepo for Azuria Studios products, services and shared code.
 
-| Project                | Directory                                          | Development                                            |
-| ---------------------- | -------------------------------------------------- | ------------------------------------------------------ |
-| Launcher native app    | [`apps/app`](apps/app)                             | `npm run launcher:dev`                                 |
-| Launcher Vue interface | [`apps/app-frontend`](apps/app-frontend)           | `npm run dev`                                          |
-| Launcher website       | [`apps/frontend`](apps/frontend)                   | `npm run website:build` then `npm run website:preview` |
-| Azuria account website | [`apps/accounts/frontend`](apps/accounts/frontend) | `npm run accounts:build`                               |
-| Azuria account service | [`services/accounts`](services/accounts)           | See [account setup](docs/ACCOUNTS_SETUP.md)            |
-| CurseForge service     | [`services/curseforge`](services/curseforge)       | `npm run service:test`                                 |
-| Shared release tools   | [`packages/release-tools`](packages/release-tools) | `npm run test --workspace=@azuria/release-tools`       |
+| Project                | Directory                                                      | Development                                            |
+| ---------------------- | -------------------------------------------------------------- | ------------------------------------------------------ |
+| Launcher native app    | [`apps/app`](apps/app)                                         | `npm run launcher:dev`                                 |
+| Launcher Vue interface | [`apps/app-frontend`](apps/app-frontend)                       | `npm run dev`                                          |
+| Launcher website       | [`apps/frontend`](apps/frontend)                               | `npm run website:build` then `npm run website:preview` |
+| Azuria Studios website | [`apps/azuria-studios/frontend`](apps/azuria-studios/frontend) | `npm run studios:build`                                |
+| Azuria account website | [`apps/accounts/frontend`](apps/accounts/frontend)             | `npm run accounts:build`                               |
+| Azuria account service | [`services/accounts`](services/accounts)                       | See [account setup](docs/ACCOUNTS_SETUP.md)            |
+| CurseForge service     | [`services/curseforge`](services/curseforge)                   | `npm run service:test`                                 |
+| Shared release tools   | [`packages/release-tools`](packages/release-tools)             | `npm run test --workspace=@azuria/release-tools`       |
 
 ## Getting started
 
@@ -35,13 +36,13 @@ JavaScript projects are npm workspaces. Install once at the root; use the comman
 
 Products have separate build/deployment workflows. Launcher releases retain their signing configuration, Windows identity and public update host: [azuria-releases](https://github.com/jamesb123450/azuria-releases). This repository and its source history are never published there. CurseForge deployment remains manual, with credentials in Actions and Worker secrets.
 
-The website lives at [launcher.azuriasmp.org](https://launcher.azuriasmp.org/). For Vercel, set **Root Directory** to `apps/frontend` and keep the build/output settings in the [migration guide](docs/MONOREPO.md). The GitHub website workflow retains the existing public distribution copy.
+The website lives at [launcher.azuriasmp.org](https://launcher.azuriasmp.org/). For Vercel, set **Root Directory** to `apps/frontend` and keep the build/output settings in the [monorepo guide](docs/MONOREPO.md#deployment). The GitHub website workflow retains the existing public distribution copy.
 
-See [monorepo layout, adding products and migration checks](docs/MONOREPO.md). No repository rename, domain change or deployment is performed by this migration.
+See [monorepo layout, deployment and adding products](docs/MONOREPO.md).
 
 ## Azuria accounts
 
-Account pages are prepared for **accounts.azuriasmp.org**, backed by Supabase.
+Account pages are available at **accounts.azuriasmp.org**, backed by Supabase.
 Follow [the account setup guide](docs/ACCOUNTS_SETUP.md) for database migrations,
 email delivery, Vercel deployment and credential storage. The launcher’s Azuria
 account is separate from its Microsoft/Minecraft account.
