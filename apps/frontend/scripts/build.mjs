@@ -45,7 +45,6 @@ for (const filename of [
   "news-model.mjs",
   "news.css",
   "release-data.mjs",
-  "panorama.js",
 ])
   await cp(new URL(`src/${filename}`, root), new URL(filename, dist));
 for (const page of [

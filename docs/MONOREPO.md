@@ -10,15 +10,21 @@ The native launcher owns Tauri configuration, Rust IPC/window code, installer, r
 
 Use Node.js 24. Run `npm ci` at the root, which owns the only npm lockfile. Never install separately inside a workspace. Root commands forward to the correct workspace and working directory. `npm run build` builds the Vue interface and website; native packaging is explicit through `npm run launcher:build`. `npm test` runs release-routing checks and all JavaScript workspace unit/site/service tests after a frontend/website build. `npm run website:test` builds and tests just the website. `npm run test:e2e` runs launcher browser tests. Windows-only checks continue in Foundation checks.
 
-## Migration deployment checklist
+## Deployment
 
-1. Review and merge the migration PR after checks. Keep existing Tauri signing secrets, Discord/client identifiers, application identifier and public updater URL unchanged.
-2. In the existing Vercel project's Settings, change **Root Directory** from `apps/launcher-website` (or the original `website`) to `apps/frontend`. Keep **Build Command** `npm run build`, **Output Directory** `dist`, and **Framework Preset** Other. Enable inclusion of files outside the root directory because the website uses the shared workspace package. Use the repository root workspace install (`npm ci --prefix ../..`) if overriding Install Command. Keep `AZURIA_SITE_URL=https://launcher.azuriasmp.org/` in the existing environments. Redeploy and verify CSS, images, legal routes and downloads.
-3. Keep `azuria-releases` as the public distribution host. The launcher workflow runs native build/release scripts from `apps/app` and publishes only compiled signed artifacts. Existing installed clients use the same update URL and signing key.
-4. The CurseForge source path remains `services/curseforge`; its manual deployment workflow and existing secrets are unchanged. No service redeployment is necessary merely for the folder migration.
-5. Rebase open PRs onto this layout, translating UI files/tests to `apps/app-frontend/`, native shell/installer files to `apps/app/`, Rust library files to `packages/azuria-*/`, and website paths to `apps/frontend/`. System-tray and single-instance support have been removed in a separate follow-up commit; normal idle window closure is restored.
+The launcher website uses Vercel Root Directory `apps/frontend`, build command
+`npm run build`, output `dist` and Framework Preset Other. Enable access to files
+outside the root directory for shared workspace imports. Use the repository root
+workspace install (`npm ci --prefix ../..`) if overriding Install Command, and
+set `AZURIA_SITE_URL=https://launcher.azuriasmp.org/`.
 
-The repository name remains `azuria-launcher` during migration. A later rename to `azuria-studios` requires checking external Git/Vercel integrations and documentation; it is not necessary for monorepo operation.
+The studios website (`apps/azuria-studios/frontend`) and account website
+(`apps/accounts/frontend`) have separate Vercel projects. Product READMEs and
+`docs/ACCOUNTS_SETUP.md` describe their current configuration.
+
+`azuria-releases` hosts compiled signed launcher updates and the static website
+copy. Keep the launcher application identifier, update URL and signing key stable.
+CurseForge deployment is manual and uses `services/curseforge`.
 
 ## Release boundaries
 

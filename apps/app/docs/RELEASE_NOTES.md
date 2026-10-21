@@ -1,6 +1,5 @@
-## Easier Azuria sign-in
+## Repository maintenance
 
-- Return from your browser to Azuria Launcher to connect your account automatically.
-- Use the Open Azuria Launcher button if your browser blocks the return prompt.
-- Manual connection codes remain available as a fallback.
-- Cancelling sign-in invalidates the pending connection request.
+- Remove unused artwork, retired interface components and the disconnected custom Discord presence code.
+- Remove the unused panorama renderer and images from website builds.
+- Consolidate setup documentation and retain the database migration history for maintenance and tests.

@@ -44,7 +44,7 @@ behaviour for custom setup creation. Account verification and game status must b
 ready before Home creates anything. Browser preview never creates or launches a
 setup through the Home launch button.
 
-The news section intentionally displays Coming soon. Artwork credits are available
+The news section shows published Azuria stories from the shared account service, with loading, empty and retry states. Artwork credits are available
 under the hero and in `public/scenery/CREDITS.md`; provider asset sources live in
 `public/providers/CREDITS.md`.
 
