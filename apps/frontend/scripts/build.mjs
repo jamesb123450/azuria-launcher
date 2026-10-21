@@ -41,6 +41,9 @@ for (const filename of [
   "premium.css",
   "motion.mjs",
   "site.js",
+  "news.js",
+  "news-model.mjs",
+  "news.css",
   "release-data.mjs",
   "panorama.js",
 ])
@@ -49,6 +52,7 @@ for (const page of [
   "home",
   "downloads",
   "changelog",
+  "news",
   "help",
   "privacy",
   "terms",
@@ -87,6 +91,35 @@ await writeFile(
 );
 await writeFile(
   new URL("sitemap.xml", dist),
-  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "help/", "privacy/", "terms/", "contact/"].map((path) => `<url><loc>${url.href}${path}</loc></url>`).join("")}</urlset>`,
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "news/", "help/", "privacy/", "terms/", "contact/"].map((path) => `<url><loc>${url.href}${path}</loc></url>`).join("")}</urlset>`,
 );
-console.log(`Built 7 pages and a 404 page in ${fileURLToPath(dist)}`);
+console.log(`Built 8 pages and a 404 page in ${fileURLToPath(dist)}`);
+
+const newsURL = process.env.AZURIA_SUPABASE_URL?.trim();
+const newsKey = process.env.AZURIA_SUPABASE_PUBLISHABLE_KEY?.trim();
+if (Boolean(newsURL) !== Boolean(newsKey))
+  throw new Error("Set both public Supabase news variables");
+if (newsURL) {
+  const parsed = new URL(newsURL);
+  if (
+    parsed.protocol !== "https:" ||
+    !parsed.hostname.endsWith(".supabase.co") ||
+    parsed.pathname !== "/" ||
+    parsed.search ||
+    parsed.hash ||
+    parsed.username ||
+    parsed.password ||
+    parsed.port ||
+    !newsKey.startsWith("sb_publishable_")
+  )
+    throw new Error(
+      "Use your Supabase project URL and publishable key for news",
+    );
+}
+await writeFile(
+  new URL("news-config.json", dist),
+  JSON.stringify({
+    url: newsURL?.replace(/\/$/, "") || "",
+    key: newsKey || "",
+  }),
+);

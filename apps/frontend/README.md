@@ -41,3 +41,10 @@ Changing the ID requests fresh consent. Cookie settings allows withdrawal. Prefe
 ## Current interface captures
 
 The JPEG captures in `assets/` were refreshed from the launcher frontend after the portrait Versions catalogue and live appearance previews were added. Home is used for the hero, social preview and dark/light comparison; Versions shows the portrait cards and right launch panel. Captures are 1280×900 and use sample local setups. The skin screen uses the official Steve texture as sample data. No screenshot is generated or composited. Source credits are in `assets/MINECRAFT-CREDIT.txt`.
+
+## News publishing
+
+The home page and `/news/` load published stories at runtime. Follow
+[the news setup guide](../../docs/NEWS_SETUP.md) for the database migration,
+public build variables and admin editor. Publishing does not require a website
+redeploy. Article URLs use `/news/?story=slug` for static hosting compatibility.

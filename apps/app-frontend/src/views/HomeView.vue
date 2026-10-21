@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Newspaper } from "@lucide/vue";
+import NewsFeed from "../components/NewsFeed.vue";
 import HeroSettingsMenu from "../components/HeroSettingsMenu.vue";
 import QuickLaunch from "../components/QuickLaunch.vue";
 import CommunitySidebar from "../components/CommunitySidebar.vue";
@@ -20,14 +20,7 @@ const store = useLauncher();
             alt=""
           /><QuickLaunch /><HeroSettingsMenu />
         </section>
-        <section class="home-news" aria-labelledby="home-news-heading">
-          <h2 id="home-news-heading">Latest from Azuria</h2>
-          <div class="news-coming-soon">
-            <Newspaper :size="30" aria-hidden="true" />
-            <h3>Coming soon</h3>
-            <p>News and updates from Azuria Studios will appear here.</p>
-          </div>
-        </section>
+        <NewsFeed />
         <details class="home-image-credit">
           <summary>Image credits</summary>
           <p>

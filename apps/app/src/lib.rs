@@ -344,6 +344,7 @@ pub fn run() {
         .manage(resources::Resources::default())
         .invoke_handler(tauri::generate_handler![
             azuria_account::azuria_configuration,
+            azuria_account::azuria_news,
             azuria_account::azuria_friends,
             azuria_account::azuria_status,
             azuria_account::azuria_begin,

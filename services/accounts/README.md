@@ -26,3 +26,10 @@ The third migration and separate `admin-action` function protect the shared acco
 website’s admin area. Follow [the admin setup guide](../../docs/ADMIN_SETUP.md) for
 role assignment, function deployment and authenticator setup. No administrator is
 created automatically; roles are granted only through trusted Supabase access.
+
+## News
+
+The news migration adds admin publishing, private drafts and public image storage.
+Follow [NEWS_SETUP.md](../../docs/NEWS_SETUP.md) to apply the migration and connect
+both the launcher website and desktop feed. Publishing requires the live admin
+role and MFA; readers do not need an account.

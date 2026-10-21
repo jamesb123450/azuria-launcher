@@ -29,6 +29,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      AZURIA_SUPABASE_URL: ${{ vars.AZURIA_SUPABASE_URL }}
+      AZURIA_SUPABASE_PUBLISHABLE_KEY: ${{ vars.AZURIA_SUPABASE_PUBLISHABLE_KEY }}
       AZURIA_SITE_URL: https://jamesb123450.github.io/azuria-releases/
       AZURIA_ADSENSE_ENABLED: ${{ vars.AZURIA_ADSENSE_ENABLED }}
       AZURIA_ADSENSE_CMP_READY: ${{ vars.AZURIA_ADSENSE_CMP_READY }}

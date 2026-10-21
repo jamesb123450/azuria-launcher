@@ -17,6 +17,7 @@ const files = [
   "index.html",
   "downloads/index.html",
   "changelog/index.html",
+  "news/index.html",
   "help/index.html",
   "privacy/index.html",
   "terms/index.html",

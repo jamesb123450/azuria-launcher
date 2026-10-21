@@ -1,3 +1,4 @@
+import { newsWorkspace } from "./admin-news.js";
 import {
   adminSections,
   plannedTools,
@@ -322,11 +323,7 @@ export async function showAdmin({ client, user, ui }) {
           "Find a player or review account access.",
         ],
         ["Review activity", "activity", "See recent account changes."],
-        [
-          "Preview announcements",
-          "announcements",
-          "Explore upcoming publishing tools.",
-        ],
+        ["Manage news", "news", "Write and publish updates for the launcher."],
       ]) {
         const shortcut = box("admin-shortcut");
         shortcut.append(
@@ -368,6 +365,8 @@ export async function showAdmin({ client, user, ui }) {
         ),
       );
     else if (page === "activity") content.append(audit);
+    else if (page === "news")
+      content.append(await newsWorkspace({ client, ui }));
     else {
       const section = plannedTools[page];
       content.append(
