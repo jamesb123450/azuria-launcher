@@ -204,7 +204,7 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
     .getByRole("button", { name: "Open Survival", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Survival", exact: true }),
+    page.getByRole("heading", { name: "Survival", exact: true, level: 1 }),
   ).toBeVisible();
   await page
     .getByRole("link", { name: "Saved setups", exact: true })
@@ -690,7 +690,10 @@ test("account navigation explains Windows-only sign-in in browser preview", asyn
 }) => {
   await page.goto("/#/versions?tab=setups");
   await page
-    .getByRole("link", { name: "Sign in to Minecraft", exact: true })
+    .getByRole("button", { name: "Sign in to Minecraft", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Account settings", exact: true })
     .click();
   await expect(
     page

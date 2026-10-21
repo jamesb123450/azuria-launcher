@@ -526,3 +526,44 @@ pub async fn content_version(
     .await
     .map_err(|_| "Version details stopped unexpectedly.")?
 }
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstalledPackEntry {
+    instance_id: String,
+    pack: azuria_content::LocalPack,
+}
+#[derive(Serialize)]
+pub struct InstalledPacks {
+    packs: Vec<InstalledPackEntry>,
+    unreadable: Vec<String>,
+}
+#[tauri::command]
+pub async fn installed_modpacks(app: tauri::AppHandle) -> Result<InstalledPacks, String> {
+    let profiles = with_store(&app.state::<AppState>(), |store| {
+        store
+            .list()?
+            .into_iter()
+            .map(|item| Ok((item.id.clone(), store.instance_dir(&item.id)?)))
+            .collect::<Result<Vec<_>, String>>()
+    })?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut result = InstalledPacks {
+            packs: vec![],
+            unreadable: vec![],
+        };
+        for (id, root) in profiles {
+            match azuria_content::installed_pack(&root) {
+                Ok(Some(pack)) => result.packs.push(InstalledPackEntry {
+                    instance_id: id,
+                    pack,
+                }),
+                Ok(None) => {}
+                Err(_) => result.unreadable.push(id),
+            }
+        }
+        result
+    })
+    .await
+    .map_err(|_| "Could not read installed modpacks. Try again.".into())
+}

@@ -17,7 +17,9 @@ import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
 import { desktop } from "../api";
 import { loaderName } from "../types";
-defineProps<{ compact?: boolean }>();
+import { launchMonitored } from "../monitor";
+const props = defineProps<{ compact?: boolean; monitor?: boolean }>();
+const opening = ref(false);
 const quick = useQuickPlay(),
   game = useGame(),
   account = useAccount(),
@@ -44,10 +46,15 @@ const label = computed(() =>
         : "Cancel launch"
       : quick.preparing
         ? "Preparing…"
-        : "Launch game",
+        : opening.value
+          ? props.monitor
+            ? "Opening monitor…"
+            : "Preparing…"
+          : "Launch game",
 );
 const blocked = computed(
   () =>
+    opening.value ||
     quick.preparing ||
     launcher.busy ||
     updates.busy ||
@@ -90,13 +97,19 @@ async function launch() {
     return;
   }
   try {
+    opening.value = true;
     const item = await quick.ensureSetup();
-    await game.launch(item.id);
+    if (props.monitor) await launchMonitored(item.id, router, game.launch);
+    else await game.launch(item.id);
   } catch (cause) {
     error.value =
       cause instanceof Error
         ? cause.message
-        : "Couldn’t prepare Minecraft. Try again.";
+        : typeof cause === "string"
+          ? cause
+          : "Couldn’t prepare Minecraft. Try again.";
+  } finally {
+    opening.value = false;
   }
 }
 </script>
@@ -106,7 +119,7 @@ async function launch() {
       <button class="launch-main" :disabled="blocked" @click="launch">
         <strong
           ><LoaderCircle
-            v-if="quick.preparing || stopping"
+            v-if="quick.preparing || stopping || opening"
             :size="19"
             class="launch-spin"
           /><Square v-else-if="active" :size="17" /><Play v-else :size="19" />{{

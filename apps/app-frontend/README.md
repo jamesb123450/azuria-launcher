@@ -39,3 +39,28 @@ Profile headers expose Mods (for modded profiles), Resource packs, Shaders, Worl
 Update all reviews the visible, selected if applicable, independently managed projects with available updates. It fetches the compatible version names before confirmation. On confirmation the content store creates a fresh native update plan for each exact reviewed version and installs sequentially, waiting for that plan’s native terminal status before continuing. A failed or cancelled update stops the queue; already completed projects stay updated. The queue survives page navigation, supports cancellation between jobs, and uses existing native collision checks and backups.
 
 Discover carries the profile and content kind in its route. Selecting a target applies its Minecraft version and, for mods, loader to search. Install dialogs prefer that explicit target, and project detail/back links retain it. Modpack installation still creates a separate profile. No compatibility or project metadata is fabricated.
+
+## Version catalogue and account menu
+
+The Versions selector offers Minecraft, installed Modpacks and Saved profiles.
+Modpacks use the same portrait grid and show their actual saved name, icon and
+Minecraft version. Without a custom icon, cards use generic version scenery;
+this is not presented as artwork supplied by the pack author. Installed pack
+identities are read locally from `.azuria/content.json`, with no provider search,
+update checks or background polling. Corrupt histories show a warning and a retry;
+all profiles remain accessible in Saved profiles.
+
+Selecting a card updates the right launch panel. Minecraft offers Vanilla/Fabric
+choices; installed packs retain their pinned loader and version. The gear opens
+that exact profile's content/settings page. Catalogue launches open the native
+Game monitor before invoking the launch command. If the monitor cannot open,
+Minecraft is not started. Existing account, updater and game-state guards remain
+in effect. The monitor shows real preparation progress, cancellation and failures.
+
+The topbar account button opens the Minecraft account menu. Reauthentication,
+switching to another Microsoft account, skins/capes, screenshots, profile settings
+and sign-out use existing account actions and routes. Only one Minecraft account
+is stored; the menu does not imply a saved multi-account list. Azuria Studios
+account sessions are separate. Menus support arrows, Escape, outside dismissal
+and keyboard focus restoration. Page entry, context changes, posters and menus
+have restrained motion, disabled with the system reduced-motion preference.

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   FolderOpen,
   RefreshCw,
+  LoaderCircle,
 } from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
 import { useGame } from "../stores/game";
@@ -26,6 +27,19 @@ const mode = computed(() =>
     route.query.view === "screenshots" ? "screenshots" : "logs",
   ),
   error = ref("");
+const launch = computed(() => game.launches[id.value]);
+const preparing = computed(
+  () =>
+    launch.value &&
+    ![
+      "running",
+      "exited",
+      "crashed",
+      "error",
+      "cancelled",
+      "prepared",
+    ].includes(launch.value.stage),
+);
 const nativeMonitor = desktop && window.location.hash.startsWith("#/monitor/");
 function tab(view: string) {
   void router.replace({ query: view === "logs" ? {} : { view } });
@@ -109,6 +123,32 @@ onMounted(async () => {
           </button>
         </div>
         <p v-if="error" role="alert" class="inline-error">{{ error }}</p>
+        <section v-if="preparing" class="monitor-launch-progress" role="status">
+          <LoaderCircle :size="22" class="launch-spin" />
+          <div>
+            <strong>Opening Minecraft</strong>
+            <p>{{ launch?.message }}</p>
+            <progress
+              v-if="launch && launch.total > 0"
+              :value="launch.completed"
+              :max="launch.total"
+            />
+          </div>
+          <button
+            class="button secondary"
+            :disabled="game.stopping[id]"
+            @click="game.cancel(id)"
+          >
+            Cancel launch
+          </button>
+        </section>
+        <p
+          v-if="launch?.stage === 'error' || launch?.stage === 'crashed'"
+          role="alert"
+          class="inline-error"
+        >
+          {{ launch.message }}
+        </p>
         <LiveLogs v-if="mode === 'logs'" :id="id" :key="id" /><ScreenshotsView
           v-else
           :instance-id="id"
@@ -118,3 +158,36 @@ onMounted(async () => {
     <CommunitySidebar ads-only />
   </div>
 </template>
+
+<style scoped>
+.monitor-launch-progress {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 0 0 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: 13px;
+  background: linear-gradient(110deg, #e6b0e512, #8aace80c);
+}
+.monitor-launch-progress > svg {
+  color: var(--pink);
+}
+.monitor-launch-progress > div {
+  flex: 1;
+  min-width: 0;
+}
+.monitor-launch-progress strong {
+  font-size: 13px;
+}
+.monitor-launch-progress p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0;
+}
+.monitor-launch-progress progress {
+  width: 100%;
+  accent-color: var(--pink);
+  height: 5px;
+}
+</style>

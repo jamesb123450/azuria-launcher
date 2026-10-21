@@ -24,6 +24,14 @@ export interface InstalledProject {
   resourcePacks: number;
   files: string[];
 }
+export interface InstalledPackEntry {
+  instanceId: string;
+  pack: { provider: Provider; projectId: string; version: string };
+}
+export interface InstalledPacks {
+  packs: InstalledPackEntry[];
+  unreadable: string[];
+}
 export interface Inventory {
   pack: InstalledProject | null;
   projects: InstalledProject[];
@@ -107,6 +115,10 @@ async function mr(
   return response.json();
 }
 export const contentApi = {
+  installedPacks: (): Promise<InstalledPacks> =>
+    desktop
+      ? invoke("installed_modpacks")
+      : Promise.resolve({ packs: [], unreadable: [] }),
   inventory: (id: string): Promise<Inventory> =>
     desktop
       ? invoke("content_inventory", { id })

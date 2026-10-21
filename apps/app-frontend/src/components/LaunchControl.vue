@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Play, LoaderCircle, Square, RotateCcw } from "@lucide/vue";
 import { useGame, terminalStages } from "../stores/game";
 import { useUpdates } from "../stores/updates";
 import { useAccount } from "../stores/account";
 import { desktop } from "../api";
 import type { Instance } from "../types";
-const props = defineProps<{ instance: Instance }>();
+import { useRouter } from "vue-router";
+import { launchMonitored } from "../monitor";
+const router = useRouter(),
+  opening = ref(false),
+  error = ref("");
+const props = defineProps<{ instance: Instance; monitor?: boolean }>();
 const game = useGame();
 const updates = useUpdates();
 const account = useAccount();
@@ -23,21 +28,29 @@ const retryPreparation = computed(
     ["error", "cancelled"].includes(launch.value.stage),
 );
 const label = computed(() =>
-  !supported.value
-    ? "Launch unavailable"
-    : active.value
-      ? game.stopping[props.instance.id]
-        ? "Stopping…"
-        : "Stop"
-      : retryPreparation.value
-        ? launch.value?.stage === "cancelled"
-          ? "Resume download"
-          : "Retry download"
-        : launch.value?.stage === "error" || launch.value?.stage === "crashed"
-          ? "Retry launch"
-          : "Play",
+  opening.value
+    ? props.monitor
+      ? "Opening monitor…"
+      : "Preparing…"
+    : !supported.value
+      ? "Launch unavailable"
+      : active.value
+        ? game.stopping[props.instance.id]
+          ? "Stopping…"
+          : "Stop"
+        : retryPreparation.value
+          ? launch.value?.stage === "cancelled"
+            ? "Resume download"
+            : "Retry download"
+          : launch.value?.stage === "error" || launch.value?.stage === "crashed"
+            ? "Retry launch"
+            : props.monitor
+              ? "Launch game"
+              : "Play",
 );
-function toggle() {
+async function toggle() {
+  error.value = "";
+  const id = props.instance.id;
   if (active.value) {
     if (
       launch.value?.stage === "running" &&
@@ -48,7 +61,24 @@ function toggle() {
       return;
     void game.cancel(props.instance.id);
   } else if (retryPreparation.value) void game.prepare(props.instance.id);
-  else void game.launch(props.instance.id);
+  else {
+    if (props.monitor && !account.view.verified) {
+      await router.push("/settings#account");
+      return;
+    }
+    opening.value = true;
+    try {
+      if (props.monitor) await launchMonitored(id, router, game.launch);
+      else await game.launch(id);
+    } catch (e) {
+      error.value =
+        typeof e === "string"
+          ? e
+          : "Could not open the game monitor. Try again.";
+    } finally {
+      opening.value = false;
+    }
+  }
 }
 </script>
 <template>
@@ -56,6 +86,7 @@ function toggle() {
     <button
       class="button primary"
       :disabled="
+        opening ||
         !supported ||
         !game.ready ||
         !!game.stopping[instance.id] ||
@@ -64,7 +95,7 @@ function toggle() {
       @click="toggle"
     >
       <LoaderCircle
-        v-if="game.stopping[instance.id]"
+        v-if="game.stopping[instance.id] || opening"
         :size="16"
         class="launch-spin"
       /><Square v-else-if="active" :size="15" /><RotateCcw
@@ -72,6 +103,7 @@ function toggle() {
         :size="16"
       /><Play v-else :size="16" />{{ label }}
     </button>
+    <p v-if="error" role="alert" class="inline-error">{{ error }}</p>
     <p v-if="!supported" class="launch-hint">
       {{
         desktop

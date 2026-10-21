@@ -1,0 +1,395 @@
+.versions-page .catalogue-searchbar {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.versions-page .catalogue-searchbar:focus-within {
+  border-color: #b6a6e866;
+  box-shadow: 0 0 0 3px #b6a6e80a;
+}
+.versions-page .catalogue-mode select {
+  background: transparent;
+  border: 0;
+  min-width: 150px;
+  width: 150px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.versions-page .catalogue-mode select option,
+.versions-page .catalogue-sort select option {
+  background: var(--panel);
+}
+.versions-page .catalogue-searchbar .search-box {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border-left: 1px solid var(--border-strong);
+  padding-left: 14px;
+}
+.versions-page .catalogue-searchbar .search-box input {
+  min-width: 0;
+}
+.versions-page .catalogue-sort select {
+  padding: 13px 12px;
+  color: var(--text);
+  background: var(--panel);
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.versions-page .versions-browser-toolbar {
+  gap: 10px;
+  margin-bottom: 25px;
+}
+.versions-page .versions-workspace {
+  gap: 25px;
+  grid-template-columns: minmax(0, 1fr) 285px;
+}
+.versions-page .versions-catalogue .minecraft-version-grid {
+  grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+  gap: 24px 17px;
+}
+.versions-page .versions-catalogue .version-art {
+  aspect-ratio: 3/4;
+  border-radius: 12px;
+  transition:
+    border-color 0.22s,
+    box-shadow 0.22s,
+    transform 0.22s;
+}
+.versions-page .minecraft-version-card {
+  transition:
+    transform 0.24s,
+    opacity 0.2s;
+}
+.versions-page .minecraft-version-card:hover .version-art {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px #0002;
+}
+.versions-page .minecraft-version-card.selected .version-art {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 3px #e6b0e512;
+}
+.versions-page .minecraft-version-card:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 5px;
+}
+.versions-page .version-card-info strong {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.versions-page .version-poster-caption {
+  padding: 40px 12px 15px;
+}
+.versions-page .version-poster-caption strong {
+  font-size: 18px;
+}
+.versions-page .version-context {
+  padding: 0 0 0 22px;
+  border-left: 1px solid var(--border);
+  top: 12px;
+  min-height: calc(100dvh - 165px);
+}
+.versions-page .version-context-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 177px);
+}
+.versions-page .version-context-art {
+  aspect-ratio: 5/4;
+  border-radius: 13px;
+}
+.versions-page .version-context-art > img {
+  object-position: center;
+}
+.versions-page .version-context-copy {
+  padding-top: 24px;
+}
+.versions-page .version-context-copy h2 {
+  margin: 10px 0 12px;
+  font-size: 23px;
+  letter-spacing: -0.7px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.versions-page .version-context-copy p {
+  line-height: 1.75;
+  margin: 0 0 12px;
+}
+.versions-page .version-context-controls {
+  margin-top: auto;
+  padding-top: 28px;
+  gap: 15px;
+}
+.versions-page .version-patch {
+  font-size: 11px;
+  color: var(--muted);
+}
+.versions-page .version-patch select {
+  padding: 9px 11px;
+  border-radius: 8px;
+}
+.versions-page .version-loader-row {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+.versions-page .version-loader-row .quick-loaders {
+  display: flex;
+  margin: 9px 0 0;
+  width: 100%;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.versions-page .version-loader-row .quick-loaders button {
+  flex: 1;
+  min-height: 35px;
+  font-size: 12px;
+  border-radius: 7px;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+.versions-page .version-launch-row {
+  gap: 9px;
+  align-items: start;
+}
+.versions-page .version-launch-row > .icon-button {
+  width: 44px;
+  flex-basis: 44px;
+  height: 49px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.versions-page .version-launch-row > .icon-button:hover {
+  transform: translateY(-1px);
+}
+.versions-page .version-launch-row .launch-control {
+  flex: 1;
+  min-width: 0;
+}
+.versions-page .version-launch-row .launch-control > .button,
+.versions-page .version-launch-row .launch-main {
+  min-height: 49px;
+  width: 100%;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.versions-page .version-launch-row .launch-hint {
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.catalogue-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  font-weight: 650;
+  color: var(--muted);
+}
+.catalogue-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.catalogue-section-heading h1 {
+  font-size: 22px;
+  letter-spacing: -0.5px;
+  margin: 8px 0 0;
+}
+.catalogue-section-heading h1 small {
+  color: var(--muted);
+  font-size: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 7px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.versions-page .modpack-art > img {
+  filter: brightness(0.55);
+}
+.pack-poster-identity {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 10px;
+  background: linear-gradient(transparent, #0c0f1be8);
+  text-align: left;
+  color: #fff;
+}
+.pack-poster-identity > .instance-symbol {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  margin-bottom: auto;
+}
+.pack-poster-identity > span:not(.instance-symbol) {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+}
+.pack-poster-identity strong {
+  font-size: 17px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.versions-page .pack-context-art > img {
+  filter: brightness(0.65);
+}
+.versions-page .pack-context-art > .instance-symbol {
+  position: absolute;
+  left: 17px;
+  bottom: 17px;
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
+}
+.versions-page .pack-context-art > .context-edition {
+  inset: 14px auto auto 14px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: #111723a8;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+.pack-loader {
+  display: grid;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 14px;
+}
+.pack-loader > span,
+.pack-loader small {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.pack-loader strong {
+  font-size: 13px;
+  text-transform: capitalize;
+}
+.context-reveal-enter-active,
+.context-reveal-leave-active {
+  transition:
+    opacity 0.14s,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.context-reveal-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.context-reveal-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+@media (max-width: 1100px) {
+  .versions-page .versions-workspace {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 18px;
+  }
+  .versions-page .version-context {
+    padding-left: 17px;
+  }
+  .versions-page .versions-catalogue .minecraft-version-grid {
+    grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
+    gap: 20px 13px;
+  }
+  .versions-page .catalogue-mode select {
+    min-width: 132px;
+    width: 132px;
+  }
+}
+@media (max-width: 950px) {
+  .versions-page .versions-browser-toolbar {
+    flex-wrap: wrap;
+  }
+  .versions-page .catalogue-searchbar {
+    flex-basis: 100%;
+  }
+  .versions-page .versions-workspace {
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+  .versions-page .version-context-copy h2 {
+    font-size: 21px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .versions-page .minecraft-version-card,
+  .versions-page .version-art,
+  .versions-page .quick-loaders button,
+  .context-reveal-enter-active,
+  .context-reveal-leave-active,
+  .versions-page .version-launch-row > .icon-button {
+    transition: none;
+  }
+  .versions-page .minecraft-version-card:hover .version-art {
+    transform: none;
+  }
+}
+
+.versions-page .minecraft-version-grid {
+  animation: catalogue-arrive 0.25s ease;
+}
+@keyframes catalogue-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .versions-page .minecraft-version-grid {
+    animation: none;
+  }
+}
+
+@media (max-height: 760px) {
+  .versions-page .version-context-art {
+    aspect-ratio: 16/9;
+  }
+  .versions-page .version-context-copy {
+    padding-top: 16px;
+  }
+  .versions-page .version-context-copy h2 {
+    font-size: 20px;
+    margin: 8px 0;
+  }
+  .versions-page .version-context-copy p {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .versions-page .version-context-controls {
+    gap: 10px;
+    padding-top: 18px;
+  }
+}

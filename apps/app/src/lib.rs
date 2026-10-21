@@ -392,6 +392,7 @@ pub fn run() {
             resources::storage_cleanup,
             resources::open_data_folder,
             content::content_inventory,
+            content::installed_modpacks,
             content::content_update_plan,
             content::content_version,
             content::content_project,

@@ -111,6 +111,46 @@ impl Client {
     }
 }
 
+/// Installed pack identity from local history. No provider requests or update checks.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalPack {
+    pub provider: Provider,
+    pub project_id: String,
+    pub version: String,
+}
+pub fn installed_pack(root: &Path) -> Result<Option<LocalPack>, String> {
+    let path = safe_join(root, ".azuria/content.json")?;
+    let file = match fs::File::open(path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(io(error)),
+    };
+    const LIMIT: u64 = 4 * 1024 * 1024;
+    if file.metadata().map_err(io)?.len() > LIMIT {
+        return Err("Content history exceeds its size limit.".into());
+    }
+    // Browsing is read-only: never restore an installer backup mid-publication.
+    let history: Value = serde_json::from_reader(file.take(LIMIT + 1)).map_err(|_| fail())?;
+    for record in history["installs"].as_array().ok_or_else(fail)? {
+        if record["kind"] != "modpacks" || record["root"] != record["project"] {
+            continue;
+        }
+        let provider: Provider =
+            serde_json::from_value(record["provider"].clone()).map_err(|_| fail())?;
+        let project_id = text(record, "project")?;
+        id(&project_id)?;
+        let version = text(record, "version")?;
+        id(&version)?;
+        return Ok(Some(LocalPack {
+            provider,
+            project_id,
+            version,
+        }));
+    }
+    Ok(None)
+}
+
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstalledProject {
@@ -547,6 +587,40 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn catalogue_does_not_restore_backups_or_read_unbounded_histories() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir(root.path().join(".azuria")).unwrap();
+        let path = root.path().join(".azuria/content.json");
+        let backup = path.with_extension("json.backup");
+        std::fs::write(&backup, "{\"installs\":[]}").unwrap();
+        assert!(super::installed_pack(root.path()).unwrap().is_none());
+        assert!(backup.exists());
+        assert!(!path.exists());
+        std::fs::File::create(&path)
+            .unwrap()
+            .set_len(4 * 1024 * 1024 + 1)
+            .unwrap();
+        assert!(super::installed_pack(root.path()).is_err());
+    }
+    #[test]
+    fn installed_pack_catalogue_reads_only_local_pack_roots() {
+        let root = tempfile::tempdir().unwrap();
+        assert!(super::installed_pack(root.path()).unwrap().is_none());
+        std::fs::create_dir(root.path().join(".azuria")).unwrap();
+        let path = root.path().join(".azuria/content.json");
+        std::fs::write(&path, serde_json::json!({"installs":[
+            {"kind":"mods","root":"pack1234","project":"mod12345","provider":"modrinth","version":"v1"},
+            {"kind":"modpacks","root":"pack1234","project":"dep12345","provider":"modrinth","version":"v1"},
+            {"kind":"modpacks","root":"pack1234","project":"pack1234","provider":"modrinth","version":"v2"}
+        ]}).to_string()).unwrap();
+        let pack = super::installed_pack(root.path()).unwrap().unwrap();
+        assert_eq!(pack.project_id, "pack1234");
+        assert_eq!(pack.version, "v2");
+        std::fs::write(&path, "not JSON").unwrap();
+        assert!(super::installed_pack(root.path()).is_err());
+    }
+
     use super::*;
     #[test]
     #[ignore = "fetches public Modrinth version names and changelog"]
