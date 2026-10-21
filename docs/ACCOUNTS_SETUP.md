@@ -211,3 +211,52 @@ claim that those external services are already configured.
 - https://supabase.com/docs/guides/functions/secrets
 - https://supabase.com/docs/reference/javascript/auth-admin-generatelink
 - https://supabase.com/docs/reference/javascript/auth-admin-deleteuser
+
+## Signup consent and Resend marketing contacts
+
+Deploy the account frontend together with migration
+`202610210002_signup_consent.sql`. New registrations require the terms/privacy
+checkbox; marketing is optional and unticked. Existing users are not opted in.
+The database records the server timestamp, legal copy version and marketing choice
+at signup, and rejects direct API registrations without explicit legal acceptance.
+Deploy the frontend before applying the migration to avoid rejecting old forms.
+
+Set `RESEND_API_KEY` (with contact read/write permissions) and a new random
+`MARKETING_SYNC_SECRET` in **Supabase Edge Function secrets**, then deploy:
+
+```sh
+npx supabase functions deploy marketing-sync
+```
+
+Enable Supabase Cron and pg_net. Store `project_url` (your Supabase URL) and
+`marketing_sync_secret` (matching the function secret) in Supabase Vault via the
+dashboard. Schedule this SQL once in SQL Editor:
+
+```sql
+select cron.schedule('azuria-marketing-sync', '* * * * *', $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url')
+      || '/functions/v1/marketing-sync',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' ||
+        (select decrypted_secret from vault.decrypted_secrets where name = 'marketing_sync_secret')
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 55000
+  );
+$$);
+```
+
+Every minute, the server adds up to ten verified, opted-in email addresses to
+Resend's **Contacts** list using `POST /contacts`. No audience ID is needed for the
+current Contacts API. Existing contacts retain their unsubscribe status. Failed
+requests remain pending for the next run; duplicate runs first check by email.
+No marketing emails are sent by this function. Regular account email delivery
+continues through Supabase SMTP independently.
+
+Check pg_net response logs for non-2xx results. Test unticked marketing (no contact),
+ticked marketing before verification (no contact), and ticked after verification
+(contact appears within a minute). Test provider failure followed by recovery.
+Keep legal_version in the migration in step with future changes to the signup copy.
+Reference: https://resend.com/docs/api-reference/contacts/create-contact

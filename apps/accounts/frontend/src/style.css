@@ -863,3 +863,17 @@ dialog::backdrop {
 .news-editor-preview .news-reading h1 {
   font-size: clamp(1.7rem, 3vw, 3rem);
 }
+
+.consent-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.6;
+}
+.consent-checkbox input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 2px 0 0;
+  accent-color: #cda2cb;
+}
