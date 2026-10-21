@@ -1,5 +1,6 @@
-## News from Azuria
+## Easier Azuria sign-in
 
-- Read published Azuria news on the launcher home page, with cover images and summaries.
-- Open a story to read its full article on the launcher website.
-- Clear loading, empty and retry states keep the feed useful when news is unavailable.
+- Return from your browser to Azuria Launcher to connect your account automatically.
+- Use the Open Azuria Launcher button if your browser blocks the return prompt.
+- Manual connection codes remain available as a fallback.
+- Cancelling sign-in invalidates the pending connection request.

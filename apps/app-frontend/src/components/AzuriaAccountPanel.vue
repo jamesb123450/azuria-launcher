@@ -54,44 +54,56 @@ async function connect() {
       <p v-if="account.error" role="alert" class="inline-error">
         {{ account.error }}
       </p>
-      <form
-        v-if="account.pending"
-        class="azuria-connect-form"
-        @submit.prevent="connect"
+      <p
+        v-if="account.connected && !account.pending"
+        class="azuria-connected"
+        role="status"
       >
-        <label
-          >Connection code<input
-            v-model="code"
-            autocomplete="off"
-            spellcheck="false"
-            autocapitalize="none"
-            maxlength="43"
-            required
-            placeholder="Paste the code from your browser"
-        /></label>
-        <p class="muted">
-          Approve the connection in your browser, then paste its code here. The
-          code expires after two minutes.
+        Your Azuria account is connected.
+      </p>
+      <div v-if="account.pending" class="azuria-connect-form">
+        <p role="status">
+          Finish signing in in your browser. Azuria will connect automatically
+          when you return.
         </p>
-        <div class="update-actions">
-          <button
-            class="button primary"
-            :disabled="account.busy || code.trim().length !== 43"
-          >
-            Connect launcher</button
-          ><button
-            type="button"
-            class="button secondary"
-            :disabled="account.busy"
-            @click="
-              account.pending = false;
-              code = '';
-            "
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+        <details>
+          <summary>Use a connection code instead</summary>
+          <form class="azuria-connect-form" @submit.prevent="connect">
+            <label
+              >Connection code<input
+                v-model="code"
+                autocomplete="off"
+                spellcheck="false"
+                autocapitalize="none"
+                maxlength="43"
+                required
+                placeholder="Paste the code from your browser"
+            /></label>
+            <p class="muted">
+              Open “Use a connection code instead” in your browser to copy a
+              code. Codes expire after two minutes.
+            </p>
+            <div class="update-actions">
+              <button
+                class="button primary"
+                :disabled="account.busy || code.trim().length !== 43"
+              >
+                Connect launcher
+              </button>
+            </div>
+          </form>
+        </details>
+        <button
+          class="button secondary"
+          :disabled="account.busy"
+          @click="
+            account.cancel();
+            code = '';
+          "
+        >
+          Cancel sign-in
+        </button>
+      </div>
       <div v-else class="update-actions">
         <button
           v-if="account.view.supported && account.view.configured"
@@ -154,6 +166,17 @@ async function connect() {
   background: var(--input, #151622);
   color: inherit;
   font: inherit;
+}
+.azuria-connect-form summary {
+  cursor: pointer;
+  padding-block: 10px;
+  color: var(--muted);
+}
+.azuria-connected {
+  color: var(--text);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 .azuria-connect-form p {
   margin: 0;

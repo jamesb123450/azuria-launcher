@@ -8,12 +8,14 @@ use std::sync::{
     Mutex,
 };
 use std::time::{Duration, Instant};
-use tauri::State;
+use tauri::{Emitter, Manager, State};
 
 #[derive(Default)]
 pub struct AzuriaAccounts {
     busy: AtomicBool,
     pending: Mutex<Option<(String, Instant)>>,
+    connection: Mutex<ConnectionUpdate>,
+    completed_challenge: Mutex<Option<String>>,
 }
 struct Operation<'a>(&'a AtomicBool);
 impl Drop for Operation<'_> {
@@ -29,14 +31,14 @@ impl AzuriaAccounts {
         Ok(Operation(&self.busy))
     }
 }
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct View {
     configured: bool,
     supported: bool,
     account: Option<Profile>,
 }
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Profile {
     id: String,
@@ -221,11 +223,6 @@ pub fn azuria_begin(state: State<'_, AzuriaAccounts>) -> Result<(), String> {
         .map_err(|_| "Could not create a secure sign-in request.".to_string())?;
     let verifier = URL_SAFE_NO_PAD.encode(bytes);
     let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()));
-    #[cfg(windows)]
-    crate::browser::open_web(&format!(
-        "https://accounts.azuriasmp.org/#challenge={challenge}"
-    ))
-    .map_err(str::to_string)?;
     #[cfg(not(windows))]
     {
         let _ = challenge;
@@ -236,8 +233,24 @@ pub fn azuria_begin(state: State<'_, AzuriaAccounts>) -> Result<(), String> {
         *state
             .pending
             .lock()
-            .map_err(|_| "Account storage is unavailable.".to_string())? =
-            Some((verifier, Instant::now()));
+            .map_err(|_| "Account storage is unavailable.")? = Some((verifier, Instant::now()));
+        *state
+            .completed_challenge
+            .lock()
+            .map_err(|_| "Account storage is unavailable.")? = None;
+        *state
+            .connection
+            .lock()
+            .map_err(|_| "Account storage is unavailable.")? = ConnectionUpdate::default();
+        if let Err(error) = crate::browser::open_web(&format!(
+            "https://accounts.azuriasmp.org/#challenge={challenge}"
+        )) {
+            *state
+                .pending
+                .lock()
+                .map_err(|_| "Account storage is unavailable.")? = None;
+            return Err(error.to_string());
+        }
         Ok(())
     }
 }
@@ -247,8 +260,10 @@ pub async fn azuria_complete(
     code: String,
 ) -> Result<View, String> {
     let _operation = state.operation()?;
+    complete(&state, code.trim()).await
+}
+async fn complete(state: &AzuriaAccounts, code: &str) -> Result<View, String> {
     let config = config().ok_or("Azuria accounts are not configured.")?;
-    let code = code.trim();
     if code.len() != 43
         || !code
             .bytes()
@@ -285,6 +300,11 @@ pub async fn azuria_complete(
         .map_err(|_| "Could not read the account response. Start sign-in again.".to_string())?;
     let result = profile(&config, tokens).await?;
     *state
+        .completed_challenge
+        .lock()
+        .map_err(|_| "Account storage is unavailable.")? =
+        Some(URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes())));
+    *state
         .pending
         .lock()
         .map_err(|_| "Account storage is unavailable.".to_string())? = None;
@@ -293,6 +313,10 @@ pub async fn azuria_complete(
 #[tauri::command]
 pub async fn azuria_sign_out(state: State<'_, AzuriaAccounts>) -> Result<View, String> {
     let _operation = state.operation()?;
+    *state
+        .connection
+        .lock()
+        .map_err(|_| "Account storage is unavailable.")? = ConnectionUpdate::default();
     let token = saved()?;
     // Forget locally even when offline. Never let a network failure prevent removal.
     clear()?;
@@ -575,4 +599,100 @@ pub async fn azuria_news() -> Result<NewsFeed, String> {
         url: config.url,
         stories,
     })
+}
+
+#[derive(Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionUpdate {
+    connecting: bool,
+    view: Option<View>,
+    error: Option<String>,
+}
+#[tauri::command]
+pub fn azuria_connection(state: State<'_, AzuriaAccounts>) -> Result<ConnectionUpdate, String> {
+    let update = state
+        .connection
+        .lock()
+        .map_err(|_| "Account storage is unavailable.")?
+        .clone();
+    Ok(update)
+}
+#[tauri::command]
+pub fn azuria_cancel(state: State<'_, AzuriaAccounts>) -> Result<(), String> {
+    let _operation = state.operation()?;
+    *state
+        .pending
+        .lock()
+        .map_err(|_| "Account storage is unavailable.")? = None;
+    *state
+        .connection
+        .lock()
+        .map_err(|_| "Account storage is unavailable.")? = ConnectionUpdate::default();
+    Ok(())
+}
+fn matches_pending(state: &AzuriaAccounts, challenge: &str) -> Result<(), String> {
+    let pending = state
+        .pending
+        .lock()
+        .map_err(|_| "Account storage is unavailable.")?;
+    let (verifier, started) = pending
+        .as_ref()
+        .ok_or("Start sign-in from this launcher, then approve it in your browser.")?;
+    crate::auth_callback::validate_request(verifier, started.elapsed(), challenge)
+}
+fn notify_connection(app: &tauri::AppHandle, update: ConnectionUpdate) {
+    let state = app.state::<AzuriaAccounts>();
+    if let Ok(mut stored) = state.connection.lock() {
+        *stored = update.clone();
+    }
+    // No authorization code, verifier or session token enters the frontend event.
+    let _ = app.emit_to("main", "azuria-connection", update);
+}
+pub fn receive_callback(app: tauri::AppHandle, raw: &str) {
+    let Some((code, challenge)) = crate::auth_callback::parse(raw) else {
+        return;
+    };
+    if app
+        .state::<AzuriaAccounts>()
+        .completed_challenge
+        .lock()
+        .ok()
+        .as_deref()
+        .and_then(|value| value.as_deref())
+        == Some(challenge.as_str())
+    {
+        return;
+    }
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+    tauri::async_runtime::spawn(async move {
+        let state = app.state::<AzuriaAccounts>();
+        let result = async {
+            let _operation = state.operation().map_err(|_| "The launcher is finishing another account request. Click Open Azuria Launcher again in your browser.")?;
+            matches_pending(&state, &challenge)?;
+            notify_connection(
+                &app,
+                ConnectionUpdate {
+                    connecting: true,
+                    ..Default::default()
+                },
+            );
+            complete(&state, &code).await
+        }
+        .await;
+        let update = match result {
+            Ok(view) => ConnectionUpdate {
+                view: Some(view),
+                ..Default::default()
+            },
+            Err(error) => ConnectionUpdate {
+                error: Some(error),
+                ..Default::default()
+            },
+        };
+        notify_connection(&app, update);
+    });
 }

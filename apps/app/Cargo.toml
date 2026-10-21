@@ -32,6 +32,8 @@ tempfile = "3"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 
 [target.'cfg(windows)'.dependencies]
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }

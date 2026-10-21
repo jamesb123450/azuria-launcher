@@ -139,11 +139,30 @@ them. No service-role key or database password belongs in GitHub for this featur
 The example `apps/app/.env.example` lists the variables, but Cargo does not read an
 `.env` file automatically: set them in the shell used to start or build the app.
 
-Users sign in through their browser, explicitly approve the launcher connection,
-copy its 43-character code and paste it into launcher Settings → Profile → Azuria
-account. There is no polling. The code expires in two minutes and works only with
-the launcher request that created its PKCE challenge. The initial request expires
-in 15 minutes; users can start again if necessary.
+Users click **Sign in to Azuria**, sign in through their browser and approve
+**Connect Azuria Launcher**. The website offers to open the installed launcher via
+`azuria://auth/callback`; the running launcher exchanges its short-lived code
+behind the scenes. The return link contains only a one-use code and the original
+PKCE challenge as state, never a password or session token. The private verifier
+stays in the launcher’s memory. There is no polling.
+
+If the browser blocks reopening, click **Open Azuria Launcher** on the account
+page. **Use a connection code instead** is available on both screens for manual
+copy/paste. Codes expire after two minutes; the launcher’s initial request expires
+after 15 minutes. Start again if the launcher was closed, restarted or sign-in was
+cancelled, since its private verifier is deliberately not persisted.
+
+The Windows installer registers the `azuria` scheme. Startup also refreshes that
+registration so existing installations upgraded through the in-app updater work.
+A single-instance plugin forwards callbacks to the running process and brings its
+window forward. Only the exact callback route with matching request state is
+accepted. Replayed completed callbacks are ignored. Choosing Cancel sign-in clears
+the native pending request, and older browser tabs cannot complete a newer request.
+
+Deploy the updated accounts frontend on Vercel and install/update to a launcher
+release containing this change. No database migration, new secret, Edge Function
+redeploy, Supabase redirect URL or DNS record is required for this handoff. Older
+launcher versions can continue using the manual-code fallback.
 
 After redemption, an independent launcher session is created. Its refresh token is
 saved in **Windows Credential Manager**, under `com.azuria.launcher.azuria` /
@@ -180,6 +199,12 @@ the file from the current branch does not remove it from history.
 - Register and verify using a real inbox; test recovery in another browser.
 - Claim a username; confirm duplicates and another user’s profile changes are rejected.
 - Connect a Windows launcher, restart it and verify the saved session restores.
+- Approve in the browser and confirm the existing launcher window reconnects without code entry.
+- Block the external-app prompt, then test the Open button and manual-code fallback.
+- Cancel a pending request; its old browser callback must not connect the launcher.
+- Start another request; a callback from the older tab must be rejected.
+- Close/reopen the launcher before approving; it must ask you to start sign-in again.
+- Retry a completed callback; no second session should be created.
 - Try reusing a code, waiting for expiry and using a code in a different launcher.
 - Revoke other sessions; confirm a restart requires reauthentication.
 - Disconnect the network; confirm local Minecraft functionality still works.
