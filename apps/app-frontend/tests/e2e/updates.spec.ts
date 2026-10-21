@@ -166,9 +166,9 @@ test("signature failures leave the launcher usable and never run the installer",
   ).not.toBeVisible();
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Updates", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "could not be downloaded or verified",
-  );
+  await expect(
+    page.getByLabel("Updates", { exact: true }).getByRole("alert"),
+  ).toContainText("could not be downloaded or verified");
   expect(
     await page.evaluate(() =>
       (
