@@ -424,10 +424,10 @@ watch(
     transition: none;
   }
 }
-:global(html[data-theme="light"]) .account-reauth {
+:global(html[data-theme="light"] .account-reauth) {
   color: #a34026;
 }
-:global(html[data-theme="light"]) .account-menu-error {
+:global(html[data-theme="light"] .account-menu-error) {
   color: #a1324a;
 }
 </style>
