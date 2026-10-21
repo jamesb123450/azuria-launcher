@@ -1,6 +1,9 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 const api = vi.hoisted(() => ({ request: vi.fn(), invoke: vi.fn() }));
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn().mockResolvedValue(() => {}),
+}));
 vi.mock("../../src/friends-api", () => ({ friendsApi: api }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: api.invoke }));
 vi.mock("../../src/api", () => ({ desktop: true }));

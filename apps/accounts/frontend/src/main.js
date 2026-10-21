@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import "./style.css";
+import { showLauncherHandoff } from "./launcher-handoff.js";
 import { showAdmin } from "./admin.js";
 import {
   profileError,
@@ -410,32 +411,22 @@ async function accountScreen() {
       button(
         "Connect Azuria Launcher",
         async () => {
-          const data = await edge({ action: "authorize", challenge: handoff });
-          heading(
-            "Finish in your launcher",
-            "Paste this one-use code into the launcher. It expires in two minutes.",
-          );
-          const code = document.createElement("code");
-          code.className = "code";
-          code.textContent = data.code;
+          const challenge = handoff;
+          const data = await edge({ action: "authorize", challenge });
           handoff = null;
           sessionStorage.removeItem("azuria-handoff");
-          render(
-            code,
-            button("Copy code", async () => {
-              try {
-                await navigator.clipboard.writeText(data.code);
-                message("Copied. Return to Azuria Launcher.");
-              } catch {
-                message("Select the code above and copy it.");
-              }
-            }),
-            paragraph(
-              "Only enter this code in the launcher you just opened. Never share it with someone else.",
-              "fine",
-            ),
-            button("Back to account", accountScreen, "text-button"),
-          );
+          showLauncherHandoff({
+            code: data.code,
+            challenge,
+            ui: {
+              heading,
+              render,
+              paragraph,
+              button,
+              message,
+              back: button("Back to account", accountScreen, "text-button"),
+            },
+          });
         },
         "primary",
       ),

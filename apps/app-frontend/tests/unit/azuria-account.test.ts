@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-const ipc = vi.hoisted(() => ({ invoke: vi.fn() }));
+const ipc = vi.hoisted(() => ({ invoke: vi.fn(), listen: vi.fn() }));
+vi.mock("@tauri-apps/api/event", () => ({ listen: ipc.listen }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: ipc.invoke }));
 vi.mock("../../src/api", () => ({ desktop: true }));
 import { useAzuriaAccount } from "../../src/stores/azuria-account";
@@ -17,6 +18,8 @@ const signed = {
 beforeEach(() => {
   setActivePinia(createPinia());
   ipc.invoke.mockReset();
+  ipc.listen.mockReset();
+  ipc.listen.mockResolvedValue(() => {});
   ipc.invoke.mockResolvedValue(blank);
 });
 it("coalesces startup requests without background polling", async () => {
@@ -26,6 +29,7 @@ it("coalesces startup requests without background polling", async () => {
   expect(ipc.invoke.mock.calls.map(([command]) => command)).toEqual([
     "azuria_configuration",
     "azuria_status",
+    "azuria_connection",
   ]);
 });
 it("leaves an unavailable build unconfigured without a network request", async () => {
@@ -62,4 +66,50 @@ it("keeps a known account on an offline retry and clears it after native sign-ou
   await store.signOut();
   expect(store.view.account).toBeNull();
   expect(store.error).toBe("");
+});
+
+it("updates the account from a native callback without exposing connection codes", async () => {
+  const store = useAzuriaAccount();
+  await store.init();
+  await store.begin();
+  const listener = ipc.listen.mock.calls[0][1];
+  listener({ payload: { connecting: true, view: null, error: null } });
+  expect(store.busy).toBe(true);
+  expect(store.pending).toBe(true);
+  listener({ payload: { connecting: false, view: signed, error: null } });
+  expect(store.pending).toBe(false);
+  expect(store.connected).toBe(true);
+  expect(store.busy).toBe(false);
+  expect(store.view.account?.username).toBe("player");
+});
+it("a stale status request cannot overwrite a completed browser connection", async () => {
+  const store = useAzuriaAccount();
+  await store.init();
+  let finish!: (value: typeof blank) => void;
+  ipc.invoke.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const request = store.refresh();
+  ipc.listen.mock.calls[0][1]({
+    payload: { connecting: false, view: signed, error: null },
+  });
+  finish(blank);
+  await request;
+  expect(store.view.account?.username).toBe("player");
+  expect(store.connected).toBe(true);
+});
+it("native callback errors leave the manual fallback available and cancel invalidates the native request", async () => {
+  const store = useAzuriaAccount();
+  await store.init();
+  await store.begin();
+  ipc.listen.mock.calls[0][1]({
+    payload: { connecting: false, view: null, error: "This request expired." },
+  });
+  expect(store.pending).toBe(true);
+  expect(store.error).toBe("This request expired.");
+  await store.cancel();
+  expect(ipc.invoke).toHaveBeenLastCalledWith("azuria_cancel", undefined);
+  expect(store.pending).toBe(false);
 });

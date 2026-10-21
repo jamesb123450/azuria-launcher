@@ -1,3 +1,4 @@
+mod auth_callback;
 mod azuria_account;
 mod behaviour;
 mod browser;
@@ -291,8 +292,35 @@ fn open_project_page() -> Result<(), String> {
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // Deep-link integration forwards callbacks to the existing process.
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            use tauri_plugin_deep_link::DeepLinkExt;
+            // Covers existing installations upgraded through the in-app updater.
+            #[cfg(windows)]
+            {
+                let _ = app.deep_link().register_all();
+            } // Manual codes remain available if registration fails.
+            let handle = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                let urls = event.urls();
+                if urls.len() == 1 {
+                    azuria_account::receive_callback(handle.clone(), urls[0].as_str());
+                }
+            });
+            if let Some(urls) = app.deep_link().get_current()? {
+                if urls.len() == 1 {
+                    azuria_account::receive_callback(app.handle().clone(), urls[0].as_str());
+                }
+            }
             content::remove_legacy_key();
             let legacy = app.path().app_local_data_dir()?;
             #[cfg(windows)]
@@ -348,6 +376,8 @@ pub fn run() {
             azuria_account::azuria_friends,
             azuria_account::azuria_status,
             azuria_account::azuria_begin,
+            azuria_account::azuria_connection,
+            azuria_account::azuria_cancel,
             azuria_account::azuria_complete,
             azuria_account::azuria_sign_out,
             azuria_account::azuria_manage,
