@@ -9,7 +9,6 @@ import {
   Settings,
   Compass,
   GitBranch,
-  UserRound,
   Camera,
   Shirt,
   ChevronRight,
@@ -18,6 +17,7 @@ import {
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
+import AccountMenu from "./components/AccountMenu.vue";
 import FriendsPanel from "./components/FriendsPanel.vue";
 import { useFriends } from "./stores/friends";
 import ActivityMenus from "./components/ActivityMenus.vue";
@@ -202,21 +202,7 @@ async function storagePrepared() {
         </div>
         <div class="topbar-right">
           <ActivityMenus />
-          <RouterLink
-            to="/settings#account"
-            class="topbar-account"
-            :aria-label="
-              account.view.account
-                ? 'Manage Minecraft account'
-                : 'Sign in to Minecraft'
-            "
-            ><SkinHead v-if="account.view.account" /><UserRound
-              v-else
-              :size="16"
-            /><span>{{
-              account.view.account ? account.label : "Sign in"
-            }}</span></RouterLink
-          >
+          <AccountMenu />
           <RouterLink
             v-if="updates.update"
             to="/settings"
