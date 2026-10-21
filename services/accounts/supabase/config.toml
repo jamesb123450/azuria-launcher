@@ -18,3 +18,7 @@ verify_jwt = false
 # The handler and database verify the caller JWT, live role, MFA and recent password.
 [functions.admin-action]
 verify_jwt = false
+
+# Cron authenticates using a dedicated secret checked by the handler.
+[functions.marketing-sync]
+verify_jwt = false

@@ -140,21 +140,34 @@ function fail(text) {
 function check(error) {
   if (error) throw error;
 }
-function legalNote() {
-  const p = paragraph("", "fine");
-  p.append("By creating an account, you agree to our ");
-  for (const [text, path] of [
-    ["Terms", "/terms/"],
-    ["Privacy policy", "/privacy/"],
-  ]) {
-    const a = document.createElement("a");
-    a.textContent = text;
-    a.href = path;
-    a.target = "_blank";
-    a.rel = "noopener";
-    p.append(a, text === "Terms" ? " and acknowledge our " : ".");
+function consentCheckbox(name, required, text) {
+  const label = document.createElement("label");
+  label.className = "consent-checkbox";
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.name = name;
+  input.required = required;
+  const copy = document.createElement("span");
+  copy.textContent = text;
+  if (name === "legal") {
+    copy.textContent = "I agree to the ";
+    for (const [title, path] of [
+      ["Terms of service", "/terms/"],
+      ["Privacy policy", "/privacy/"],
+    ]) {
+      const link = document.createElement("a");
+      link.href = path;
+      link.textContent = title;
+      link.target = "_blank";
+      link.rel = "noopener";
+      copy.append(
+        link,
+        title === "Terms of service" ? " and " : " (required).",
+      );
+    }
   }
-  return p;
+  label.append(input, copy);
+  return label;
 }
 function authScreen(mode = "signin") {
   document.body.classList.remove("admin-dashboard-open");
@@ -188,6 +201,12 @@ function authScreen(mode = "signin") {
   if (mode === "signup")
     fields.push(
       field("confirm", "Confirm password", "password", "new-password"),
+      consentCheckbox("legal", true, ""),
+      consentCheckbox(
+        "marketing",
+        false,
+        "Email me Azuria Studios news, updates and offers (optional). Unsubscribe at any time.",
+      ),
     );
   const main = form(
     fields,
@@ -201,6 +220,8 @@ function authScreen(mode = "signin") {
         password = String(data.get("password") || "");
       try {
         if (mode === "signup") {
+          if (data.get("legal") !== "on")
+            fail("Accept the terms and privacy policy to create an account.");
           const username = String(data.get("username")).trim().toLowerCase(),
             displayName = String(data.get("displayName")).trim();
           const invalid =
@@ -211,7 +232,12 @@ function authScreen(mode = "signin") {
             email,
             password,
             options: {
-              data: { username, display_name: displayName },
+              data: {
+                username,
+                display_name: displayName,
+                legal_accepted: true,
+                marketing_opt_in: data.get("marketing") === "on",
+              },
               emailRedirectTo: `${location.origin}/confirm/`,
             },
           });
@@ -274,7 +300,7 @@ function authScreen(mode = "signin") {
     switches.append(
       button("Back to sign in", () => authScreen(), "text-button"),
     );
-  render(main, ...(mode === "signup" ? [legalNote()] : []), switches);
+  render(main, switches);
 }
 async function loadProfile() {
   const { data, error } = await client
@@ -529,6 +555,10 @@ function legalPage(type) {
         [
           "Your information",
           "We use your email address, account ID, username and display name to provide your account. Supabase handles authentication and database storage. Vercel hosts these account pages.",
+        ],
+        [
+          "Marketing emails",
+          "If you tick the optional marketing checkbox, we record your consent and add your verified email address to Resend for Azuria Studios news, updates and offers. You can unsubscribe using the link in any marketing email. Account emails do not depend on marketing consent.",
         ],
         [
           "Passwords and sessions",
