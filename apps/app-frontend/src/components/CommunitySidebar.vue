@@ -3,7 +3,16 @@ import { useFriends } from "../stores/friends";
 import { useAzuriaAccount } from "../stores/azuria-account";
 import { UsersRound, Sparkles, Plus, RefreshCw } from "@lucide/vue";
 defineProps<{ adsOnly?: boolean }>();
+import { useMessages } from "../stores/messages";
+import { nextTick } from "vue";
+import type { Relationship } from "../friends-api";
+const messages = useMessages();
 const friends = useFriends();
+async function chat(row: Relationship) {
+  friends.show("friends");
+  await nextTick();
+  messages.select(row);
+}
 const account = useAzuriaAccount();
 </script>
 <template>
@@ -77,7 +86,7 @@ const account = useAzuriaAccount();
           v-for="row in friends.friends.slice(0, 6)"
           :key="row.account_id"
           class="sidebar-friend"
-          @click="friends.show('friends')"
+          @click="chat(row)"
         >
           <span class="sidebar-friend-avatar">{{
             row.display_name.slice(0, 1).toUpperCase()

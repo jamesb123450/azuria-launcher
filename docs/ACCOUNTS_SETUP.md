@@ -39,7 +39,7 @@ A fresh environment also needs the remaining migrations in filename order:
 and `202610210002_signup_consent.sql`. These add friends, administration, news
 and signup consent respectively. See the feature sections below and the
 [service reference](../services/accounts/README.md#friends) for operational details.
-Messaging and presence are not included.
+For launcher messaging, follow [Messaging setup](MESSAGING_SETUP.md). Presence is not included.
 
 Alternatively, with the Supabase CLI, run `supabase db push` from `services/accounts`
 after linking the project. **Use either the SQL Editor or CLI for the initial

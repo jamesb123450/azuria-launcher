@@ -374,6 +374,7 @@ pub fn run() {
             azuria_account::azuria_configuration,
             azuria_account::azuria_news,
             azuria_account::azuria_friends,
+            azuria_account::azuria_messages,
             azuria_account::azuria_status,
             azuria_account::azuria_begin,
             azuria_account::azuria_connection,

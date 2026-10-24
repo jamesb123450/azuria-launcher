@@ -523,6 +523,77 @@ pub async fn azuria_friends(
     Ok(result)
 }
 
+#[tauri::command]
+pub async fn azuria_messages(
+    state: State<'_, AzuriaAccounts>,
+    action: String,
+    target: Option<String>,
+    before: Option<String>,
+    client_id: Option<String>,
+    body: Option<String>,
+) -> Result<serde_json::Value, String> {
+    let target = target.as_deref().unwrap_or_default();
+    if action != "unread" && !valid_friend_target(target) {
+        return Err("Choose a valid friend.".into());
+    }
+    let cursor = || -> Result<Option<i64>, String> {
+        before
+            .as_deref()
+            .map(|v| {
+                v.parse::<i64>()
+                    .map_err(|_| "Invalid message cursor.".to_string())
+            })
+            .transpose()
+    };
+    let (name, payload) = match action.as_str() {
+        "unread" => ("message_unread", serde_json::json!({})),
+        "history" => (
+            "message_history",
+            serde_json::json!({"p_target":target,"p_before":cursor()?}),
+        ),
+        "read" => (
+            "message_read",
+            serde_json::json!({"p_target":target,"p_through":cursor()?.ok_or("Choose a message.")?}),
+        ),
+        "send" => {
+            let text = body.as_deref().unwrap_or_default().trim();
+            let id = client_id
+                .as_deref()
+                .filter(|v| valid_friend_target(v))
+                .ok_or("Invalid message ID.")?;
+            if text.is_empty() || text.chars().count() > 2000 {
+                return Err("Write a message of up to 2,000 characters.".into());
+            }
+            (
+                "message_send",
+                serde_json::json!({"p_target":target,"p_client_id":id,"p_body":text}),
+            )
+        }
+        _ => return Err("Unknown messaging action.".into()),
+    };
+    let _operation = state.operation()?;
+    let config = config().ok_or("Azuria accounts are not configured in this build.")?;
+    let token = saved()?.ok_or("Sign in to your Azuria account first.")?;
+    let tokens = refresh(&config, token).await?;
+    if tokens.user.email_confirmed_at.is_none() {
+        return Err("Verify your email first.".into());
+    }
+    save(&tokens.refresh_token)?;
+    let data = friends_rpc(&config, &tokens.access_token, name, &payload)
+        .await
+        .map_err(|error| {
+            if error.contains("not configured") {
+                "Messaging is not configured on the account service yet.".to_string()
+            } else if error.contains("no longer available") {
+                "This conversation is unavailable. Make sure you are still friends.".to_string()
+            } else {
+                "Could not complete the message request. Check your connection and try again."
+                    .to_string()
+            }
+        })?;
+    Ok(serde_json::json!({"accountId":tokens.user.id,"data":data}))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
