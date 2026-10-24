@@ -1,3 +1,4 @@
+import { surveyErrorMessage } from "./survey-errors.mjs";
 import { survey } from "./survey-definition.mjs";
 const config = document.querySelector("#feedback-config")?.dataset;
 const form = document.querySelector("#feedback-form");
@@ -106,6 +107,7 @@ if (form) {
     pending = true;
     send.disabled = true;
     status.textContent = "Sending your answers…";
+    let failureMessage = surveyErrorMessage();
     try {
       const response = await fetch(
         `${config.url}/functions/v1/feedback-submit`,
@@ -123,17 +125,21 @@ if (form) {
           signal: AbortSignal.timeout(20000),
         },
       );
-      if (!response.ok) throw new Error("unavailable");
-      const result = await response.json();
-      if (result?.success !== true) throw new Error("unavailable");
+      let result;
+      try {
+        result = await response.json();
+      } catch {}
+      if (!response.ok || result?.success !== true) {
+        failureMessage = surveyErrorMessage(result?.code, response.status);
+        throw new Error("unavailable");
+      }
       remember("completed");
       form.hidden = true;
       const thanks = document.querySelector("#feedback-thanks");
       thanks.hidden = false;
       thanks.focus();
     } catch {
-      status.textContent =
-        "Your answers could not be confirmed. They are still here. Complete the bot check again, then try sending once more.";
+      status.textContent = failureMessage;
       resetChallenge();
     } finally {
       pending = false;

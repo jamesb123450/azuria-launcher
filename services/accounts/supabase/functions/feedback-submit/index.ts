@@ -26,7 +26,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     return new Response(null, { status: 204, headers });
   if (request.method !== "POST") return reply(405, { error: "Use POST." });
   const secret = Deno.env.get("AZURIA_TURNSTILE_SECRET_KEY");
-  if (!secret) return reply(503, { error: "Survey unavailable." });
+  if (!secret)
+    return reply(503, {
+      code: "survey_unconfigured",
+      error: "Survey unavailable.",
+    });
   try {
     // Enforce the limit while streaming; Content-Length alone is untrusted.
     const reader = request.body?.getReader();
@@ -73,26 +77,56 @@ export async function handleRequest(request: Request): Promise<Response> {
       !body.token ||
       body.token.length > 2048
     )
-      return reply(400, { error: "Invalid answers." });
-    const verification = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secret, response: body.token }),
-        signal: AbortSignal.timeout(10000),
-      },
-    );
+      return reply(400, { code: "invalid_answers", error: "Invalid answers." });
+    let verification;
+    try {
+      verification = await fetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret, response: body.token }),
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+    } catch {
+      return reply(503, {
+        code: "bot_unavailable",
+        error: "Bot check unavailable.",
+      });
+    }
     if (!verification.ok)
-      return reply(503, { error: "Bot check unavailable." });
+      return reply(503, {
+        code: "bot_unavailable",
+        error: "Bot check unavailable.",
+      });
     const result = await verification.json();
     const hosts = origins.map((value) => new URL(value).hostname);
+    if (!result.success) {
+      const errors = Array.isArray(result["error-codes"])
+        ? result["error-codes"]
+        : [];
+      const configuration = errors.some((value: string) =>
+        ["missing-input-secret", "invalid-input-secret"].includes(value),
+      );
+      const code = configuration
+        ? "bot_configuration"
+        : errors.includes("timeout-or-duplicate")
+          ? "bot_expired"
+          : "bot_failed";
+      return reply(configuration ? 503 : 400, {
+        code,
+        error: "Bot verification failed.",
+      });
+    }
     if (
-      !result.success ||
       result.action !== "launcher_feedback" ||
       !hosts.includes(result.hostname)
     )
-      return reply(400, { error: "Please repeat the bot check." });
+      return reply(400, {
+        code: "bot_configuration",
+        error: "Bot widget does not match this survey.",
+      });
     const client = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -104,11 +138,26 @@ export async function handleRequest(request: Request): Promise<Response> {
       p_answers: body.answers,
       p_comment: (body.extraFeedback || "").trim(),
     });
-    if (error)
+    if (error) {
+      const code = ["PGRST202", "PGRST204", "42883", "42703", "42P01"].includes(
+        error.code,
+      )
+        ? "survey_setup_required"
+        : error.code === "22023"
+          ? "invalid_answers"
+          : error.code === "P0001"
+            ? "daily_limit"
+            : "save_failed";
+      // Log only a fixed diagnostic category and DB code, never answers/tokens/identities.
+      console.warn("feedback_submission_failed", {
+        code,
+        databaseCode: error.code,
+      });
       return reply(
-        error.code === "22023" ? 400 : error.code === "P0001" ? 429 : 503,
-        { error: "Could not record feedback. Try again later." },
+        code === "invalid_answers" ? 400 : code === "daily_limit" ? 429 : 503,
+        { code, error: "Could not record feedback." },
       );
+    }
     return reply(200, { success: true });
   } catch {
     return reply(400, {
