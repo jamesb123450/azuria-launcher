@@ -3,6 +3,7 @@ import { ref, watch } from "vue";
 import { useFriends } from "../stores/friends";
 import { LockKeyhole, Download, Upload } from "@lucide/vue";
 import { useMessages } from "../stores/messages";
+defineProps<{ expanded?: boolean }>();
 const messages = useMessages();
 const passphrase = ref("");
 const friends = useFriends();
@@ -19,7 +20,7 @@ async function recover(action: "backup" | "restore") {
 }
 </script>
 <template>
-  <details class="message-security">
+  <details class="message-security" :open="expanded">
     <summary><LockKeyhole :size="13" />Messaging encryption & recovery</summary>
     <p>
       New messages are end-to-end encrypted. Back up your key before moving to

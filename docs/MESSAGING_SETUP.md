@@ -7,10 +7,11 @@ Messaging uses the existing Supabase project and Azuria sign-in. No new keys or 
 1. Open Supabase → SQL Editor.
 2. Run `services/accounts/supabase/migrations/202610240003_messaging.sql` once, after the existing accounts and friends migrations.
 3. Run `services/accounts/supabase/migrations/202610240004_message_encryption.sql` once, after the messaging migration. If you already ran the first migration, run only this new encryption migration.
-4. Install the new launcher build on two verified accounts and accept a friend request. Both users must open Friends in the updated launcher once to register their encryption public keys.
-5. Click a friend in the right sidebar, or open Friends → Message. Send and reply, refresh, and check older history.
-6. Open **Messaging encryption & recovery**, choose a strong recovery passphrase of at least 12 characters, and save the encrypted recovery file. Keep the file and passphrase safe. To move to another Windows PC, sign in, enter the same passphrase and select **Restore from file**.
-7. Compare the conversation's security code with your friend in person or through another trusted channel before relying on the identity of the other endpoint.
+4. Run `services/accounts/supabase/migrations/202610240005_social_conversations.sql` once to enable the recent Chats list. This index returns conversation IDs, dates and unread counts only.
+5. Install the new launcher build on two verified accounts and accept a friend request. Both users must open Social in the updated launcher once to register their encryption public keys.
+6. Click a friend in the right sidebar, or open Social and select a friend. Send and reply, refresh, and check older history.
+7. Open **Encryption → Messaging encryption & recovery**, choose a strong recovery passphrase of at least 12 characters, and save the encrypted recovery file. Keep the file and passphrase safe. To move to another Windows PC, sign in, enter the same passphrase and select **Restore from file**.
+8. Compare the conversation's security code with your friend in person or through another trusted channel before relying on the identity of the other endpoint.
 
 No Edge Function deployment or Realtime publication change is needed. Existing Supabase public URL/key settings remain unchanged. Never put a service-role key, messaging private key or recovery passphrase in GitHub/Vercel environment variables.
 
@@ -32,7 +33,7 @@ Older launcher builds cannot send after the encryption migration. They fail clos
 - Text only, up to 2,000 characters locally; 30 new messages per sender per minute. The server bounds ciphertext size and validates its envelope; it cannot inspect encrypted content.
 - Accepted friends can read their shared history. Removing or blocking a friend revokes API access and sending in both directions. Restoring the friendship restores retained history with the same keys. Previously received messages cannot be remotely erased from a recipient's device.
 - History loads 50 messages at a time; read markers apply through the newest fetched message.
-- Opening Friends loads unread counts. While the panel is open and the app is visible it refreshes every 15 seconds. Closed/hidden panels do not poll. There are no background push notifications, typing indicators or online-status claims.
+- Opening Social loads recent conversations and unread counts. While Social is visible and the app is visible it refreshes every 15 seconds. Other pages and hidden app windows do not poll. The Chats list shows the most recent 200 conversations; Friends can open older conversations. There are no background push notifications, typing indicators or online-status claims.
 - Failed sends keep the draft. Retrying unchanged text uses the same client ID; the server returns the original encrypted row without overwriting it, and the native client decrypts and verifies that it matches the draft before confirming success.
 - Display text is rendered as plain text. HTML and links are not executed.
 - Deleting an account cascades its public key and messages. There is no automatic retention expiry or individual message deletion in this version.

@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { useFriends } from "../stores/friends";
 import { useAzuriaAccount } from "../stores/azuria-account";
-import { UsersRound, Sparkles, Plus, RefreshCw } from "@lucide/vue";
+import { UsersRound, Sparkles, ArrowUpRight, MessageCircle } from "@lucide/vue";
 defineProps<{ adsOnly?: boolean }>();
 import { useMessages } from "../stores/messages";
-import { nextTick } from "vue";
+import { useRouter } from "vue-router";
 import type { Relationship } from "../friends-api";
 const messages = useMessages();
 const friends = useFriends();
-async function chat(row: Relationship) {
-  friends.show("friends");
-  await nextTick();
-  messages.select(row);
+const router = useRouter();
+function chat(row: Relationship) {
+  void router.push({ path: "/social", query: { friend: row.account_id } });
 }
 const account = useAzuriaAccount();
 </script>
@@ -26,22 +25,9 @@ const account = useAzuriaAccount();
           <UsersRound :size="17" />Friends
           <small v-if="friends.loaded">{{ friends.friends.length }}</small>
         </h2>
-        <div v-if="friends.owner" class="friends-tools">
-          <button
-            class="icon-button"
-            :disabled="friends.busy"
-            aria-label="Refresh friends"
-            @click="friends.refresh"
-          >
-            <RefreshCw :size="13" /></button
-          ><button
-            class="icon-button"
-            aria-label="Add friend"
-            @click="friends.show('add')"
-          >
-            <Plus :size="15" />
-          </button>
-        </div>
+        <RouterLink to="/social" class="open-social"
+          >Open Social<ArrowUpRight :size="12"
+        /></RouterLink>
       </div>
       <div v-if="!friends.owner" class="friends-empty">
         <UsersRound :size="30" :stroke-width="1.3" />
@@ -57,7 +43,7 @@ const account = useAzuriaAccount();
         <button
           v-if="friends.incoming.length"
           class="friends-request-link"
-          @click="friends.show('requests')"
+          @click="router.push('/social?section=requests')"
         >
           {{ friends.incoming.length }} friend
           {{ friends.incoming.length === 1 ? "request" : "requests" }}
@@ -78,7 +64,10 @@ const account = useAzuriaAccount();
         >
           <UsersRound :size="28" :stroke-width="1.3" />
           <p>Add a friend to get started.</p>
-          <button class="azuria-account-link" @click="friends.show('add')">
+          <button
+            class="azuria-account-link"
+            @click="router.push('/social?section=add')"
+          >
             Add friend
           </button>
         </div>
@@ -91,16 +80,20 @@ const account = useAzuriaAccount();
           <span class="sidebar-friend-avatar">{{
             row.display_name.slice(0, 1).toUpperCase()
           }}</span
-          ><span
+          ><span class="sidebar-friend-name"
             ><strong>{{ row.display_name }}</strong
             ><small>@{{ row.username }}</small></span
           >
+          <span v-if="messages.unread[row.account_id]" class="friend-unread">{{
+            messages.unread[row.account_id]
+          }}</span>
+          <MessageCircle v-else :size="14" class="sidebar-chat-icon" />
         </button>
         <button
           class="azuria-account-link manage-friends"
-          @click="friends.show()"
+          @click="router.push('/social')"
         >
-          Manage friends
+          Friends & messages
         </button>
       </template>
     </section>
@@ -120,6 +113,37 @@ const account = useAzuriaAccount();
 </template>
 
 <style scoped>
+.open-social {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.open-social:hover {
+  color: var(--text);
+}
+.sidebar-friend-name {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar-chat-icon {
+  color: var(--muted);
+  opacity: 0.55;
+}
+.friend-unread {
+  background: var(--pink);
+  color: #241d29;
+  min-width: 19px;
+  height: 19px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+}
+
 .azuria-account-link {
   font-size: 12px;
   color: var(--accent, #d7b0d1);

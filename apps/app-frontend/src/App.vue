@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Download,
+  UsersRound,
 } from "@lucide/vue";
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
@@ -56,15 +57,17 @@ watch(
   { immediate: true, flush: "post" },
 );
 const pageIcon = computed(() =>
-  route.path.startsWith("/discover")
-    ? Compass
-    : route.path === "/wardrobe"
-      ? Shirt
-      : route.path === "/screenshots"
-        ? Camera
-        : route.path.startsWith("/settings")
-          ? Settings
-          : Play,
+  route.path === "/social"
+    ? UsersRound
+    : route.path.startsWith("/discover")
+      ? Compass
+      : route.path === "/wardrobe"
+        ? Shirt
+        : route.path === "/screenshots"
+          ? Camera
+          : route.path.startsWith("/settings")
+            ? Settings
+            : Play,
 );
 
 function resolveBackground(path: string): RouteLocationNormalized {
@@ -94,19 +97,21 @@ function closeSettings() {
 const page = computed(() =>
   route.path === "/settings"
     ? "Settings"
-    : route.path.startsWith("/discover")
-      ? "Discover"
-      : route.name === "instance-settings"
-        ? "Instance settings"
-        : route.name === "instance"
-          ? "Instance"
-          : route.path === "/wardrobe"
-            ? "Skins & capes"
-            : route.path === "/screenshots"
-              ? "Screenshots"
-              : route.path === "/versions"
-                ? "Versions"
-                : "Home",
+    : route.path === "/social"
+      ? "Social"
+      : route.path.startsWith("/discover")
+        ? "Discover"
+        : route.name === "instance-settings"
+          ? "Instance settings"
+          : route.name === "instance"
+            ? "Instance"
+            : route.path === "/wardrobe"
+              ? "Skins & capes"
+              : route.path === "/screenshots"
+                ? "Screenshots"
+                : route.path === "/versions"
+                  ? "Versions"
+                  : "Home",
 );
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
@@ -242,6 +247,15 @@ async function storagePrepared() {
             ></RouterLink
           >
           <RouterLink
+            to="/social"
+            class="rail-link"
+            aria-label="Social"
+            title="Social"
+            ><UsersRound :size="21" /><span class="rail-tooltip"
+              >Social</span
+            ></RouterLink
+          >
+          <RouterLink
             to="/wardrobe"
             class="rail-link"
             aria-label="Skins and capes"
@@ -302,6 +316,7 @@ async function storagePrepared() {
           id="main-content"
           tabindex="-1"
           :class="{
+            'is-social': route.path === '/social',
             'is-library':
               route.path === '/versions' && route.query.tab === 'setups',
           }"

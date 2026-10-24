@@ -13,48 +13,27 @@ import {
 import { useFriends } from "../stores/friends";
 import type { FriendAction, Relationship } from "../friends-api";
 import { useMessages } from "../stores/messages";
-import MessageConversation from "./MessageConversation.vue";
-import MessageSecurity from "./MessageSecurity.vue";
+import { useRouter } from "vue-router";
 const messages = useMessages();
 const friends = useFriends();
-let timer: ReturnType<typeof setTimeout> | undefined;
-function schedule() {
-  clearTimeout(timer);
-  if (!friends.open) return;
-  timer = setTimeout(async () => {
-    if (document.visibilityState === "visible" && friends.open)
-      await messages.refresh();
-    schedule();
-  }, 15000);
+const router = useRouter();
+function chat(row: Relationship) {
+  close();
+  void router.push({ path: "/social", query: { friend: row.account_id } });
 }
-watch(
-  () => friends.open,
-  (open) => {
-    messages.select(null);
-    if (open) {
-      void messages.refresh();
-      schedule();
-    } else clearTimeout(timer);
-  },
-);
-watch(
-  () => friends.entries,
-  () => {
-    if (
-      messages.peer &&
-      !friends.friends.some(
-        (row) => row.account_id === messages.peer?.account_id,
-      )
-    )
-      messages.select(null);
-  },
-);
 const dialog = ref<HTMLDialogElement>();
 const username = ref("");
 const confirmation = ref<{ action: FriendAction; row: Relationship } | null>(
   null,
 );
 let trigger: HTMLElement | null = null;
+watch(
+  () => friends.owner,
+  () => {
+    confirmation.value = null;
+    username.value = "";
+  },
+);
 function close() {
   friends.open = false;
   confirmation.value = null;
@@ -73,7 +52,6 @@ onMounted(() => {
   void sync();
 });
 onBeforeUnmount(() => {
-  clearTimeout(timer);
   dialog.value?.close();
 });
 async function confirm() {
@@ -105,7 +83,6 @@ async function confirm() {
         :key="item"
         :aria-current="friends.tab === item ? 'page' : undefined"
         @click="
-          messages.select(null);
           friends.tab = item;
           confirmation = null;
         "
@@ -129,7 +106,6 @@ async function confirm() {
       </button>
     </nav>
     <div class="friends-dialog-content">
-      <MessageSecurity />
       <p v-if="friends.error" class="inline-error" role="alert">
         {{ friends.error }}
       </p>
@@ -137,8 +113,7 @@ async function confirm() {
         {{ friends.notice }}
       </p>
       <p v-if="friends.busy" role="status" class="muted">Connecting…</p>
-      <MessageConversation v-if="messages.peer" />
-      <section v-else-if="confirmation" class="friend-confirm">
+      <section v-if="confirmation" class="friend-confirm">
         <h3>
           {{ confirmation.action === "block" ? "Block" : "Remove" }}
           {{ confirmation.row.display_name }}?
@@ -342,7 +317,7 @@ async function confirm() {
             <button
               class="button secondary"
               :disabled="friends.busy"
-              @click="messages.select(row)"
+              @click="chat(row)"
             >
               <MessageCircle :size="14" />Message{{
                 messages.unread[row.account_id]

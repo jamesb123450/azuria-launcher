@@ -41,7 +41,7 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
                 ? [...rows].reverse()
                 : args.action === "send"
                   ? [rows.at(-1)]
-                  : args.action === "unread"
+                  : args.action === "inbox"
                     ? []
                     : null,
           };
@@ -75,7 +75,7 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
     };
   });
   await page.locator(".sidebar-friend").click();
-  const dialog = page.getByRole("dialog", { name: "Friends", exact: true });
+  const dialog = page.getByRole("region", { name: "Social", exact: true });
   await expect(dialog.getByLabel("Messages", { exact: true })).toContainText(
     "<b>Hello</b>",
   );
@@ -89,7 +89,7 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
   await expect(dialog.locator(".conversation-security code")).toContainText(
     "01234567",
   );
-  await dialog.locator(".message-security summary").click();
+  await dialog.getByRole("button", { name: "Encryption", exact: true }).click();
   await dialog
     .getByLabel("Recovery passphrase", { exact: true })
     .fill("my recovery passphrase");
@@ -102,12 +102,15 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
   await expect(
     dialog.getByLabel("Recovery passphrase", { exact: true }),
   ).toHaveValue("");
+  await dialog
+    .getByRole("button", { name: "Close messaging security" })
+    .click();
   await dialog.getByLabel("Message", { exact: true }).fill("Hi Bob");
   await dialog.getByLabel("Message", { exact: true }).press("Enter");
   await expect(dialog.locator(".message-bubble.mine")).toContainText("Hi Bob");
   await expect(dialog.getByLabel("Message", { exact: true })).toHaveValue("");
   await dialog.getByRole("button", { name: "Back to friends" }).click();
   await expect(
-    dialog.getByRole("button", { name: "Message", exact: true }),
+    dialog.getByRole("heading", { name: "Select a conversation" }),
   ).toBeVisible();
 });
