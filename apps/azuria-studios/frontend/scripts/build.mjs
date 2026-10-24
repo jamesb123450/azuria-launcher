@@ -65,7 +65,12 @@ await writeFile(
     "Tell us what matters to you in a Minecraft launcher. An anonymous survey from Azuria Studios.",
   ),
 );
-for (const name of ["survey.js", "survey.css", "survey-definition.mjs"])
+for (const name of [
+  "survey.js",
+  "survey.css",
+  "survey-definition.mjs",
+  "survey-errors.mjs",
+])
   await cp(`${root}src/${name}`, `${output}/${name}`);
 await cp(`${root}assets`, `${output}/assets`, { recursive: true });
 await cp(`${root}src/site.css`, `${output}/site.css`);

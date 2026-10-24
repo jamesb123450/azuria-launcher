@@ -29,10 +29,11 @@ test("anonymous feedback verifies bot proof before writing and never forwards id
   globalThis.Deno = { env: { get: (name) => env[name] } };
   const writes = [],
     checks = [];
+  let databaseError = null;
   globalThis.feedbackClient = () => ({
     rpc: async (name, args) => {
       writes.push({ name, args });
-      return {};
+      return { error: databaseError };
     },
   });
   let proof = {
@@ -126,6 +127,36 @@ test("anonymous feedback verifies bot proof before writing and never forwards id
       200,
     );
     assert.equal(writes.at(-1).args.p_comment, "A written suggestion");
+    for (const [providerCode, expected, httpStatus] of [
+      ["invalid-input-secret", "bot_configuration", 503],
+      ["timeout-or-duplicate", "bot_expired", 400],
+      ["invalid-input-response", "bot_failed", 400],
+    ]) {
+      proof = { success: false, "error-codes": [providerCode] };
+      const response = await handleRequest(request());
+      assert.equal(response.status, httpStatus);
+      assert.equal((await response.json()).code, expected);
+    }
+    proof = {
+      success: true,
+      action: "launcher_feedback",
+      hostname: "azuriasmp.org",
+    };
+    for (const [dbCode, expected, httpStatus] of [
+      ["PGRST202", "survey_setup_required", 503],
+      ["42703", "survey_setup_required", 503],
+      ["22023", "invalid_answers", 400],
+      ["P0001", "daily_limit", 429],
+      ["OTHER", "save_failed", 503],
+    ]) {
+      databaseError = { code: dbCode, message: "sensitive provider details" };
+      const response = await handleRequest(request());
+      assert.equal(response.status, httpStatus);
+      const body = await response.json();
+      assert.equal(body.code, expected);
+      assert.ok(!JSON.stringify(body).includes("sensitive provider details"));
+    }
+    databaseError = null;
     const oversized = new Request("https://test.supabase.co", {
       method: "POST",
       body: "x".repeat(16385),
