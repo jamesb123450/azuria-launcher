@@ -45,7 +45,10 @@
 #feedback-form legend {
   font-size: 17px;
   font-weight: 600;
-  padding: 0 8px;
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 10px;
   max-width: 100%;
   line-height: 1.5;
 }
@@ -189,4 +192,38 @@
   .survey-options label {
     transition: none;
   }
+}
+
+#feedback-form fieldset > .survey-hint {
+  clear: both;
+}
+.survey-written {
+  display: grid;
+  gap: 12px;
+  padding: 25px;
+  margin-bottom: 24px;
+  border: 1px solid var(--as-line);
+  border-radius: 18px;
+  background: var(--as-panel);
+}
+.survey-written label {
+  font-size: 17px;
+  font-weight: 600;
+}
+.survey-written textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 150px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid var(--as-line);
+  border-radius: 10px;
+  font: inherit;
+  line-height: 1.6;
+  color: var(--as-text);
+  background: var(--as-bg);
+}
+.survey-written textarea:focus-visible {
+  outline: 2px solid var(--as-pink);
+  outline-offset: 3px;
 }

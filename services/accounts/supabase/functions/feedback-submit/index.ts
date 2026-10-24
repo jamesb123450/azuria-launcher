@@ -57,8 +57,13 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (
       !body ||
       Array.isArray(body) ||
-      Object.keys(body).sort().join(",") !==
-        "answers,submissionId,token,version" ||
+      (Object.keys(body).sort().join(",") !==
+        "answers,submissionId,token,version" &&
+        Object.keys(body).sort().join(",") !==
+          "answers,extraFeedback,submissionId,token,version") ||
+      (body.extraFeedback !== undefined &&
+        (typeof body.extraFeedback !== "string" ||
+          body.extraFeedback.length > 2000)) ||
       body.version !== 1 ||
       typeof body.submissionId !== "string" ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -93,10 +98,11 @@ export async function handleRequest(request: Request): Promise<Response> {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
-    const { error } = await client.rpc("feedback_submit", {
+    const { error } = await client.rpc("feedback_submit_with_comment", {
       p_id: body.submissionId,
       p_version: body.version,
       p_answers: body.answers,
+      p_comment: (body.extraFeedback || "").trim(),
     });
     if (error)
       return reply(

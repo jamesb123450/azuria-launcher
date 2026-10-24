@@ -20,7 +20,7 @@ if (form) {
     legend.textContent = `${index + 1}. ${question.title}`;
     const hint = document.createElement("p");
     hint.className = "survey-hint";
-    hint.textContent = "Select all that apply.";
+    hint.textContent = "Required · Select all that apply.";
     const options = document.createElement("div");
     options.className = "survey-options";
     for (const [id, text] of question.options) {
@@ -90,6 +90,13 @@ if (form) {
         return;
       }
     }
+    const extraFeedback = form.elements.extraFeedback.value.trim();
+    if (extraFeedback.length > 2000) {
+      status.textContent =
+        "Please keep extra feedback to 2,000 characters or fewer.";
+      form.elements.extraFeedback.focus();
+      return;
+    }
     if (!token) {
       status.textContent =
         "Please complete the bot check before sending your answers.";
@@ -110,6 +117,7 @@ if (form) {
             version: survey.version,
             submissionId,
             answers,
+            extraFeedback,
             token,
           }),
           signal: AbortSignal.timeout(20000),

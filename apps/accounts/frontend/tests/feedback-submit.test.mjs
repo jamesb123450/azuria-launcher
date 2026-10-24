@@ -92,11 +92,12 @@ test("anonymous feedback verifies bot proof before writing and never forwards id
     assert.equal((await handleRequest(request())).status, 200);
     assert.deepEqual(writes, [
       {
-        name: "feedback_submit",
+        name: "feedback_submit_with_comment",
         args: {
           p_id: payload.submissionId,
           p_version: 1,
           p_answers: payload.answers,
+          p_comment: "",
         },
       },
     ]);
@@ -104,6 +105,27 @@ test("anonymous feedback verifies bot proof before writing and never forwards id
       secret: "test-secret",
       response: "test-proof",
     });
+    assert.equal(
+      (
+        await handleRequest(
+          request({ ...payload, extraFeedback: "x".repeat(2001) }),
+        )
+      ).status,
+      400,
+    );
+    assert.equal(
+      (await handleRequest(request({ ...payload, extraFeedback: 42 }))).status,
+      400,
+    );
+    assert.equal(
+      (
+        await handleRequest(
+          request({ ...payload, extraFeedback: "  A written suggestion  " }),
+        )
+      ).status,
+      200,
+    );
+    assert.equal(writes.at(-1).args.p_comment, "A written suggestion");
     const oversized = new Request("https://test.supabase.co", {
       method: "POST",
       body: "x".repeat(16385),
