@@ -1,6 +1,12 @@
 import { readFile, writeFile, mkdir, cp, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { privacy, terms } from "../src/legal.mjs";
+import {
+  privacy,
+  terms,
+  contactPage,
+  dataRequest,
+  cookiePolicy,
+} from "../src/legal.mjs";
 import { analyticsMarkup } from "../src/analytics.mjs";
 const analytics = analyticsMarkup({
   id: process.env.AZURIA_GA_MEASUREMENT_ID,
@@ -37,6 +43,9 @@ await writeFile(
 for (const [slug, content, title] of [
   ["privacy", privacy, "Privacy policy"],
   ["terms", terms, "Terms of service"],
+  ["contact", contactPage, "Contact"],
+  ["data-request", dataRequest, "Data requests"],
+  ["cookie-policy", cookiePolicy, "Cookie policy"],
 ]) {
   await mkdir(`${output}/${slug}`, { recursive: true });
   const body = home.replace(

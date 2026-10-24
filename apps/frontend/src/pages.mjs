@@ -98,6 +98,7 @@ export function render(
     privacy: "Privacy policy — Azuria Launcher",
     terms: "Terms of service — Azuria Launcher",
     contact: "Contact — Azuria Launcher",
+    "cookie-policy": "Cookie policy — Azuria Launcher",
     404: "Page not found — Azuria Launcher",
   };
   const descriptions = {
@@ -112,8 +113,9 @@ export function render(
       "How the Azuria website and launcher handle data, hosting, account connections and support requests.",
     terms:
       "Terms for using the Azuria website and development builds, including third-party services and content rights.",
-    contact:
-      "Get help, report a bug or contact the Azuria project through GitHub.",
+    contact: "Get help, report a bug or contact Azuria Studios about privacy.",
+    "cookie-policy":
+      "Cookies, browser storage and optional analytics on the Azuria Launcher website.",
     404: "This page could not be found. Return to the Azuria Launcher website.",
   };
   const nav = (name, path) =>
@@ -199,6 +201,7 @@ export function render(
         <a href="${link("contact/")}">Contact</a
         ><a href="https://accounts.azuriasmp.org/">Azuria account</a
         ><a href="${link("privacy/")}">Privacy policy</a
+        ><a href="${link("cookie-policy/")}">Cookie policy</a
         ><a href="${link("terms/")}">Terms of service</a
         ><a href="${repository}/issues">Report an issue</a
         ><button class="cookie-settings" type="button">Cookie settings</button>
@@ -543,8 +546,9 @@ export function render(
     content = html`<section class="page-intro container">
         <h1>Privacy policy</h1>
         <p>
-          Last updated: 19 October 2026. How Azuria handles information when you
-          visit this website or use the launcher.
+          Last updated: <time datetime="2026-10-24">24 October 2026</time>. How
+          Azuria handles information when you visit this website or use the
+          launcher.
         </p>
       </section>
       <div class="container legal-layout">
@@ -710,6 +714,16 @@ export function render(
           </section>
           <section id="your-choices">
             <h2>6. Your choices and rights</h2>
+            <h3>GDPR and UK GDPR</h3>
+            <p>
+              Where applicable, we handle personal information under the General
+              Data Protection Regulation (GDPR), UK GDPR and the UK Data
+              Protection Act 2018. This includes using a lawful basis for
+              processing and respecting the rights described below. Optional
+              website analytics is based on your consent. You can withdraw
+              consent using Cookie settings without affecting the lawfulness of
+              earlier processing.
+            </p>
             <p>
               You can browse without signing in. Launcher privacy settings
               control account reconnection, visible account details and optional
@@ -756,8 +770,8 @@ export function render(
     content = html`<section class="page-intro container">
         <h1>Terms of service</h1>
         <p>
-          Last updated: 19 October 2026. Please read these terms before using
-          the Azuria website or launcher.
+          Last updated: <time datetime="2026-10-24">24 October 2026</time>.
+          Please read these terms before using the Azuria website or launcher.
         </p>
       </section>
       <div class="container legal-layout">
@@ -899,6 +913,76 @@ export function render(
           </section>
         </article>
       </div>`;
+  if (page === "cookie-policy")
+    content = html`<section class="page-intro container">
+        <h1>Cookie policy</h1>
+        <p>Last updated: <time datetime="2026-10-24">24 October 2026</time>.</p>
+      </section>
+      <div class="container legal-layout">
+        <article class="legal-content">
+          <section>
+            <h2>Cookies and browser storage</h2>
+            <p>
+              The launcher website uses browser storage to remember your
+              requested preferences. The installed launcher is separate from
+              this website; this notice describes the website’s cookies and
+              storage.
+            </p>
+          </section>
+          <section>
+            <h2>Optional Google Analytics</h2>
+            <p>
+              When configured, Google Analytics loads only after you choose
+              Accept analytics. Rejecting analytics leaves the Google tag
+              unloaded. Advertising personalisation and Google signals are
+              disabled. Google may use first-party analytics cookies to measure
+              visits and interactions. Our initial page-view URLs omit query
+              strings and fragments.
+            </p>
+            <p>
+              Read
+              <a href="https://policies.google.com/privacy"
+                >Google’s privacy policy</a
+              >
+              for information about its processing and retention.
+            </p>
+          </section>
+          <section>
+            <h2>Remembering your choice</h2>
+            <p>
+              Your analytics choice is stored in this browser for up to 180
+              days, and we ask again if the measurement ID changes. Requested
+              display preferences are stored locally. If browser storage is
+              blocked, choices may not persist.
+            </p>
+          </section>
+          <section>
+            <h2>Change your choice</h2>
+            <p>
+              Use Cookie settings in the footer to reopen the banner. Rejecting
+              analytics after previously accepting stops collection, clears
+              accessible Google Analytics cookies and reloads the page to stop
+              the loaded tag. You can also clear site data through your browser
+              settings.
+            </p>
+          </section>
+          <section>
+            <h2>Advertising and other services</h2>
+            <p>
+              The analytics banner does not grant consent to advertising. If
+              website advertising is enabled, its consent requirements must be
+              handled separately before advertising scripts load. Service
+              providers may process technical request information to deliver and
+              protect the website.
+            </p>
+            <p>
+              Read our <a href="${link("privacy/")}">privacy policy</a> or
+              <a href="${link("contact/")}">contact Azuria Studios</a> about
+              your information.
+            </p>
+          </section>
+        </article>
+      </div>`;
   if (page === "contact")
     content = html`<section class="page-intro container">
         <h1>Contact Azuria</h1>
@@ -922,11 +1006,11 @@ export function render(
           <span class="contact-icon">${icon("external", 28)}</span>
           <h2>Project enquiries</h2>
           <p>
-            Contact Azuria Studios through the public project on GitHub.
-            Response times may vary.
+            For privacy questions or requests to access, correct or delete your
+            information, email privacy@azuriasmp.org. Response times may vary.
           </p>
-          <a class="button secondary" href="${repository}/issues"
-            >Visit the project ${icon("external", 16)}</a
+          <a class="button secondary" href="mailto:privacy@azuriasmp.org"
+            >Email about privacy ${icon("external", 16)}</a
           >
         </article>
       </div>
@@ -934,9 +1018,8 @@ export function render(
         <h2>Before you share</h2>
         <p>
           GitHub issues are public. Do not include passwords, access tokens or
-          sensitive personal information. For a privacy or security concern, ask
-          Azuria Studios for a suitable private contact route without posting
-          the details publicly.
+          sensitive personal information. For a privacy concern, email
+          privacy@azuriasmp.org instead of posting details publicly.
         </p>
         <p>
           Direct website messaging is not available. This page does not collect
