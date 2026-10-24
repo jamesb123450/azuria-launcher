@@ -20,6 +20,7 @@ const files = [
   "news/index.html",
   "help/index.html",
   "privacy/index.html",
+  "cookie-policy/index.html",
   "terms/index.html",
   "contact/index.html",
   "404.html",
@@ -41,6 +42,10 @@ test("all built pages have metadata, navigation and resolvable local links and f
     const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
     assert.equal(ids.length, new Set(ids).size, "IDs must be unique");
     for (const [, target] of html.matchAll(/\b(?:href|src)="([^"]+)"/g)) {
+      if (target.startsWith("mailto:")) {
+        assert.match(target, /^mailto:privacy@azuriasmp\.org/);
+        continue;
+      }
       if (target.startsWith("https://")) {
         assert.doesNotMatch(target, /undefined|null|javascript:/);
         continue;
@@ -304,4 +309,18 @@ test("product pages describe current features and use refreshed captures", async
       /launching aren’t available yet|approval (?:is currently )?pending|Check for updates|not installed yet/,
     );
   }
+});
+
+test("launcher policies expose cookie information, GDPR rights and dated terms", async () => {
+  const privacy = await readFile(resolve(root, "privacy/index.html"), "utf8");
+  const terms = await readFile(resolve(root, "terms/index.html"), "utf8");
+  const cookies = await readFile(
+    resolve(root, "cookie-policy/index.html"),
+    "utf8",
+  );
+  const contact = await readFile(resolve(root, "contact/index.html"), "utf8");
+  assert.match(privacy, /GDPR and UK GDPR/);
+  assert.match(terms, /<time datetime="2026-10-24">24 October 2026<\/time>/);
+  assert.match(cookies, /<h1>Cookie policy<\/h1>/);
+  assert.match(contact, /mailto:privacy@azuriasmp.org/);
 });

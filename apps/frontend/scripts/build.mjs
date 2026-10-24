@@ -54,6 +54,7 @@ for (const page of [
   "news",
   "help",
   "privacy",
+  "cookie-policy",
   "terms",
   "contact",
   "404",
@@ -90,7 +91,7 @@ await writeFile(
 );
 await writeFile(
   new URL("sitemap.xml", dist),
-  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "news/", "help/", "privacy/", "terms/", "contact/"].map((path) => `<url><loc>${url.href}${path}</loc></url>`).join("")}</urlset>`,
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "news/", "help/", "privacy/", "cookie-policy/", "terms/", "contact/"].map((path) => `<url><loc>${url.href}${path}</loc></url>`).join("")}</urlset>`,
 );
 console.log(`Built 8 pages and a 404 page in ${fileURLToPath(dist)}`);
 
