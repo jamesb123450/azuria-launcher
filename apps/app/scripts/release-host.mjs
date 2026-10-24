@@ -4,22 +4,60 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { publicRepository } from "@azuria/release-tools";
 export { publicRepository };
-export function nextVersion(runNumber, tags) {
-  const run = Number(runNumber);
-  if (!Number.isInteger(run) || run < 1)
-    throw new Error("Invalid workflow run number");
+export function nextVersion(tags) {
   const patches = tags.filter(Boolean).map((tag) => {
     const match = /^v0\.2\.(\d+)$/.exec(tag);
     if (!match)
       throw new Error(
         "Unsupported latest release version; review numbering manually",
       );
-    return Number(match[1]) + 1;
+    return Number(match[1]);
   });
-  const patch = Math.max(run, ...patches);
-  if (patch > 65535) throw new Error("Windows version limit exceeded");
+  const patch = Math.max(0, ...patches) + 1;
+  if (!Number.isSafeInteger(patch) || patch > 65535)
+    throw new Error("Windows version limit exceeded");
   return `0.2.${patch}`;
 }
+export function releaseNotes(commits) {
+  if (!Array.isArray(commits) || !commits.length)
+    throw new Error("No unpublished changes found for this release");
+  const changes = [
+    ...new Set(
+      commits
+        .filter((item) => (item.parents?.length ?? 1) <= 1)
+        .flatMap((item) => {
+          const message = item.commit?.message;
+          if (typeof message !== "string")
+            throw new Error("Invalid release comparison");
+          const lines = message.split(/\r?\n/);
+          const marker = lines.findIndex((line) =>
+            /^Release notes:$/i.test(line.trim()),
+          );
+          const bullets = [];
+          if (marker >= 0) {
+            for (const line of lines.slice(marker + 1)) {
+              if (!line.trim() && !bullets.length) continue;
+              if (!line.trim().startsWith("- ")) break;
+              bullets.push(line.trim().slice(2));
+            }
+          }
+          return (bullets.length ? bullets : [lines[0]]).map((line) =>
+            line.trim().replace(/[\x00-\x1f\x7f]/g, ""),
+          );
+        })
+        .filter(
+          (line) =>
+            line && !/^Merge (pull request|branch|remote-tracking)/i.test(line),
+        ),
+    ),
+  ];
+  if (!changes.length) throw new Error("No release changes could be described");
+  // Include only this release's comparison range, never a rolling release history.
+  return (
+    "## What's new\n\n" + changes.map((line) => `- ${line}`).join("\n") + "\n"
+  );
+}
+
 function sourceRepository() {
   const source = process.env.GITHUB_REPOSITORY;
   if (!/^[\w-]+\/[\w.-]+$/.test(source || "") || source === publicRepository)
@@ -65,10 +103,34 @@ export async function configure() {
   );
   if (!/^[a-f0-9]{40}$/.test(ref.object?.sha || ""))
     throw new Error("Invalid public release target");
-  const version = nextVersion(process.env.GITHUB_RUN_NUMBER, [
-    latest?.tag_name,
-    legacy?.tag_name,
-  ]);
+  const version = nextVersion([latest?.tag_name, legacy?.tag_name]);
+  const head = process.env.GITHUB_SHA;
+  let base = process.env.AZURIA_RELEASE_BEFORE;
+  if (!/^[a-f0-9]{40}$/.test(head || ""))
+    throw new Error("Missing release source commit");
+  if (latest?.tag_name) {
+    const previous = await get(
+      `repos/${source}/git/ref/tags/${encodeURIComponent(latest.tag_name)}`,
+      sourceToken,
+      true,
+    );
+    if (previous) base = latest.tag_name;
+  }
+  if (
+    !base ||
+    /^0{40}$/.test(base) ||
+    (!/^v0\.2\.\d+$/.test(base) && !/^[a-f0-9]{40}$/.test(base))
+  )
+    throw new Error("Missing previous release boundary");
+  const comparison = await get(
+    `repos/${source}/compare/${encodeURIComponent(base)}...${head}`,
+    sourceToken,
+  );
+  if (comparison.status !== "ahead" || comparison.commits?.length >= 250)
+    throw new Error(
+      "Release history is incomplete or this commit is already published",
+    );
+  writeFileSync("release-notes.generated.md", releaseNotes(comparison.commits));
   writeFileSync(
     "update-build.json",
     JSON.stringify({ version, bundle: { createUpdaterArtifacts: true } }),
@@ -97,6 +159,8 @@ export function publish() {
     process.env.AZURIA_RELEASE_REPOSITORY !== publicRepository
   )
     throw new Error("Invalid public release configuration");
+  if (!/^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA || ""))
+    throw new Error("Invalid source release commit");
   const installer = `Azuria-Launcher_${version}_x64-setup.exe`;
   const folder = "target/release/bundle/nsis";
   const assets = [installer, installer + ".sig", "latest.json"].map((name) =>
@@ -109,6 +173,8 @@ export function publish() {
   const platform = manifest.platforms?.["windows-x86_64"];
   if (
     manifest.version !== version ||
+    manifest.notes !==
+      readFileSync("release-notes.generated.md", "utf8").trim() ||
     platform?.url !==
       `https://github.com/${publicRepository}/releases/download/v${version}/${installer}` ||
     !platform.signature ||
@@ -145,7 +211,7 @@ export function publish() {
         "--title",
         `Azuria ${version}`,
         "--notes-file",
-        "docs/RELEASE_NOTES.md",
+        "release-notes.generated.md",
       ],
       token,
     );
@@ -153,6 +219,22 @@ export function publish() {
     gh(
       ["release", "edit", tag, "--repo", repo, "--draft=false", "--latest"],
       token,
+    );
+  }
+  if (process.env.AZURIA_LEGACY_PUBLISH !== "true") {
+    // Retain a private source boundary even when distributing through the public mirror.
+    gh(
+      [
+        "api",
+        `repos/${sourceRepository()}/git/refs`,
+        "--method",
+        "POST",
+        "-f",
+        `ref=refs/tags/v${version}`,
+        "-f",
+        `sha=${process.env.GITHUB_SHA}`,
+      ],
+      process.env.GITHUB_TOKEN,
     );
   }
 }

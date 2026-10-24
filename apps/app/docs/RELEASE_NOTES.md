@@ -1,7 +1,7 @@
-## A smoother launcher library
+## Saved sign-in and simpler launch controls
 
-- Browse Minecraft versions and installed modpacks in matching portrait cards.
-- Select a card to update its launch panel; use the gear to open that profile.
-- Open the game monitor before launching, with live preparation progress.
-- Manage your Minecraft account from the new dropdown menu.
-- Smoother page, menu and selection transitions respect reduced-motion settings.
+- Keep your Azuria website sign-in on the same browser between sessions.
+- Retry saved launcher sign-in after a temporary connection failure.
+- Reduce unnecessary token refreshes while using Azuria friends and messages.
+- Advance release versions one patch at a time and refresh notes for each release.
+- Use a simpler Versions sidebar with wide artwork and compact launch controls.

@@ -181,9 +181,10 @@ offline; remote revocation is best effort. Use “Sign out other sessions” on 
 account site to revoke other refresh sessions; already-issued access tokens can
 remain valid until expiry.
 
-The browser stores its session in **sessionStorage**, scoped to the account site
-and browser tab. Closing the tab ends that browser’s saved login. This avoids
-persistent browser storage while still allowing reloads and email confirmation.
+The browser stores its session in essential **localStorage**, scoped to the account site
+and browser profile. Closing tabs or restarting the browser preserves sign-in.
+Signing out, clearing site data or revoking the session removes access. Existing
+tab-only credentials migrate once; stale tabs cannot restore them after sign-out.
 
 ## Where sensitive details belong
 
@@ -293,3 +294,5 @@ ticked marketing before verification (no contact), and ticked after verification
 (contact appears within a minute). Test provider failure followed by recovery.
 Keep legal_version in the migration in step with future changes to the signup copy.
 Reference: https://resend.com/docs/api-reference/contacts/create-contact
+
+Saved launcher credentials remain in Windows Credential Manager across app and Windows restarts. Temporary account-service errors keep those credentials; only confirmed revoked/expired refresh sessions are cleared. Azuria access tokens are reused in native memory until shortly before expiry, reducing refresh-token rotations. Reconnecting or refocusing the app retries a failed saved-session verification, at most once per 30 seconds, without opening a browser or background polling. Server-side session expiry, revocation and explicit sign-out still apply.

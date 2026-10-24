@@ -8,12 +8,13 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Mutex,
 };
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 use tauri::{Emitter, Manager, State};
 
 #[derive(Default)]
 pub struct AzuriaAccounts {
     busy: AtomicBool,
+    session: Mutex<Option<(Tokens, Instant, SystemTime)>>,
     pending: Mutex<Option<(String, Instant)>>,
     connection: Mutex<ConnectionUpdate>,
     completed_challenge: Mutex<Option<String>>,
@@ -31,6 +32,45 @@ impl AzuriaAccounts {
         }
         Ok(Operation(&self.busy))
     }
+    // Callers hold operation(): token rotation and durable writes remain serial.
+    async fn tokens(&self, config: &Config) -> Result<Tokens, String> {
+        let token = saved()?.ok_or("Sign in to your Azuria account first.")?;
+        let cached = self.cached_tokens()?;
+        if let Some(tokens) = cached {
+            return Ok(tokens);
+        }
+        let tokens = refresh(config, token).await?;
+        // Commit the rotated token immediately, before any profile/social requests.
+        save(&tokens.refresh_token)?;
+        let lifetime =
+            Duration::from_secs(tokens.expires_in.unwrap_or(0).saturating_sub(60).min(3600));
+        *self
+            .session
+            .lock()
+            .map_err(|_| "Account storage is unavailable.")? = Some((
+            tokens.clone(),
+            Instant::now() + lifetime,
+            SystemTime::now() + lifetime,
+        ));
+        Ok(tokens)
+    }
+    fn cached_tokens(&self) -> Result<Option<Tokens>, String> {
+        let session = self
+            .session
+            .lock()
+            .map_err(|_| "Account storage is unavailable.")?;
+        Ok(session
+            .as_ref()
+            .filter(|(_, until, wall)| *until > Instant::now() && *wall > SystemTime::now())
+            .map(|(tokens, _, _)| tokens.clone()))
+    }
+    fn forget_session(&self) -> Result<(), String> {
+        *self
+            .session
+            .lock()
+            .map_err(|_| "Account storage is unavailable.")? = None;
+        Ok(())
+    }
 }
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -47,17 +87,19 @@ pub struct Profile {
     username: Option<String>,
     display_name: Option<String>,
 }
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 struct User {
     id: String,
     email: Option<String>,
     email_confirmed_at: Option<String>,
 }
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 struct Tokens {
     access_token: String,
     refresh_token: String,
     user: User,
+    #[serde(default)]
+    expires_in: Option<u64>,
 }
 #[derive(Deserialize)]
 struct StoredProfile {
@@ -186,18 +228,44 @@ async fn profile(config: &Config, tokens: Tokens) -> Result<View, String> {
 }
 async fn refresh(config: &Config, token: String) -> Result<Tokens, String> {
     let response = client()?.post(format!("{}/auth/v1/token?grant_type=refresh_token", config.url)).header("apikey", config.key).json(&serde_json::json!({"refresh_token": token})).send().await.map_err(|_| "Could not reach Azuria. Your saved session has been kept; try again when you’re online.".to_string())?;
-    if matches!(response.status().as_u16(), 400 | 401 | 403) {
-        clear()?;
-        return Err("Your Azuria session has expired. Sign in again.".into());
-    }
     if !response.status().is_success() {
-        return Err("Azuria accounts are temporarily unavailable. Try again later.".into());
+        let status = response.status().as_u16();
+        let value = response
+            .json::<serde_json::Value>()
+            .await
+            .unwrap_or_default();
+        if revoked_refresh(
+            status,
+            value
+                .get("code")
+                .and_then(|v| v.as_str())
+                .or_else(|| value.get("error_code").and_then(|v| v.as_str())),
+        ) {
+            clear()?;
+            return Err("Your Azuria session has expired or was revoked. Sign in again.".into());
+        }
+        return Err("Azuria could not verify your session. Your saved sign-in has been kept; try again when the service is available.".into());
     }
     response
         .json()
         .await
         .map_err(|_| "The account service returned an invalid response.".into())
 }
+fn revoked_refresh(status: u16, code: Option<&str>) -> bool {
+    matches!(status, 400 | 401 | 403)
+        && matches!(
+            code,
+            Some(
+                "refresh_token_not_found"
+                    | "refresh_token_already_used"
+                    | "session_not_found"
+                    | "session_expired"
+                    | "user_banned"
+                    | "user_not_found"
+            )
+        )
+}
+
 #[tauri::command]
 pub fn azuria_configuration() -> View {
     empty()
@@ -209,7 +277,7 @@ pub async fn azuria_status(state: State<'_, AzuriaAccounts>) -> Result<View, Str
         return Ok(empty());
     };
     match saved()? {
-        Some(token) => profile(&config, refresh(&config, token).await?).await,
+        Some(_) => profile(&config, state.tokens(&config).await?).await,
         None => Ok(empty()),
     }
 }
@@ -300,6 +368,7 @@ async fn complete(state: &AzuriaAccounts, code: &str) -> Result<View, String> {
         .await
         .map_err(|_| "Could not read the account response. Start sign-in again.".to_string())?;
     let result = profile(&config, tokens).await?;
+    state.forget_session()?;
     *state
         .completed_challenge
         .lock()
@@ -319,6 +388,7 @@ pub async fn azuria_sign_out(state: State<'_, AzuriaAccounts>) -> Result<View, S
         .lock()
         .map_err(|_| "Account storage is unavailable.")? = ConnectionUpdate::default();
     let token = saved()?;
+    state.forget_session()?;
     // Forget locally even when offline. Never let a network failure prevent removal.
     clear()?;
     *state
@@ -466,7 +536,7 @@ async fn friends_rpc(
     let value: serde_json::Value =
         serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null);
     if !status.is_success() {
-        let message = match value.get("code").and_then(|v| v.as_str()) {
+        let message = match value.get("code").and_then(|v| v.as_str()).or_else(|| value.get("error_code").and_then(|v| v.as_str())) {
             Some("P0001") => "Too many requests. Wait a little before trying again.",
             Some("42501") => "Reconnect your Azuria account and make sure your email and profile are set up.",
             Some("22023" | "23505") => "This request is no longer available, is already pending or cannot be sent. Refresh Friends.",
@@ -487,8 +557,7 @@ pub async fn azuria_friends(
     let (name, body) = friend_call(&action, target.as_deref(), username.as_deref())?;
     let _operation = state.operation()?;
     let config = config().ok_or("Azuria accounts are not configured in this build.")?;
-    let token = saved()?.ok_or("Sign in to your Azuria account first.")?;
-    let tokens = refresh(&config, token).await?;
+    let tokens = state.tokens(&config).await?;
     if tokens.user.email_confirmed_at.is_none() {
         return Err("Verify your email first.".into());
     }
@@ -554,6 +623,50 @@ mod tests {
         assert!(state.operation().is_err());
         drop(operation);
         assert!(state.operation().is_ok());
+    }
+    #[test]
+    fn cached_access_never_outlives_its_deadline_and_sign_out_discards_it() {
+        let state = AzuriaAccounts::default();
+        let token = || Tokens {
+            access_token: "test-access".into(),
+            refresh_token: "test-refresh".into(),
+            user: User {
+                id: "test-user".into(),
+                email: None,
+                email_confirmed_at: Some("confirmed".into()),
+            },
+            expires_in: Some(3600),
+        };
+        *state.session.lock().unwrap() = Some((
+            token(),
+            Instant::now() + Duration::from_secs(60),
+            SystemTime::now() + Duration::from_secs(60),
+        ));
+        assert!(state.cached_tokens().unwrap().is_some());
+        state.forget_session().unwrap();
+        assert!(state.cached_tokens().unwrap().is_none());
+        *state.session.lock().unwrap() = Some((
+            token(),
+            Instant::now() - Duration::from_secs(1),
+            SystemTime::now() + Duration::from_secs(60),
+        ));
+        assert!(state.cached_tokens().unwrap().is_none());
+        // A resumed device must also honour elapsed wall time.
+        *state.session.lock().unwrap() = Some((
+            token(),
+            Instant::now() + Duration::from_secs(60),
+            SystemTime::now() - Duration::from_secs(1),
+        ));
+        assert!(state.cached_tokens().unwrap().is_none());
+    }
+    #[test]
+    fn temporary_or_unrecognised_refresh_failures_do_not_discard_saved_sessions() {
+        assert!(revoked_refresh(400, Some("refresh_token_not_found")));
+        assert!(revoked_refresh(403, Some("user_banned")));
+        assert!(!revoked_refresh(401, Some("bad_jwt")));
+        assert!(!revoked_refresh(400, Some("request_timeout")));
+        assert!(!revoked_refresh(503, Some("refresh_token_not_found")));
+        assert!(!revoked_refresh(401, None));
     }
     #[test]
     fn verifier_and_challenge_use_the_expected_url_safe_format() {

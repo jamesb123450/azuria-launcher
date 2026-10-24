@@ -124,3 +124,25 @@ it("hides the account label when the saved privacy option is enabled", async () 
   await store.init();
   expect(store.label).toBe("Minecraft account");
 });
+
+it("restores a saved Minecraft session on reconnect without another browser sign-in", async () => {
+  const target = new EventTarget();
+  vi.stubGlobal("window", target);
+  try {
+    api.status.mockResolvedValue({ ...signed, verified: false });
+    api.restore.mockRejectedValueOnce({
+      stage: "microsoft",
+      code: "network",
+      message: "Offline",
+    });
+    const store = useAccount();
+    await store.init();
+    api.restore.mockResolvedValueOnce(signed);
+    target.dispatchEvent(new Event("online"));
+    await vi.waitFor(() => expect(store.view.verified).toBe(true));
+    expect(api.restore).toHaveBeenCalledTimes(2);
+    expect(api.signIn).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

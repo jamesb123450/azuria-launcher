@@ -1,4 +1,5 @@
-import { ref } from "vue";
+import { sessionResume } from "../lib/session-resume";
+import { ref, onScopeDispose } from "vue";
 import { defineStore } from "pinia";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -30,6 +31,8 @@ export const useAzuriaAccount = defineStore("azuria-account", () => {
     error = ref(""),
     connected = ref(false);
   let revision = 0;
+  let stopResume = () => {};
+  onScopeDispose(() => stopResume());
   function connection(update: ConnectionUpdate) {
     if (!update || (!update.connecting && !update.view && !update.error))
       return;
@@ -61,6 +64,12 @@ export const useAzuriaAccount = defineStore("azuria-account", () => {
       return true;
     } catch (cause) {
       if (started !== revision) return false;
+      if (
+        typeof cause === "string" &&
+        cause.startsWith("Your Azuria session has expired or was revoked.")
+      ) {
+        view.value = { ...view.value, account: null };
+      }
       error.value =
         typeof cause === "string"
           ? cause
@@ -94,6 +103,18 @@ export const useAzuriaAccount = defineStore("azuria-account", () => {
           }
         }
         ready.value = true;
+        stopResume = sessionResume(
+          () =>
+            ready.value &&
+            view.value.configured &&
+            view.value.supported &&
+            !busy.value &&
+            !pending.value &&
+            /kept|temporarily|could not reach|could not connect|request.*running/i.test(
+              error.value,
+            ),
+          () => perform("azuria_status"),
+        );
       })();
     await initializing;
   }
