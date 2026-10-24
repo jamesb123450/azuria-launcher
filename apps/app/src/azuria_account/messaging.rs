@@ -200,7 +200,11 @@ pub(super) async fn request(
     client_id: Option<String>,
     body: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    if !["unread", "history", "read", "send", "backup", "restore"].contains(&action.as_str()) {
+    if ![
+        "unread", "inbox", "history", "read", "send", "backup", "restore",
+    ]
+    .contains(&action.as_str())
+    {
         return Err("Unknown messaging action.".into());
     }
     let target = target.as_deref().unwrap_or_default().to_ascii_lowercase();
@@ -236,12 +240,17 @@ pub(super) async fn request(
         recovery("backup", actor, &password, Some(&key))?;
         return Ok(serde_json::json!({"accountId":actor,"data":null}));
     }
-    if action == "unread" {
-        let data = friends_rpc(&config, access, "message_unread", &serde_json::json!({})).await?;
+    if action == "unread" || action == "inbox" {
+        let name = if action == "inbox" {
+            "message_conversations"
+        } else {
+            "message_unread"
+        };
+        let data = friends_rpc(&config, access, name, &serde_json::json!({})).await?;
         return Ok(serde_json::json!({"accountId":actor,"data":data}));
     }
     let public = remote_key(&config, access, target).await?.ok_or(
-        "Your friend needs to open Friends in the updated launcher to set up encrypted messaging.",
+        "Your friend needs to open Social in the updated launcher to set up encrypted messaging.",
     )?;
     let code = security_code(actor, &key.public_key(), target, &public)?;
     pin(&config, actor, target, &public)?;

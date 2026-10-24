@@ -23,7 +23,7 @@ const row = {
   created_at: "2026-10-24T12:00:00Z",
 };
 const flush = async () => {
-  for (let i = 0; i < 12; i++) await Promise.resolve();
+  for (let i = 0; i < 40; i++) await Promise.resolve();
 };
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -42,8 +42,9 @@ beforeEach(() => {
   api.invoke.mockImplementation(async (_name, args) => ({
     accountId: "alice",
     data:
-      args.action === "history" ? [row] : args.action === "unread" ? [] : null,
+      args.action === "history" ? [row] : args.action === "inbox" ? [] : null,
   }));
+  useMessages().active = true;
 });
 it("clears conversation and rejects late results after sign-out", async () => {
   const store = useMessages();
@@ -55,6 +56,7 @@ it("clears conversation and rejects late results after sign-out", async () => {
       }),
   );
   store.select(friend);
+  await flush();
   useAzuriaAccount().view.account = null;
   done({ accountId: "alice", data: [row] });
   await flush();
@@ -104,6 +106,7 @@ it("waits for a friends refresh before making a messaging request", async () => 
   friends.busy = true;
   friends.open = true;
   const store = useMessages();
+  store.active = true;
   store.select(friend);
   await flush();
   expect(api.invoke).not.toHaveBeenCalled();
@@ -118,7 +121,7 @@ it("keeps the security code scoped to the current account and conversation", asy
     accountId: "alice",
     securityCode: args.action === "history" ? "trusted-code" : undefined,
     data:
-      args.action === "history" ? [row] : args.action === "unread" ? [] : null,
+      args.action === "history" ? [row] : args.action === "inbox" ? [] : null,
   }));
   store.select(friend);
   await flush();
@@ -127,4 +130,61 @@ it("keeps the security code scoped to the current account and conversation", asy
   expect(store.securityCode).toBe("");
   useAzuriaAccount().view.account = null;
   expect(store.notice).toBe("");
+});
+
+it("does not start background message requests when the Social page is inactive", async () => {
+  const { useFriends } = await import("../../src/stores/friends");
+  const friends = useFriends();
+  const store = useMessages();
+  store.active = false;
+  friends.open = true;
+  friends.busy = true;
+  await flush();
+  friends.busy = false;
+  await flush();
+  expect(store.active).toBe(false);
+  expect(api.invoke).not.toHaveBeenCalled();
+});
+
+it("queues rapid conversation switches instead of racing the native session lock", async () => {
+  const store = useMessages();
+  let done!: (value: unknown) => void;
+  api.invoke.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        done = resolve;
+      }),
+  );
+  store.select(friend);
+  await flush();
+  store.select({
+    ...friend,
+    account_id: "casey",
+    username: "casey",
+    display_name: "Casey",
+  });
+  await flush();
+  expect(api.invoke).toHaveBeenCalledTimes(1);
+  api.invoke.mockImplementation(async (_name, args) => ({
+    accountId: "alice",
+    data:
+      args.action === "history"
+        ? [{ ...row, id: 2, sender_id: "casey", body: "New conversation" }]
+        : args.action === "inbox"
+          ? []
+          : null,
+  }));
+  done({ accountId: "alice", data: [row] });
+  await flush();
+  expect(store.rows.map((row) => row.body)).toEqual(["New conversation"]);
+  expect(store.error).toBe("");
+});
+
+it("does not dispatch a queued request after sign-out", async () => {
+  const store = useMessages();
+  store.select(friend);
+  useAzuriaAccount().view.account = null;
+  await flush();
+  expect(api.invoke).not.toHaveBeenCalled();
+  expect(store.rows).toEqual([]);
 });

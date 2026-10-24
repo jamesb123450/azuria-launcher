@@ -8,13 +8,19 @@ import {
   LockKeyhole,
 } from "@lucide/vue";
 import { useMessages } from "../stores/messages";
+defineEmits<{ back: [] }>();
 const messages = useMessages();
 const feed = ref<HTMLElement>();
 watch(
   () => messages.rows.at(-1)?.id,
   async () => {
     await nextTick();
-    feed.value?.scrollTo({ top: feed.value.scrollHeight, behavior: "smooth" });
+    feed.value?.scrollTo({
+      top: feed.value.scrollHeight,
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
   },
 );
 function time(value: string) {
@@ -30,7 +36,7 @@ function time(value: string) {
       <button
         class="icon-button"
         aria-label="Back to friends"
-        @click="messages.select(null)"
+        @click="$emit('back')"
       >
         <ArrowLeft :size="18" />
       </button>
@@ -153,6 +159,10 @@ function time(value: string) {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1;
+  min-height: 0;
+  padding: 22px;
+  animation: conversation-arrive 0.18s ease-out;
 }
 .conversation-header {
   display: flex;
@@ -168,12 +178,14 @@ function time(value: string) {
   margin-top: 4px;
 }
 .message-feed {
-  height: min(340px, 38vh);
+  flex: 1;
+  min-height: 80px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px 4px;
+  overscroll-behavior: contain;
 }
 .message-bubble {
   align-self: flex-start;
@@ -218,7 +230,7 @@ function time(value: string) {
   font-size: 12px;
 }
 .message-composer textarea {
-  resize: vertical;
+  resize: none;
   max-height: 150px;
   background: var(--surface);
   color: var(--text);
@@ -241,7 +253,20 @@ function time(value: string) {
 .older-messages {
   align-self: center;
 }
+@keyframes conversation-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
+  .conversation {
+    animation: none;
+  }
   .message-feed {
     scroll-behavior: auto;
   }

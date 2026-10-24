@@ -12,15 +12,22 @@ export interface DirectMessage {
   created_at: string;
   encryption?: "encrypted" | "legacy" | "unverified";
 }
+export interface ConversationSummary {
+  account_id: string;
+  latest_at: string;
+  unread: number;
+}
 export const useMessages = defineStore("messages", () => {
   const account = useAzuriaAccount();
   const friends = useFriends();
   watch(
     () => friends.busy,
     (busy) => {
-      if (!busy && friends.open) void refresh();
+      if (!busy && active.value) void refresh();
     },
   );
+  const active = ref(false);
+  const inbox = ref<ConversationSummary[]>([]);
   const owner = computed(() => account.view.account?.id ?? null);
   const peer = ref<Relationship | null>(null);
   const rows = ref<DirectMessage[]>([]);
@@ -32,6 +39,7 @@ export const useMessages = defineStore("messages", () => {
   const busy = ref(false);
   const more = ref(false);
   let generation = 0;
+  let network = Promise.resolve();
   let retry: { text: string; id: string } | null = null;
   watch(
     owner,
@@ -40,6 +48,7 @@ export const useMessages = defineStore("messages", () => {
       peer.value = null;
       rows.value = [];
       unread.value = {};
+      inbox.value = [];
       draft.value = "";
       error.value = "";
       securityCode.value = "";
@@ -52,30 +61,43 @@ export const useMessages = defineStore("messages", () => {
   async function call<T>(action: string, extra = {}): Promise<T> {
     const id = owner.value;
     const current = generation;
-    const result = await invoke<{
-      accountId: string;
-      data: T;
-      securityCode?: string;
-    }>("azuria_messages", {
-      action,
-      target: peer.value?.account_id ?? null,
-      before: null,
-      clientId: null,
-      body: null,
-      ...extra,
+    const previous = network;
+    let release!: () => void;
+    network = new Promise<void>((resolve) => {
+      release = resolve;
     });
-    if (
-      !id ||
-      owner.value !== id ||
-      result.accountId !== id ||
-      current !== generation
-    )
-      throw new Error("Account changed.");
-    if (result.securityCode) securityCode.value = result.securityCode;
-    return result.data;
+    await previous;
+    try {
+      // A rapid conversation switch must wait for the native session lock,
+      // and obsolete queued requests must never be sent after sign-out.
+      if (!id || owner.value !== id || current !== generation)
+        throw new Error("Conversation changed.");
+      const result = await invoke<{
+        accountId: string;
+        data: T;
+        securityCode?: string;
+      }>("azuria_messages", {
+        action,
+        target: peer.value?.account_id ?? null,
+        before: null,
+        clientId: null,
+        body: null,
+        ...extra,
+      });
+      if (
+        owner.value !== id ||
+        result.accountId !== id ||
+        current !== generation
+      )
+        throw new Error("Account changed.");
+      if (result.securityCode) securityCode.value = result.securityCode;
+      return result.data;
+    } finally {
+      release();
+    }
   }
   async function refresh(older = false) {
-    if (!owner.value || busy.value || friends.busy) return;
+    if (!active.value || !owner.value || busy.value || friends.busy) return;
     const token = generation;
     busy.value = true;
     error.value = "";
@@ -108,12 +130,13 @@ export const useMessages = defineStore("messages", () => {
         if (last && document.visibilityState === "visible")
           await call("read", { before: String(last.id) });
       }
-      const counts =
-        await call<{ account_id: string; unread: number }[]>("unread");
-      if (token === generation)
+      const counts = await call<ConversationSummary[]>("inbox");
+      if (token === generation) {
+        inbox.value = counts;
         unread.value = Object.fromEntries(
           counts.map((row) => [row.account_id, row.unread]),
         );
+      }
     } catch (cause) {
       if (token === generation)
         error.value =
@@ -161,6 +184,17 @@ export const useMessages = defineStore("messages", () => {
           [...rows.value, ...page].map((row) => [row.id, row]),
         ).values(),
       ].sort((a, b) => a.id - b.id);
+      const contact = peer.value?.account_id;
+      if (contact) {
+        inbox.value = [
+          {
+            account_id: contact,
+            latest_at: page[0]?.created_at ?? new Date().toISOString(),
+            unread: 0,
+          },
+          ...inbox.value.filter((row) => row.account_id !== contact),
+        ];
+      }
       draft.value = "";
       retry = null;
     } catch (cause) {
@@ -197,6 +231,8 @@ export const useMessages = defineStore("messages", () => {
     }
   }
   return {
+    active,
+    inbox,
     recovery,
     securityCode,
     notice,

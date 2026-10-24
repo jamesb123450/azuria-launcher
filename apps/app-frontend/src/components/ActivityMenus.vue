@@ -9,6 +9,7 @@ import {
   Package,
   LoaderCircle,
 } from "@lucide/vue";
+import { useRouter } from "vue-router";
 import { useFriends } from "../stores/friends";
 import { useActivity, type Task } from "../stores/activity";
 import { useGame } from "../stores/game";
@@ -20,6 +21,7 @@ const activity = useActivity(),
   updates = useUpdates();
 activity.init();
 const friends = useFriends();
+const router = useRouter();
 const open = ref<"tasks" | "notifications" | null>(null),
   host = ref<HTMLElement>(),
   notificationsButton = ref<HTMLButtonElement>(),
@@ -194,7 +196,7 @@ async function cancel(task: Task) {
           class="friend-notification"
           @click="
             close();
-            friends.show('requests');
+            router.push('/social?section=requests');
           "
         >
           {{ friends.incoming.length }} friend

@@ -120,6 +120,7 @@ test("signing out clears an open friends dialog and cached names", async ({
   page,
 }) => {
   await setup(page);
+  await page.getByRole("link", { name: "Open Social", exact: true }).click();
   await page
     .getByRole("button", { name: "Manage friends", exact: true })
     .click();

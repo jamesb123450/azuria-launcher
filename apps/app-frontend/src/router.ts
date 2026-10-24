@@ -16,6 +16,7 @@ export const router = createRouter({
   },
   routes: [
     { path: "/", component: HomeView },
+    { path: "/social", component: () => import("./views/SocialView.vue") },
     { path: "/monitor/:id", component: GameMonitor },
     { path: "/versions", component: VersionsView },
     { path: "/library", redirect: "/versions?tab=setups" },
