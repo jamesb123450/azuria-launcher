@@ -5,10 +5,26 @@ accepts multiple choices. Dismissing or opening the invitation is remembered in
 that browser; the footer always links to the survey. The invitation waits for
 the existing privacy banner to close. It is not shown on legal or survey pages.
 
+## Update an existing survey
+
+For the optional written-feedback field, run
+`services/accounts/supabase/migrations/202610240002_feedback_comments.sql` in
+Supabase, then redeploy the function from the repository root:
+
+```sh
+npx supabase functions deploy feedback-submit --workdir services/accounts --project-ref YOUR_PROJECT_REF
+```
+
+Apply the migration before deploying the updated function and websites. Existing
+responses are preserved. No new environment variables or Turnstile keys are needed.
+All six multiple-choice questions remain required; written feedback is optional
+and limited to 2,000 characters. Comments are shown as plain text in individual
+admin responses. The form asks respondents not to include personal information.
+
 ## Enable collection
 
 1. Run `services/accounts/supabase/migrations/202610240001_feedback.sql` in the
-   existing Supabase project's SQL editor. Apply the earlier account, friends
+   existing Supabase project's SQL editor, followed by `202610240002_feedback_comments.sql`. Apply the earlier account, friends
    and admin migrations first if this is a new database.
 2. In Cloudflare, create a **Turnstile** widget for the studio site's actual
    hostname (for example `azuriasmp.org` and `www.azuriasmp.org`). Use Managed
@@ -35,7 +51,7 @@ the existing privacy banner to close. It is not shown on legal or survey pages.
 5. From the repository root, deploy the function to the existing project:
 
    ```sh
-   npx supabase functions deploy feedback-submit --project-ref YOUR_PROJECT_REF
+   npx supabase functions deploy feedback-submit --workdir services/accounts --project-ref YOUR_PROJECT_REF
    ```
 
    The committed `config.toml` disables gateway JWT verification for this public
@@ -54,8 +70,9 @@ test environments. Preview domains need their own allowed origins/widget setup.
 ## Response handling
 
 Records contain a random retry reference, version, selected option IDs and a
-calendar date. They contain no account IDs, email addresses, IPs, user agents,
-challenge tokens or free text. Infrastructure providers may retain technical
+calendar date, plus an optional written comment. No account IDs, email addresses,
+IPs, user agents or challenge tokens are attached automatically. Respondents are
+asked to leave personal information out of their comments. Infrastructure providers may retain technical
 request logs separately. The website's privacy policy explains this distinction.
 A repeated submission reference cannot overwrite an existing response.
 

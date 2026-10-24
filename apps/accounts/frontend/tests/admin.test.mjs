@@ -24,6 +24,7 @@ before(async () => {
     "202610200002_friends.sql",
     "202610200003_admin.sql",
     "202610240001_feedback.sql",
+    "202610240002_feedback_comments.sql",
   ])
     await db.exec(
       await readFile(
@@ -356,6 +357,7 @@ test("feedback retries are idempotent and admin summaries count each selected op
   assert.equal(responses.length, 1);
   assert.deepEqual(Object.keys(responses[0]).sort(), [
     "answers",
+    "extra_feedback",
     "id",
     "submitted_on",
     "version",
@@ -369,5 +371,76 @@ test("feedback retries are idempotent and admin summaries count each selected op
   await assert.rejects(
     rpc(admin, "feedback_admin_responses", [-1]),
     /Invalid page/,
+  );
+});
+
+test("optional comments retain required answers, reject oversize text, and never overwrite retries", async () => {
+  for (const key of Object.keys(feedbackAnswers)) {
+    const missing = { ...feedbackAnswers };
+    delete missing[key];
+    await assert.rejects(
+      rpc(
+        null,
+        "feedback_submit_with_comment",
+        [feedbackId, 1, missing, "hello"],
+        { role: "service_role" },
+      ),
+      /Invalid|Missing/,
+    );
+  }
+  await assert.rejects(
+    rpc(
+      null,
+      "feedback_submit_with_comment",
+      [feedbackId, 1, feedbackAnswers, "x".repeat(2001)],
+      { role: "service_role" },
+    ),
+    /Invalid written/,
+  );
+  await assert.rejects(
+    rpc(normal, "feedback_submit_with_comment", [
+      feedbackId,
+      1,
+      feedbackAnswers,
+      "hello",
+    ]),
+    /permission denied/,
+  );
+  await rpc(
+    null,
+    "feedback_submit_with_comment",
+    [
+      feedbackId,
+      1,
+      feedbackAnswers,
+      "  More themes please.\n<script>alert(1)</script>  ",
+    ],
+    { role: "service_role" },
+  );
+  await rpc(
+    null,
+    "feedback_submit_with_comment",
+    [feedbackId, 1, feedbackAnswers, "replacement"],
+    { role: "service_role" },
+  );
+  assert.equal(
+    (await rpc(admin, "feedback_admin_responses", [0]))[0].extra_feedback,
+    "More themes please.\n<script>alert(1)</script>",
+  );
+  const second = "66666666-6666-4666-8666-666666666666";
+  await rpc(
+    null,
+    "feedback_submit_with_comment",
+    [second, 1, feedbackAnswers, ""],
+    { role: "service_role" },
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select extra_feedback from public.launcher_feedback where id=$1",
+        [second],
+      )
+    ).rows[0].extra_feedback,
+    "",
   );
 });

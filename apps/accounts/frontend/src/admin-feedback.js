@@ -78,7 +78,7 @@ export async function feedbackWorkspace({ client, ui }) {
       grid,
       node("h3", "Individual responses"),
       paragraph(
-        "No names, emails or account details are collected. Dates are stored without a time.",
+        "No account details are attached. Written feedback may contain information volunteered by respondents. Dates are stored without a time.",
         "fine",
       ),
     );
@@ -101,6 +101,11 @@ export async function feedbackWorkspace({ client, ui }) {
               .join(" · "),
           ),
         );
+      }
+      if (response.extra_feedback) {
+        const written = paragraph(response.extra_feedback);
+        written.style.whiteSpace = "pre-wrap";
+        item.append(node("h4", "Extra feedback"), written);
       }
       results.append(item);
     }
