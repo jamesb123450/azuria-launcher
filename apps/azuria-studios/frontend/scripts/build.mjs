@@ -11,7 +11,19 @@ const output = `${root}dist`;
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 const home = await readFile(`${root}src/home.html`, "utf8");
-const banner = analytics;
+const configEscape = (value = "") =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;");
+const surveyUrl = (process.env.AZURIA_SUPABASE_URL || "").replace(/\/$/, "");
+if (surveyUrl && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(surveyUrl))
+  throw new Error(
+    "AZURIA_SUPABASE_URL must be your HTTPS Supabase project URL.",
+  );
+const banner =
+  analytics +
+  `<link rel="stylesheet" href="/survey.css"><div id="feedback-config" hidden data-url="${configEscape(surveyUrl)}" data-key="${configEscape(process.env.AZURIA_SUPABASE_PUBLISHABLE_KEY)}" data-sitekey="${configEscape(process.env.AZURIA_TURNSTILE_SITE_KEY)}"></div><script src="/survey.js" type="module"></script>`;
 const render = (title, body, description) =>
   `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${description}"><meta name="theme-color" content="#101116"><title>${title}</title><link rel="icon" href="/assets/azuria.png"><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/analytics.css"><script src="/site.js" defer></script></head><body><a class="skip-link" href="#as-top">Skip to content</a>${body.replace(/<\/div>\s*$/, `${banner}</div>`)}</body></html>`;
 await writeFile(
@@ -40,6 +52,21 @@ for (const [slug, content, title] of [
     ),
   );
 }
+await mkdir(`${output}/survey`, { recursive: true });
+const surveyBody = home.replace(
+  /<main id="as-top">[\s\S]*?<\/main>/,
+  `<main id="as-top" class="survey-page"><div class="survey-intro"><p class="survey-eyebrow">AZURIA LAUNCHER · COMMUNITY SURVEY</p><h1>Your launcher.<br>Your priorities.</h1><p>Help us understand what matters to you. Choose as many answers as you like for each question. No account needed.</p><p class="survey-hint">All answers are anonymous. We don’t ask for names, emails or account details. Read our <a href="/privacy/">privacy policy</a>.</p></div><form id="feedback-form"><div id="feedback-questions"></div><div class="survey-submit"><div id="feedback-challenge"></div><p id="feedback-status" role="status" aria-live="polite"></p><button class="survey-primary" id="feedback-send" type="submit">Send feedback</button><p class="survey-hint">Please choose at least one answer per question.</p></div></form><section id="feedback-thanks" hidden tabindex="-1"><h2>Thanks for helping shape Azuria.</h2><p>Your feedback has been recorded. We’ll use it to decide what to improve next.</p><a href="/">Back to Azuria Studios →</a></section></main>`,
+);
+await writeFile(
+  `${output}/survey/index.html`,
+  render(
+    "Launcher survey — Azuria Studios",
+    surveyBody,
+    "Tell us what matters to you in a Minecraft launcher. An anonymous survey from Azuria Studios.",
+  ),
+);
+for (const name of ["survey.js", "survey.css", "survey-definition.mjs"])
+  await cp(`${root}src/${name}`, `${output}/${name}`);
 await cp(`${root}assets`, `${output}/assets`, { recursive: true });
 await cp(`${root}src/site.css`, `${output}/site.css`);
 await cp(`${root}src/site.js`, `${output}/site.js`);

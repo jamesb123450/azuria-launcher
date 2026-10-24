@@ -28,6 +28,12 @@ export const adminSections = [
     icon: "speaker",
   },
   {
+    id: "feedback",
+    label: "Launcher feedback",
+    group: "Insights",
+    icon: "chart",
+  },
+  {
     id: "analytics",
     label: "Analytics",
     group: "Insights",

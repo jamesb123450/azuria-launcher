@@ -22,10 +22,12 @@ jobs:
       - run: npm run service:test
       - run: npm run accounts:build
       - run: npm run accounts:test
+      - run: npm run test --workspace=azuria-studios-website
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
       - run: deno check services/accounts/supabase/functions/account-action/index.ts
       - run: deno test --allow-env services/accounts/supabase/functions/account-action/index.test.ts
+      - run: deno check services/accounts/supabase/functions/feedback-submit/index.ts
       - run: deno check services/accounts/supabase/functions/admin-action/index.ts
       - run: deno test --allow-env services/accounts/supabase/functions/admin-action/index.test.ts
