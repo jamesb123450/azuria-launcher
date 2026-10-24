@@ -48,3 +48,9 @@ The home page and `/news/` load published stories at runtime. Follow
 [the news setup guide](../../docs/NEWS_SETUP.md) for the database migration,
 public build variables and admin editor. Publishing does not require a website
 redeploy. Article URLs use `/news/?story=slug` for static hosting compatibility.
+
+## Google Search
+
+Page titles, descriptions, canonical URLs and social preview tags are built into
+the HTML. See [search setup](../../../docs/WEBSITE_SEARCH_SETUP.md) for production
+domains, the optional Search Console verification token and sitemap submission.

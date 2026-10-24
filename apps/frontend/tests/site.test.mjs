@@ -324,3 +324,33 @@ test("launcher policies expose cookie information, GDPR rights and dated terms",
   assert.match(cookies, /<h1>Cookie policy<\/h1>/);
   assert.match(contact, /mailto:privacy@azuriasmp.org/);
 });
+
+test("launcher search metadata identifies the primary domain and supports verification and previews", async () => {
+  const releases = JSON.parse(
+    await readFile(new URL("../data/releases.json", import.meta.url), "utf8"),
+  );
+  const html = render("home", {
+    siteURL: "https://jamesb123450.github.io/azuria-releases/",
+    canonicalSiteURL: "https://launcher.azuriasmp.org/",
+    base,
+    releases,
+    verification: "test_token",
+  });
+  assert.match(
+    html,
+    /rel="canonical" href="https:\/\/launcher.azuriasmp.org\//,
+  );
+  assert.match(html, /og:site_name" content="Azuria Launcher/);
+  assert.match(html, /name="twitter:title"/);
+  assert.match(html, /google-site-verification" content="test_token/);
+  const preview = render("home", {
+    siteURL: "https://launcher.azuriasmp.org/",
+    base: "/",
+    releases,
+    preview: true,
+  });
+  assert.match(preview, /noindex, nofollow/);
+  const sitemap = await readFile(resolve(root, "sitemap.xml"), "utf8");
+  assert.match(sitemap, /https:\/\/launcher.azuriasmp.org\/downloads\//);
+  assert.doesNotMatch(sitemap, /404|github.io/);
+});
