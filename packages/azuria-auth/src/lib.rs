@@ -1,4 +1,5 @@
 //! Native-only authentication. Public views deliberately contain no credentials.
+pub mod messaging;
 mod oauth;
 mod provider;
 mod service;

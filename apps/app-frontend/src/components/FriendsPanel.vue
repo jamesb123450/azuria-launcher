@@ -14,6 +14,7 @@ import { useFriends } from "../stores/friends";
 import type { FriendAction, Relationship } from "../friends-api";
 import { useMessages } from "../stores/messages";
 import MessageConversation from "./MessageConversation.vue";
+import MessageSecurity from "./MessageSecurity.vue";
 const messages = useMessages();
 const friends = useFriends();
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -128,6 +129,7 @@ async function confirm() {
       </button>
     </nav>
     <div class="friends-dialog-content">
+      <MessageSecurity />
       <p v-if="friends.error" class="inline-error" role="alert">
         {{ friends.error }}
       </p>
