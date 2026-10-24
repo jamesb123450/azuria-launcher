@@ -7,6 +7,7 @@ import {
   dataRequest,
   cookiePolicy,
 } from "../src/legal.mjs";
+import { studioSEO } from "../src/seo.mjs";
 import { analyticsMarkup } from "../src/analytics.mjs";
 const analytics = analyticsMarkup({
   id: process.env.AZURIA_GA_MEASUREMENT_ID,
@@ -30,14 +31,20 @@ if (surveyUrl && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(surveyUrl))
 const banner =
   analytics +
   `<link rel="stylesheet" href="/survey.css"><div id="feedback-config" hidden data-url="${configEscape(surveyUrl)}" data-key="${configEscape(process.env.AZURIA_SUPABASE_PUBLISHABLE_KEY)}" data-sitekey="${configEscape(process.env.AZURIA_TURNSTILE_SITE_KEY)}"></div><script src="/survey.js" type="module"></script>`;
-const render = (title, body, description) =>
-  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${description}"><meta name="theme-color" content="#101116"><title>${title}</title><link rel="icon" href="/assets/azuria.png"><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/analytics.css"><script src="/site.js" defer></script></head><body><a class="skip-link" href="#as-top">Skip to content</a>${body.replace(/<\/div>\s*$/, `${banner}</div>`)}</body></html>`;
+const siteOrigin =
+  process.env.AZURIA_SITE_URL?.trim() || "https://www.azuriasmp.org/";
+const verification = process.env.AZURIA_GOOGLE_SITE_VERIFICATION?.trim() || "";
+const preview = Boolean(
+  process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production",
+);
+const render = (title, body, description, path = "") =>
+  `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="${description}"><meta name="theme-color" content="#101116"><title>${title}</title>${studioSEO({ title, description, path, origin: siteOrigin, verification, preview })}<link rel="icon" href="/assets/azuria.png"><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/analytics.css"><script src="/site.js" defer></script></head><body><a class="skip-link" href="#as-top">Skip to content</a>${body.replace(/<\/div>\s*$/, `${banner}</div>`)}</body></html>`;
 await writeFile(
   `${output}/index.html`,
   render(
-    "Azuria Studios — Great experiences start here.",
+    "Azuria Studios — Gaming & Software Projects",
     home,
-    "The home of Azuria Launcher and the projects that come next.",
+    "Discover Azuria Studios, the team behind Azuria Launcher for Minecraft Java Edition. Explore our gaming and software projects and what comes next.",
   ),
 );
 for (const [slug, content, title] of [
@@ -58,6 +65,7 @@ for (const [slug, content, title] of [
       `${title} — Azuria Studios`,
       body,
       `${title} for the Azuria Studios website.`,
+      `${slug}/`,
     ),
   );
 }
@@ -72,6 +80,7 @@ await writeFile(
     "Launcher survey — Azuria Studios",
     surveyBody,
     "Tell us what matters to you in a Minecraft launcher. An anonymous survey from Azuria Studios.",
+    "survey/",
   ),
 );
 for (const name of [
@@ -93,6 +102,7 @@ await writeFile(
       '<main id="as-top" class="legal-page"><h1>Page not found</h1><p>That page isn’t here. <a href="/">Return to Azuria Studios</a>.</p></main>',
     ),
     "This page could not be found.",
+    "404.html",
   ),
 );
 console.log("Built Azuria Studios website in dist/");
@@ -101,3 +111,23 @@ await cp(`${root}src/theme.js`, `${output}/theme.js`);
 
 for (const name of ["analytics.js", "analytics.css"])
   await cp(`${root}src/${name}`, `${output}/${name}`);
+
+const indexablePaths = [
+  "",
+  "privacy/",
+  "terms/",
+  "contact/",
+  "cookie-policy/",
+  "data-request/",
+  "survey/",
+];
+const xmlEscape = (value) =>
+  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+await writeFile(
+  `${output}/robots.txt`,
+  `User-agent: *\nAllow: /\n${preview ? "" : `Sitemap: ${new URL("sitemap.xml", siteOrigin).href}\n`}`,
+);
+await writeFile(
+  `${output}/sitemap.xml`,
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${preview ? "" : indexablePaths.map((path) => `<url><loc>${xmlEscape(new URL(path, siteOrigin).href)}</loc></url>`).join("")}</urlset>`,
+);

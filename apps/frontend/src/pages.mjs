@@ -74,7 +74,16 @@ export function releaseNotes(text) {
 }
 export function render(
   page,
-  { siteURL, base, releases, adsense = "", analyticsEnabled = false },
+  {
+    siteURL,
+    base,
+    releases,
+    adsense = "",
+    analyticsEnabled = false,
+    canonicalSiteURL = siteURL,
+    verification = "",
+    preview = false,
+  },
 ) {
   const e = escapeHTML;
   const link = (path) => `${base}${path}`;
@@ -90,7 +99,7 @@ export function render(
   const installer = `${downloadRepository}/releases/latest`;
 
   const titles = {
-    home: "Azuria Launcher — Minecraft instances, organised",
+    home: "Azuria Launcher — Minecraft Java Launcher for Windows",
     downloads: "Download Azuria Launcher for Windows",
     changelog: "Changelog — Azuria Launcher",
     news: "News — Azuria Launcher",
@@ -1071,8 +1080,8 @@ export function render(
     </section>`;
   const canonical =
     page === "home"
-      ? siteURL
-      : siteURL + (page === "404" ? "404.html" : page + "/");
+      ? canonicalSiteURL
+      : canonicalSiteURL + (page === "404" ? "404.html" : page + "/");
   return html`<!doctype html>
     <html lang="en-GB">
       <head>
@@ -1088,12 +1097,29 @@ export function render(
         />
         <link rel="canonical" href="${e(canonical)}" />
         <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Azuria Launcher" />
+        <meta property="og:locale" content="en_GB" />
         <meta property="og:title" content="${e(titles[page])}" />
         <meta property="og:description" content="${e(descriptions[page])}" />
-        <meta property="og:image" content="${e(siteURL)}assets/home.jpg" />
+        <meta
+          property="og:image"
+          content="${e(canonicalSiteURL)}assets/home.jpg"
+        />
         <meta property="og:url" content="${e(canonical)}" />
+        <meta property="og:image:alt" content="Azuria Launcher home screen" />
         <meta name="twitter:card" content="summary_large_image" />
-        ${page === "404" ? '<meta name="robots" content="noindex"/>' : ""}
+        <meta name="twitter:title" content="${e(titles[page])}" />
+        <meta name="twitter:description" content="${e(descriptions[page])}" />
+        <meta
+          name="twitter:image"
+          content="${e(canonicalSiteURL)}assets/home.jpg"
+        />
+        <meta name="twitter:image:alt" content="Azuria Launcher home screen" />
+        ${verification ? `<meta name="google-site-verification" content="${e(verification)}" />` : ""}
+        <meta
+          name="robots"
+          content="${page === "404" || preview ? "noindex, nofollow" : "index, follow, max-image-preview:large"}"
+        />
         ${page === "home" ? html`<link rel="preload" as="image" href="${asset("minecraft-cherry-grove.webp")}" />` : ""}
         <link rel="icon" href="${asset("azuria.png")}" type="image/png" />
         <link

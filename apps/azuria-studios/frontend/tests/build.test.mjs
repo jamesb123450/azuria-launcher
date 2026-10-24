@@ -68,3 +68,33 @@ test("studio policies expose GDPR rights, privacy email and dated terms", async 
   assert.match(contact, /mailto:privacy@azuriasmp.org/);
   assert.match(privacy, /cookie-policy/);
 });
+
+test("studio sitemap, robots and canonical tags agree for every public page", async () => {
+  const sitemap = await readFile(new URL("sitemap.xml", root), "utf8");
+  const robots = await readFile(new URL("robots.txt", root), "utf8");
+  assert.match(robots, /Sitemap: https:\/\/www.azuriasmp.org\/sitemap.xml/);
+  const seen = new Set();
+  for (const path of [
+    "",
+    "privacy/",
+    "terms/",
+    "contact/",
+    "data-request/",
+    "cookie-policy/",
+    "survey/",
+  ]) {
+    const html = await readFile(new URL(`${path}index.html`, root), "utf8");
+    const url = `https://www.azuriasmp.org/${path}`;
+    assert.ok(html.includes(`rel="canonical" href="${url}"`));
+    assert.ok(sitemap.includes(`<loc>${url}</loc>`));
+    const title = html.match(/<title>(.*?)<\/title>/)[1];
+    assert.ok(!seen.has(title));
+    seen.add(title);
+    assert.match(html, /property="og:site_name"/);
+    assert.match(html, /name="twitter:description"/);
+    assert.match(html, /name="robots" content="index, follow/);
+  }
+  const missing = await readFile(new URL("404.html", root), "utf8");
+  assert.match(missing, /name="robots" content="noindex/);
+  assert.doesNotMatch(sitemap, /404/);
+});

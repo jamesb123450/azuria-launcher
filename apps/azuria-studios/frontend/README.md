@@ -54,3 +54,9 @@ Uses Playwright from the existing launcher frontend development dependencies. In
 See [survey setup](../../../../docs/FEEDBACK_SETUP.md) for the database migration,
 Supabase function and Vercel/Turnstile variables. Anonymous responses appear in
 the account admin dashboard under **Launcher feedback**.
+
+## Google Search
+
+The built site includes per-page search metadata, canonical links, social preview
+tags, robots.txt and sitemap.xml. See [search setup](../../../../docs/WEBSITE_SEARCH_SETUP.md)
+for optional Search Console verification and sitemap submission.

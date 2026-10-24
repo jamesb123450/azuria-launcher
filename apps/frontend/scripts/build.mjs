@@ -8,7 +8,9 @@ const root = new URL("../", import.meta.url);
 const dist = new URL("dist/", root);
 const siteURL =
   process.env.AZURIA_SITE_URL ||
-  "https://jamesb123450.github.io/azuria-releases/";
+  (process.env.VERCEL
+    ? "https://launcher.azuriasmp.org/"
+    : "https://jamesb123450.github.io/azuria-releases/");
 const url = new URL(siteURL);
 if (
   url.protocol !== "https:" ||
@@ -19,6 +21,17 @@ if (
 )
   throw new Error("Use an HTTPS site URL");
 if (!url.pathname.endsWith("/")) url.pathname += "/";
+// The public distribution mirror keeps its asset base but points search engines
+// to the primary launcher domain instead of competing with it.
+const canonicalOrigin = url.hostname.endsWith("github.io")
+  ? "https://launcher.azuriasmp.org/"
+  : url.href;
+const verification = process.env.AZURIA_GOOGLE_SITE_VERIFICATION?.trim() || "";
+if (verification && !/^[A-Za-z0-9_-]+$/.test(verification))
+  throw new Error("Use the Google site verification token, not a tag snippet.");
+const preview = Boolean(
+  process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production",
+);
 const adSnippet = await readFile(new URL("src/adsense.html", root), "utf8");
 const adsense = advertisingMarkup(adSnippet, {
   enabled: process.env.AZURIA_ADSENSE_ENABLED === "true",
@@ -71,6 +84,9 @@ for (const page of [
     destination,
     render(page, {
       siteURL: url.href,
+      canonicalSiteURL: canonicalOrigin,
+      verification,
+      preview,
       base: url.pathname,
       releases,
       adsense,
@@ -87,11 +103,11 @@ for (const page of [
 await writeFile(new URL(".nojekyll", dist), "");
 await writeFile(
   new URL("robots.txt", dist),
-  `User-agent: *\nAllow: /\nSitemap: ${url.href}sitemap.xml\n`,
+  `User-agent: *\nAllow: /\nSitemap: ${canonicalOrigin}sitemap.xml\n`,
 );
 await writeFile(
   new URL("sitemap.xml", dist),
-  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "news/", "help/", "privacy/", "cookie-policy/", "terms/", "contact/"].map((path) => `<url><loc>${url.href}${path}</loc></url>`).join("")}</urlset>`,
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${["", "downloads/", "changelog/", "news/", "help/", "privacy/", "cookie-policy/", "terms/", "contact/"].map((path) => `<url><loc>${canonicalOrigin}${path}</loc></url>`).join("")}</urlset>`,
 );
 console.log(`Built 8 pages and a 404 page in ${fileURLToPath(dist)}`);
 
