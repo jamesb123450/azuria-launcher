@@ -23,6 +23,7 @@ before(async () => {
     "202610200001_accounts.sql",
     "202610200002_friends.sql",
     "202610200003_admin.sql",
+    "202610240001_feedback.sql",
   ])
     await db.exec(
       await readFile(
@@ -55,7 +56,7 @@ before(async () => {
 });
 beforeEach(async () => {
   await db.exec(
-    "delete from public.admin_audit; delete from azuria_private.social_limits; delete from auth.sessions; update auth.users set banned_until=null;",
+    "delete from public.launcher_feedback; delete from public.admin_audit; delete from azuria_private.social_limits; delete from auth.sessions; update auth.users set banned_until=null;",
   );
   for (const id of [admin, target, otherAdmin, normal])
     await db.query(
@@ -279,5 +280,94 @@ test("authenticator QR rendering handles the SDK data URI without double-wrappin
   assert.throws(
     () => authenticatorQrSource("https://external.test/qr.svg"),
     /Invalid authenticator/,
+  );
+});
+
+const feedbackAnswers = {
+  launchers: ["azuria", "prism"],
+  appeal: ["simple"],
+  priorities: ["privacy", "mods"],
+  frustrations: ["none"],
+  azuria: ["speed"],
+  playstyle: ["vanilla"],
+};
+const feedbackId = "55555555-5555-4555-8555-555555555555";
+test("feedback writes require service role; public users cannot read responses", async () => {
+  for (const role of ["anon", "authenticated"]) {
+    await assert.rejects(
+      rpc(normal, "feedback_submit", [feedbackId, 1, feedbackAnswers], {
+        role,
+      }),
+      /permission denied/,
+    );
+    await assert.rejects(
+      as(normal, "select * from public.launcher_feedback", [], { role }),
+      /permission denied/,
+    );
+  }
+  await rpc(null, "feedback_submit", [feedbackId, 1, feedbackAnswers], {
+    role: "service_role",
+  });
+  assert.equal(
+    (await db.query("select count(*) from public.launcher_feedback")).rows[0]
+      .count,
+    1,
+  );
+});
+test("feedback validates selections, unknown fields, missing answers and versions", async () => {
+  for (const [version, answers] of [
+    [2, feedbackAnswers],
+    [1, { ...feedbackAnswers, launchers: ["invented"] }],
+    [1, { ...feedbackAnswers, appeal: [] }],
+    [1, { ...feedbackAnswers, playstyle: ["vanilla", "vanilla"] }],
+    [1, { ...feedbackAnswers, email: "person@example.com" }],
+    [1, { ...feedbackAnswers, appeal: "simple" }],
+  ]) {
+    await assert.rejects(
+      rpc(null, "feedback_submit", [feedbackId, version, answers], {
+        role: "service_role",
+      }),
+      /Invalid|Missing/,
+    );
+  }
+});
+test("feedback retries are idempotent and admin summaries count each selected option", async () => {
+  await rpc(null, "feedback_submit", [feedbackId, 1, feedbackAnswers], {
+    role: "service_role",
+  });
+  await rpc(
+    null,
+    "feedback_submit",
+    [feedbackId, 1, { ...feedbackAnswers, launchers: ["modrinth"] }],
+    { role: "service_role" },
+  );
+  const result = (await rpc(admin, "feedback_admin_summary"))[0]
+    .feedback_admin_summary;
+  assert.equal(result.total, 1);
+  assert.equal(result.counts.launchers.azuria, 1);
+  assert.equal(result.counts.launchers.prism, 1);
+  assert.equal(result.counts.launchers.modrinth, undefined);
+  assert.deepEqual(
+    result.schema,
+    (await import("../../../azuria-studios/frontend/src/survey-definition.mjs"))
+      .survey,
+  );
+  const responses = await rpc(admin, "feedback_admin_responses", [0]);
+  assert.equal(responses.length, 1);
+  assert.deepEqual(Object.keys(responses[0]).sort(), [
+    "answers",
+    "id",
+    "submitted_on",
+    "version",
+  ]);
+  for (const id of [normal, null])
+    await assert.rejects(rpc(id, "feedback_admin_summary"), /Admin access/);
+  await assert.rejects(
+    rpc(admin, "feedback_admin_summary", [], { claims: { aal: "aal1" } }),
+    /Admin access/,
+  );
+  await assert.rejects(
+    rpc(admin, "feedback_admin_responses", [-1]),
+    /Invalid page/,
   );
 });

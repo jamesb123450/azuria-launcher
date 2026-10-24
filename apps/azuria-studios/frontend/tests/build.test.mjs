@@ -9,6 +9,7 @@ test("home and legal routes are complete static documents with shared controls",
     "privacy/index.html",
     "terms/index.html",
     "404.html",
+    "survey/index.html",
   ]) {
     const html = await readFile(new URL(path, root), "utf8");
     assert.match(html, /<!doctype html>/);

@@ -877,3 +877,45 @@ dialog::backdrop {
   margin: 2px 0 0;
   accent-color: #cda2cb;
 }
+
+.feedback-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 24px 0 32px;
+}
+.feedback-result {
+  margin: 15px 0;
+}
+.feedback-result-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.feedback-result-label span:last-child {
+  white-space: nowrap;
+  color: #aaa6bb;
+}
+.feedback-result meter {
+  width: 100%;
+  height: 12px;
+  accent-color: #c988ba;
+}
+.feedback-response {
+  margin: 12px 0;
+}
+.feedback-response summary {
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.feedback-response h4 {
+  margin-bottom: 4px;
+}
+@media (max-width: 1000px) {
+  .feedback-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

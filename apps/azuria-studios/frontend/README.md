@@ -11,11 +11,11 @@ npm run studios:preview
 
 ## Vercel
 
-Import the repository as a separate Vercel project. Set **Root Directory** to `apps/azuria-studios/frontend`, **Framework Preset** to Other, **Build Command** to `npm run build`, and **Output Directory** to `dist`. The included `vercel.json` supplies build settings and security headers. No environment variables or backend are required. Do not select the launcher website's root directory.
+Import the repository as a separate Vercel project. Set **Root Directory** to `apps/azuria-studios/frontend`, **Framework Preset** to Other, **Build Command** to `npm run build`, and **Output Directory** to `dist`. The included `vercel.json` supplies build settings and security headers. The marketing pages work without a backend. Survey collection needs the configuration below. Do not select the launcher website's root directory.
 
 ## Privacy and cookies
 
-All fonts and images are local. Optional Google Analytics loads only after explicit analytics consent. No advertising or embeds are included. The first-visit banner offers equally prominent accept/reject actions; Cookie settings reopens it on every page. Consent is scoped to this site's measurement ID, expires after 180 days and is separate from requested theme preferences. Blocked storage does not break the controls. Withdrawing analytics consent disables collection, clears accessible GA cookies and reloads to stop the loaded tag. Other open tabs also apply changed choices. Old pre-analytics consent records are not accepted.
+All fonts and images are local. Optional Google Analytics loads only after explicit analytics consent. No advertising is included. The survey page loads Cloudflare Turnstile for bot protection. The first-visit banner offers equally prominent accept/reject actions; Cookie settings reopens it on every page. Consent is scoped to this site's measurement ID, expires after 180 days and is separate from requested theme preferences. Blocked storage does not break the controls. Withdrawing analytics consent disables collection, clears accessible GA cookies and reloads to stop the loaded tag. Other open tabs also apply changed choices. Old pre-analytics consent records are not accepted.
 
 The privacy contact links to the existing launcher contact page. Update it when a dedicated studio contact channel is available. Review policy details whenever data collection or hosting changes.
 
@@ -48,3 +48,9 @@ node tests/website-analytics.browser.mjs
 ```
 
 Uses Playwright from the existing launcher frontend development dependencies. Install its Chromium browser first, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. Google requests are intercepted locally; the test sends no analytics to Google. Studio preview includes the Vercel security headers.
+
+## Launcher survey
+
+See [survey setup](../../../../docs/FEEDBACK_SETUP.md) for the database migration,
+Supabase function and Vercel/Turnstile variables. Anonymous responses appear in
+the account admin dashboard under **Launcher feedback**.

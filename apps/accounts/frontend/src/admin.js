@@ -1,3 +1,4 @@
+import { feedbackWorkspace } from "./admin-feedback.js";
 import { newsWorkspace } from "./admin-news.js";
 import {
   adminSections,
@@ -324,6 +325,11 @@ export async function showAdmin({ client, user, ui }) {
         ],
         ["Review activity", "activity", "See recent account changes."],
         ["Manage news", "news", "Write and publish updates for the launcher."],
+        [
+          "Launcher feedback",
+          "feedback",
+          "See what players want from their launcher.",
+        ],
       ]) {
         const shortcut = box("admin-shortcut");
         shortcut.append(
@@ -365,6 +371,8 @@ export async function showAdmin({ client, user, ui }) {
         ),
       );
     else if (page === "activity") content.append(audit);
+    else if (page === "feedback")
+      content.append(await feedbackWorkspace({ client, ui }));
     else if (page === "news")
       content.append(await newsWorkspace({ client, ui }));
     else {

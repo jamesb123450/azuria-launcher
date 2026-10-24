@@ -1,0 +1,192 @@
+#azuria-studio-preview .survey-page {
+  max-width: 950px;
+  margin: 0 auto;
+  padding: 80px 0;
+}
+.survey-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--as-pink);
+  font-weight: 650;
+}
+.survey-intro {
+  max-width: 650px;
+  margin-bottom: 46px;
+}
+#azuria-studio-preview .survey-intro h1 {
+  font-size: clamp(38px, 6vw, 64px);
+  letter-spacing: -0.055em;
+  line-height: 1.08;
+  margin: 20px 0;
+}
+.survey-intro > p:not(.survey-eyebrow),
+.survey-invite > p:not(.survey-eyebrow) {
+  color: var(--as-muted);
+  line-height: 1.7;
+}
+#azuria-studio-preview .survey-hint {
+  color: var(--as-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+#azuria-studio-preview .survey-hint a,
+.survey-invite small a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#feedback-form fieldset {
+  border: 1px solid var(--as-line);
+  border-radius: 18px;
+  padding: 25px;
+  margin: 0 0 24px;
+  background: var(--as-panel);
+  min-width: 0;
+}
+#feedback-form legend {
+  font-size: 17px;
+  font-weight: 600;
+  padding: 0 8px;
+  max-width: 100%;
+  line-height: 1.5;
+}
+.survey-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.survey-options label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--as-line);
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.survey-options label:has(input:checked) {
+  border-color: var(--as-pink);
+  background: light-dark(#f8edf5, #302030);
+}
+.survey-options input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: light-dark(#9b3479, #e5acd5);
+}
+.survey-options label:focus-within {
+  outline: 2px solid var(--as-pink);
+  outline-offset: 3px;
+}
+.survey-submit {
+  padding: 10px 0;
+}
+#azuria-studio-preview .survey-primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px 22px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(115deg, #e7b2d9, #b8c9ef);
+  color: #241c2b;
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.survey-primary:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+#feedback-status {
+  line-height: 1.6;
+}
+.survey-invite {
+  width: min(480px, calc(100% - 40px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  border: 1px solid var(--as-line);
+  border-radius: 22px;
+  padding: 32px;
+  color: var(--as-text);
+  background: var(--as-panel);
+  box-shadow: 0 25px 100px #0007;
+}
+.survey-invite::backdrop {
+  background: #080811b3;
+  backdrop-filter: blur(9px);
+}
+.survey-invite[open] {
+  animation: survey-arrive 0.22s ease-out;
+}
+#azuria-studio-preview .survey-invite h2 {
+  font-size: 30px;
+  letter-spacing: -0.04em;
+  margin: 16px 0;
+  line-height: 1.15;
+}
+.survey-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0 18px;
+}
+.survey-invite-actions button {
+  background: transparent;
+  border: 1px solid var(--as-line);
+  color: var(--as-text);
+  border-radius: 10px;
+  padding: 12px 18px;
+}
+.survey-invite small {
+  display: block;
+  font-size: 11px;
+  color: var(--as-muted);
+  line-height: 1.6;
+}
+#feedback-thanks {
+  border: 1px solid var(--as-line);
+  padding: 32px;
+  border-radius: 18px;
+  background: var(--as-panel);
+}
+#feedback-thanks[hidden],
+#feedback-form[hidden] {
+  display: none;
+}
+@keyframes survey-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 600px) {
+  .survey-options {
+    grid-template-columns: 1fr;
+  }
+  #feedback-form fieldset {
+    padding: 18px;
+  }
+  #azuria-studio-preview .survey-page {
+    padding-top: 40px;
+  }
+  .survey-invite {
+    padding: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .survey-invite[open] {
+    animation: none;
+  }
+  .survey-options label {
+    transition: none;
+  }
+}
