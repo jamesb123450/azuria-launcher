@@ -10,6 +10,7 @@ export interface DirectMessage {
   recipient_id: string;
   body: string;
   created_at: string;
+  encryption?: "encrypted" | "legacy" | "unverified";
 }
 export const useMessages = defineStore("messages", () => {
   const account = useAzuriaAccount();
@@ -26,6 +27,8 @@ export const useMessages = defineStore("messages", () => {
   const unread = ref<Record<string, number>>({});
   const draft = ref("");
   const error = ref("");
+  const securityCode = ref("");
+  const notice = ref("");
   const busy = ref(false);
   const more = ref(false);
   let generation = 0;
@@ -39,6 +42,8 @@ export const useMessages = defineStore("messages", () => {
       unread.value = {};
       draft.value = "";
       error.value = "";
+      securityCode.value = "";
+      notice.value = "";
       busy.value = false;
       retry = null;
     },
@@ -46,19 +51,27 @@ export const useMessages = defineStore("messages", () => {
   );
   async function call<T>(action: string, extra = {}): Promise<T> {
     const id = owner.value;
-    const result = await invoke<{ accountId: string; data: T }>(
-      "azuria_messages",
-      {
-        action,
-        target: peer.value?.account_id ?? null,
-        before: null,
-        clientId: null,
-        body: null,
-        ...extra,
-      },
-    );
-    if (!id || owner.value !== id || result.accountId !== id)
+    const current = generation;
+    const result = await invoke<{
+      accountId: string;
+      data: T;
+      securityCode?: string;
+    }>("azuria_messages", {
+      action,
+      target: peer.value?.account_id ?? null,
+      before: null,
+      clientId: null,
+      body: null,
+      ...extra,
+    });
+    if (
+      !id ||
+      owner.value !== id ||
+      result.accountId !== id ||
+      current !== generation
+    )
       throw new Error("Account changed.");
+    if (result.securityCode) securityCode.value = result.securityCode;
     return result.data;
   }
   async function refresh(older = false) {
@@ -114,6 +127,8 @@ export const useMessages = defineStore("messages", () => {
   function select(row: Relationship | null) {
     generation++;
     peer.value = row;
+    securityCode.value = "";
+    notice.value = "";
     rows.value = [];
     draft.value = "";
     error.value = "";
@@ -158,7 +173,33 @@ export const useMessages = defineStore("messages", () => {
       if (token === generation) busy.value = false;
     }
   }
+  async function recovery(action: "backup" | "restore", passphrase: string) {
+    if (busy.value || friends.busy || !owner.value) return;
+    const current = generation;
+    busy.value = true;
+    error.value = "";
+    notice.value = "";
+    try {
+      await call(action, { body: passphrase });
+      if (current !== generation) return;
+      notice.value =
+        action === "backup"
+          ? "Encrypted recovery file saved. Keep it and your passphrase safe."
+          : "Messaging key restored.";
+    } catch (cause) {
+      if (current === generation)
+        error.value =
+          typeof cause === "string"
+            ? cause
+            : "Could not complete messaging recovery.";
+    } finally {
+      if (current === generation) busy.value = false;
+    }
+  }
   return {
+    recovery,
+    securityCode,
+    notice,
     owner,
     peer,
     rows,

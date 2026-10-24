@@ -15,6 +15,7 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
         sender_id: "bob",
         recipient_id: "alice",
         body: "<b>Hello</b>",
+        encryption: "legacy",
         created_at: "2026-10-24T12:00:00Z",
       },
     ];
@@ -28,10 +29,13 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
               sender_id: "alice",
               recipient_id: "bob",
               body: args.body,
+              encryption: "encrypted",
               created_at: "2026-10-24T12:01:00Z",
             });
           return {
             accountId: "alice",
+            securityCode:
+              "01234567 89ABCDEF 01234567 89ABCDEF 01234567 89ABCDEF 01234567 89ABCDEF",
             data:
               args.action === "history"
                 ? [...rows].reverse()
@@ -76,6 +80,28 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
     "<b>Hello</b>",
   );
   await expect(dialog.locator(".message-bubble b")).toHaveCount(0);
+  await expect(
+    dialog.getByText("Older message · Not end-to-end encrypted", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await dialog.locator(".conversation-security summary").click();
+  await expect(dialog.locator(".conversation-security code")).toContainText(
+    "01234567",
+  );
+  await dialog.locator(".message-security summary").click();
+  await dialog
+    .getByLabel("Recovery passphrase", { exact: true })
+    .fill("my recovery passphrase");
+  await dialog
+    .getByRole("button", { name: "Save recovery file", exact: true })
+    .click();
+  await expect(dialog.getByRole("status")).toContainText(
+    "Encrypted recovery file saved",
+  );
+  await expect(
+    dialog.getByLabel("Recovery passphrase", { exact: true }),
+  ).toHaveValue("");
   await dialog.getByLabel("Message", { exact: true }).fill("Hi Bob");
   await dialog.getByLabel("Message", { exact: true }).press("Enter");
   await expect(dialog.locator(".message-bubble.mine")).toContainText("Hi Bob");

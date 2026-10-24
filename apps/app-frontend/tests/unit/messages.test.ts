@@ -111,3 +111,20 @@ it("waits for a friends refresh before making a messaging request", async () => 
   await flush();
   expect(store.rows).toEqual([row]);
 });
+
+it("keeps the security code scoped to the current account and conversation", async () => {
+  const store = useMessages();
+  api.invoke.mockImplementation(async (_cmd, args) => ({
+    accountId: "alice",
+    securityCode: args.action === "history" ? "trusted-code" : undefined,
+    data:
+      args.action === "history" ? [row] : args.action === "unread" ? [] : null,
+  }));
+  store.select(friend);
+  await flush();
+  expect(store.securityCode).toBe("trusted-code");
+  store.select(null);
+  expect(store.securityCode).toBe("");
+  useAzuriaAccount().view.account = null;
+  expect(store.notice).toBe("");
+});

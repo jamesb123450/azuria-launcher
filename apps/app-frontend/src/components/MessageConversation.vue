@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
-import { ArrowLeft, Send, RefreshCw, MessageCircle } from "@lucide/vue";
+import {
+  ArrowLeft,
+  Send,
+  RefreshCw,
+  MessageCircle,
+  LockKeyhole,
+} from "@lucide/vue";
 import { useMessages } from "../stores/messages";
 const messages = useMessages();
 const feed = ref<HTMLElement>();
@@ -41,6 +47,16 @@ function time(value: string) {
         <RefreshCw :size="16" />
       </button>
     </header>
+    <details v-if="messages.securityCode" class="conversation-security">
+      <summary>
+        <LockKeyhole :size="13" />End-to-end encrypted · Security code
+      </summary>
+      <p>
+        Compare this code with your friend using another trusted app or in
+        person. Matching codes confirm that you have the same encryption keys.
+      </p>
+      <code>{{ messages.securityCode }}</code>
+    </details>
     <p v-if="messages.error" class="inline-error" role="alert">
       {{ messages.error }}
     </p>
@@ -76,6 +92,14 @@ function time(value: string) {
         class="message-bubble"
         :class="{ mine: row.sender_id === messages.owner }"
       >
+        <small v-if="row.encryption === 'legacy'" class="encryption-label"
+          >Older message · Not end-to-end encrypted</small
+        >
+        <small
+          v-else-if="row.encryption === 'unverified'"
+          class="encryption-label"
+          >Verification failed</small
+        >
         <p>{{ row.body }}</p>
         <time :datetime="row.created_at">{{ time(row.created_at) }}</time>
       </article>
@@ -103,6 +127,28 @@ function time(value: string) {
   </section>
 </template>
 <style scoped>
+.conversation-security {
+  font-size: 11px;
+  color: var(--muted);
+}
+.conversation-security summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.conversation-security code {
+  display: block;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  color: var(--text);
+}
+.encryption-label {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 8px;
+}
 .conversation {
   display: flex;
   flex-direction: column;
