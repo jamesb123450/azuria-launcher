@@ -1,0 +1,286 @@
+.content-install-dialog {
+  width: min(540px, calc(100vw - 48px));
+  max-height: calc(100dvh - 64px);
+  overflow-y: auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+.install-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.install-heading :deep(.content-icon) {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 7px;
+}
+.install-heading h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.install-heading .icon-button {
+  flex-shrink: 0;
+}
+.install-trust {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #e8b94b 12%, var(--panel));
+  color: var(--text);
+  margin-bottom: 20px;
+}
+.install-trust svg {
+  flex-shrink: 0;
+  color: #b58a2a;
+}
+.install-trust p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.install-pack-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.install-pack-filters .instance-field {
+  margin: 0;
+  min-width: 0;
+}
+.install-pack-filters select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--panel-soft);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+}
+.install-list-heading,
+.install-profile-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.install-list-heading h3,
+.install-profile-list h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.install-show {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.install-show input,
+.install-release input {
+  accent-color: var(--pink);
+}
+.install-versions {
+  max-height: min(310px, 40dvh);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 2px 6px 2px 0;
+}
+.install-release {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 17px 12px;
+  margin-bottom: 5px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.install-release:hover,
+.install-profile:hover {
+  background: var(--hover);
+}
+.install-release.chosen {
+  background: var(--panel-soft);
+  border-color: var(--border-strong);
+}
+.install-release:focus-within,
+.install-profile:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: -2px;
+}
+.install-release > span {
+  min-width: 0;
+}
+.install-release strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.install-release small {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.install-release input {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+}
+.install-target {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  font-size: 12px;
+}
+.install-target .text-link {
+  margin-right: 8px;
+}
+.install-target :deep(.instance-symbol),
+.install-profile :deep(.instance-symbol) {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 7px;
+}
+.install-target > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.install-target small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+.install-pack-name {
+  margin: 20px 0 12px;
+}
+.install-isolated {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.install-isolated svg {
+  flex-shrink: 0;
+}
+.install-profile-tools .search-box {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.install-profile-tools input {
+  min-width: 0;
+  width: 100%;
+}
+.install-profile-tools .button,
+.install-footer .button {
+  flex-shrink: 0;
+  padding: 10px 15px;
+  gap: 7px;
+}
+.install-profile-list {
+  margin-top: 24px;
+  max-height: min(440px, 58dvh);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.install-profile-list h3 {
+  margin-bottom: 12px;
+}
+.install-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 15px 10px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  color: var(--text);
+}
+.install-profile strong {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.install-profile > span:not(.instance-symbol) {
+  font-size: 10px;
+  color: var(--muted);
+}
+.install-profile > svg {
+  flex-shrink: 0;
+}
+.install-incompatible {
+  margin-top: 24px;
+}
+.install-incompatible summary {
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 8px 0;
+}
+.unavailable {
+  opacity: 0.6;
+  cursor: default;
+}
+.install-footer {
+  margin-top: 24px;
+  padding-top: 0;
+}
+.content-plan {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.content-plan ul {
+  max-height: 140px;
+  overflow: auto;
+  padding-left: 20px;
+}
+.content-plan p,
+.content-plan ul {
+  font-size: 12px;
+  line-height: 1.65;
+}
+@media (max-width: 520px) {
+  .content-install-dialog {
+    padding: 18px;
+  }
+  .install-heading h2 {
+    font-size: 18px;
+  }
+  .install-list-heading {
+    flex-wrap: wrap;
+  }
+  .install-profile {
+    flex-wrap: wrap;
+  }
+}
