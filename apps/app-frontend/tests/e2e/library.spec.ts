@@ -102,9 +102,7 @@ test("persistent library lifecycle and honest launch state", async ({
       exact: true,
     })
     .click();
-  await page
-    .getByRole("button", { name: "Copy settings for Aurora edited" })
-    .click();
+  await page.getByRole("menuitem", { name: "Duplicate", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
@@ -120,7 +118,7 @@ test("persistent library lifecycle and honest launch state", async ({
     })
     .click();
   await page
-    .getByRole("button", { name: "Delete Aurora edited", exact: true })
+    .getByRole("menuitem", { name: "Delete profile…", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Remove instance", exact: true })

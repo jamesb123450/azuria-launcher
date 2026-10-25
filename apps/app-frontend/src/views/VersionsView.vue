@@ -216,7 +216,7 @@ function tab(value: string) {
 </script>
 <template>
   <div :class="['versions-page', { 'has-version-context': !saved }]">
-    <div class="versions-browser-toolbar">
+    <div v-if="!saved" class="versions-browser-toolbar">
       <div class="catalogue-searchbar">
         <label class="catalogue-mode"
           ><select

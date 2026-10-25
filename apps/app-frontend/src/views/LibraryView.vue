@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import {
   Plus,
   Search,
@@ -16,29 +23,37 @@ import {
   ChevronDown,
   X,
   Folder,
+  Settings,
+  Download,
+  FolderOpen,
+  Share2,
+  Files,
 } from "@lucide/vue";
 import LaunchControl from "../components/LaunchControl.vue";
+import ContentIcon from "../components/ContentIcon.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import VersionPicker from "../components/VersionPicker.vue";
 import CommunitySidebar from "../components/CommunitySidebar.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
+import { desktop } from "../api";
+import { instanceApi } from "../instance-api";
+import { contentApi } from "../content-api";
+import { useRecentPlay } from "../stores/recent-play";
 import { versionArt } from "../lib/version-art";
 import { useBehaviour } from "../stores/behaviour";
 import { useLauncher } from "../stores/launcher";
-import { useUpdates } from "../stores/updates";
 import type { Instance } from "../types";
 import { LOADERS, loaderName } from "../types";
 import { useRouter } from "vue-router";
 const router = useRouter();
 const store = useLauncher();
 const behaviour = useBehaviour();
-const updates = useUpdates();
 const search = ref("");
 const filter = ref("all");
 const sort = ref("newest");
 const grouping = ref("none");
 const collapsed = ref(new Set<string>());
-const jumpOpen = ref(true);
+const history = useRecentPlay();
 const showDialog = ref(false);
 const editing = ref<Instance>();
 const duplicate = ref(false);
@@ -55,7 +70,6 @@ watch(
   () => behaviour.options.hideRightSidebar,
   () => (contextOverride.value = undefined),
 );
-const actionMenu = ref<string>();
 const layoutOverride = ref<"grid" | "list">();
 const layout = computed({
   get: () =>
@@ -67,10 +81,197 @@ watch(
   () => behaviour.options.compactLibrary,
   () => (layoutOverride.value = undefined),
 );
-const recent = computed(() => {
-  const newest = [...store.instances].sort((a, b) => b.createdAt - a.createdAt);
-  return newest.filter((i) => i.id !== store.selected?.id).slice(0, 3);
+const packIds = ref(new Set<string>());
+const packIcons = ref<Record<string, string | null>>({});
+const packError = ref("");
+let disposed = false;
+async function loadPacks() {
+  packError.value = "";
+  try {
+    const result = await contentApi.installedPacks();
+    if (disposed) return;
+    packIds.value = new Set((result?.packs ?? []).map((p) => p.instanceId));
+    await Promise.allSettled(
+      (result?.packs ?? []).slice(0, 24).map(async (p) => {
+        const details = await contentApi.project(
+          p.pack.provider,
+          p.pack.projectId,
+        );
+        if (!disposed)
+          packIcons.value[p.instanceId] = details.project.iconUrl ?? null;
+      }),
+    );
+  } catch {
+    if (!disposed)
+      packError.value =
+        "Installed modpacks could not be identified. Try again.";
+  }
+}
+const categories = computed(() => [
+  { id: "all", label: "Java", count: store.instances.length },
+  { id: "bedrock", label: "Bedrock", count: 0, soon: true },
+  {
+    id: "favorites",
+    label: "Pinned",
+    count: store.instances.filter((i) => i.favorite).length,
+  },
+  {
+    id: "custom",
+    label: "Custom",
+    count: store.instances.filter((i) => i.loader !== "vanilla").length,
+  },
+  {
+    id: "modpacks",
+    label: "Modpacks",
+    count: store.instances.filter((i) => packIds.value.has(i.id)).length,
+  },
+]);
+const contextItem = ref<Instance>();
+const contextMenu = ref<HTMLDivElement>();
+const contextPosition = ref({ left: "0px", top: "0px" });
+let contextTrigger: HTMLElement | null = null;
+const copyTarget = ref<Instance>();
+const copySource = ref("");
+const copyDialog = ref<HTMLDialogElement>();
+const actionError = ref("");
+function closeContext(restore = false) {
+  contextMenu.value?.hidePopover();
+  contextItem.value = undefined;
+  if (restore) contextTrigger?.focus();
+}
+async function showContext(event: MouseEvent | KeyboardEvent, item: Instance) {
+  if (store.busy || store.loading || !store.libraryReady) return;
+  closeContext();
+  contextItem.value = item;
+  contextTrigger = event.currentTarget as HTMLElement;
+  const box = contextTrigger.getBoundingClientRect();
+  const pointer =
+    event instanceof MouseEvent && (event.clientX !== 0 || event.clientY !== 0);
+  const x = pointer ? event.clientX : box.left + 24,
+    y = pointer ? event.clientY : box.top + 24;
+  await nextTick();
+  const menu = contextMenu.value;
+  if (!menu) return;
+  menu.showPopover();
+  contextPosition.value = {
+    left: `${Math.max(10, Math.min(x, innerWidth - menu.offsetWidth - 10))}px`,
+    top: `${Math.max(10, Math.min(y, innerHeight - menu.offsetHeight - 10))}px`,
+  };
+  await nextTick();
+  menu
+    .querySelector<HTMLButtonElement>("button:not(:disabled)")
+    ?.focus({ preventScroll: true });
+}
+function contextKeys(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeContext(true);
+    return;
+  }
+  if (event.key === "Tab") {
+    closeContext();
+    return;
+  }
+  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const buttons = [
+    ...(contextMenu.value?.querySelectorAll<HTMLButtonElement>(
+      "button:not(:disabled)",
+    ) ?? []),
+  ];
+  const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  buttons[
+    event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? buttons.length - 1
+        : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) %
+          buttons.length
+  ]?.focus();
+}
+function outsideContext(event: PointerEvent) {
+  if (!(
+    event.target instanceof Node && contextMenu.value?.contains(event.target)
+  ))
+    closeContext();
+}
+function viewportChanged(event: Event) {
+  if (!(
+    event.target instanceof Node && contextMenu.value?.contains(event.target)
+  ))
+    closeContext();
+}
+async function runContext(action: string) {
+  const item = contextItem.value;
+  if (!item || store.busy) return;
+  closeContext(true);
+  actionError.value = "";
+  if (!store.instances.some((i) => i.id === item.id)) return;
+  if (action === "edit") open(item);
+  else if (action === "settings" || action === "export")
+    await router.push(
+      `/instances/${item.id}?settings=${action === "export" ? "export" : "general"}`,
+    );
+  else if (action === "duplicate") open(item, true);
+  else if (action === "pin") await store.favorite(item.id);
+  else if (action === "delete") await confirmDelete(item);
+  else if (action === "copy") {
+    copyTarget.value = item;
+    copySource.value = store.instances.find((i) => i.id !== item.id)?.id ?? "";
+    copyDialog.value?.showModal();
+    await nextTick();
+    copyDialog.value?.querySelector("select")?.focus();
+  } else if (action === "folder") {
+    try {
+      await instanceApi.open(item.id, "root");
+    } catch {
+      actionError.value = "The profile folder could not be opened. Try again.";
+    }
+  }
+}
+function closeCopy() {
+  copyDialog.value?.close();
+  copyTarget.value = undefined;
+  contextTrigger?.focus();
+}
+function reviewCopy() {
+  const source = store.instances.find((i) => i.id === copySource.value),
+    target = copyTarget.value;
+  if (!source || !target || !store.instances.some((i) => i.id === target.id))
+    return;
+  closeCopy();
+  open({
+    ...source,
+    id: target.id,
+    name: target.name,
+    favorite: target.favorite,
+    createdAt: target.createdAt,
+  });
+}
+function lastPlayed(item: Instance) {
+  const time = history.played[item.id];
+  return time
+    ? `Played ${new Date(time).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+    : "Never played";
+}
+onMounted(() => {
+  void loadPacks();
+  window.addEventListener("pointerdown", outsideContext);
+  window.addEventListener("wheel", viewportChanged, { passive: true });
+  window.addEventListener("resize", viewportChanged);
 });
+onBeforeUnmount(() => {
+  disposed = true;
+  closeContext();
+  closeCopy();
+  window.removeEventListener("pointerdown", outsideContext);
+  window.removeEventListener("wheel", viewportChanged);
+  window.removeEventListener("resize", viewportChanged);
+});
+watch(
+  () => store.instances.map((i) => i.id).join(","),
+  () => closeContext(),
+);
 const items = computed(() =>
   [...store.instances]
     .filter(
@@ -79,17 +280,23 @@ const items = computed(() =>
         (filter.value === "all" ||
           (filter.value === "favorites"
             ? i.favorite
-            : i.loader === filter.value)),
+            : filter.value === "custom"
+              ? i.loader !== "vanilla"
+              : filter.value === "modpacks"
+                ? packIds.value.has(i.id)
+                : i.loader === filter.value)),
     )
-    .sort((a, b) =>
-      sort.value === "name"
-        ? a.name.localeCompare(b.name)
-        : b.createdAt - a.createdAt,
+    .sort(
+      (a, b) =>
+        Number(b.favorite) - Number(a.favorite) ||
+        (sort.value === "name"
+          ? a.name.localeCompare(b.name)
+          : b.createdAt - a.createdAt),
     ),
 );
 const groups = computed(() => {
   if (grouping.value === "none")
-    return [{ key: "all", title: "All instances", items: items.value }];
+    return [{ key: "all", title: "Ungrouped", items: items.value }];
   const buckets =
     grouping.value === "favorites"
       ? [
@@ -123,22 +330,11 @@ function toggleGroup(key: string) {
   else next.add(key);
   collapsed.value = next;
 }
-function closeActions() {
-  const trigger = document.getElementById("more-" + actionMenu.value);
-  actionMenu.value = undefined;
-  trigger?.focus();
-}
 function open(instance?: Instance, copy = false) {
   store.saveError = "";
   editing.value = instance;
   duplicate.value = copy;
   showDialog.value = true;
-}
-function created(item: Instance) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(item.createdAt));
 }
 let deletionFocus: HTMLElement | null = null;
 async function confirmDelete(item: Instance) {
@@ -152,7 +348,13 @@ async function confirmDelete(item: Instance) {
 function closeDelete() {
   deleteDialog.value?.close();
   deleting.value = undefined;
-  deletionFocus?.focus();
+  if (deletionFocus?.isConnected) deletionFocus.focus();
+  else
+    document
+      .querySelector<HTMLButtonElement>(
+        ".profile-header-actions .button.primary",
+      )
+      ?.focus();
 }
 async function remove() {
   if (deleting.value && (await store.remove(deleting.value.id))) closeDelete();
@@ -163,7 +365,23 @@ onBeforeUnmount(closeDelete);
   <div :class="['play-page', { 'context-collapsed': !contextOpen }]">
     <div class="play-main" :aria-busy="store.loading || store.busy">
       <div class="library-page-heading">
-        <h2>Profiles</h2>
+        <div>
+          <span class="profiles-eyebrow">YOUR COLLECTION</span>
+          <h2>Profiles</h2>
+        </div>
+        <div class="profile-header-actions">
+          <button class="button secondary" disabled title="Coming soon">
+            <Folder :size="16" />New folder <small>Coming soon</small></button
+          ><button class="button secondary" disabled title="Coming soon">
+            <Download :size="16" />Import <small>Coming soon</small></button
+          ><button
+            class="button primary"
+            :disabled="store.loading || store.busy || !store.libraryReady"
+            @click="open()"
+          >
+            <Plus :size="17" />New profile
+          </button>
+        </div>
         <button
           class="button secondary context-toggle"
           :aria-expanded="contextOpen"
@@ -174,11 +392,35 @@ onBeforeUnmount(closeDelete);
             v-else
             :size="16"
           />
-          Friends &amp; ads
+          Advertisements
         </button>
       </div>
+      <div
+        class="profile-categories"
+        role="group"
+        aria-label="Profile categories"
+      >
+        <button
+          v-for="category in categories"
+          :key="category.id"
+          :disabled="category.soon"
+          :aria-pressed="filter === category.id"
+          @click="filter = category.id"
+        >
+          <strong>{{ category.label }}</strong
+          ><span v-if="!category.soon">{{ category.count }}</span
+          ><small v-else>Coming soon</small>
+        </button>
+      </div>
+      <p v-if="actionError" class="inline-error" role="alert">
+        {{ actionError }}
+      </p>
+      <p v-if="packError && filter === 'modpacks'" role="alert">
+        {{ packError }}
+        <button class="text-link" @click="loadPacks">Try again</button>
+      </p>
       <section class="library-section" aria-labelledby="instances-heading">
-        <h2 id="instances-heading">
+        <h2 id="instances-heading" class="visually-hidden">
           Your instances <span class="count">{{ store.instances.length }}</span>
         </h2>
         <div class="library-action-row">
@@ -194,13 +436,6 @@ onBeforeUnmount(closeDelete);
             >
               <X :size="14" /></button
           ></label>
-          <button
-            class="button primary"
-            :disabled="store.loading || store.busy || !store.libraryReady"
-            @click="open()"
-          >
-            <Plus :size="17" /> New profile
-          </button>
         </div>
         <div class="library-toolbar">
           <button
@@ -219,7 +454,11 @@ onBeforeUnmount(closeDelete);
             {{
               filter === "favorites"
                 ? "Favourites"
-                : loaderName(filter as Instance["loader"])
+                : filter === "custom"
+                  ? "Custom"
+                  : filter === "modpacks"
+                    ? "Modpacks"
+                    : loaderName(filter as Instance["loader"])
             }}
             <X :size="14" /><span>Clear filter</span>
           </button>
@@ -352,6 +591,10 @@ onBeforeUnmount(closeDelete);
             <article
               v-for="item in group.items"
               :key="item.id"
+              tabindex="0"
+              :aria-label="`Profile ${item.name}`"
+              @contextmenu.prevent.stop="showContext($event, item)"
+              @keydown.shift.f10.prevent.stop="showContext($event, item)"
               :class="[
                 'instance-card',
                 { selected: store.selected?.id === item.id },
@@ -371,7 +614,7 @@ onBeforeUnmount(closeDelete);
                     backgroundImage: `url(${versionArt[item.minecraftVersion.split('.').slice(0, 2).join('.')]?.image || '/scenery/home-panorama.webp'})`,
                   }"
                 ></span
-                ><span class="tile-art"
+                ><span v-if="layout === 'list'" class="tile-art"
                   ><InstanceIcon
                     :loader="item.loader"
                     :seed="item.id"
@@ -384,6 +627,16 @@ onBeforeUnmount(closeDelete);
                   ></span
                 >
               </button>
+              <span class="profile-icon-badge"
+                ><ContentIcon
+                  v-if="packIds.has(item.id)"
+                  :url="packIcons[item.id] ?? null"
+                  :name="item.name" /><InstanceIcon
+                  v-else
+                  :loader="item.loader"
+                  :icon="item.icon"
+                  :seed="item.id"
+              /></span>
               <button
                 class="favorite-button icon-button"
                 :aria-label="
@@ -399,6 +652,12 @@ onBeforeUnmount(closeDelete);
                 />
               </button>
               <div class="card-bottom">
+                <RouterLink
+                  class="profile-settings-button icon-button"
+                  :to="`/instances/${item.id}?settings=general`"
+                  :aria-label="`Settings for ${item.name}`"
+                  ><Settings :size="18"
+                /></RouterLink>
                 <LaunchControl
                   :instance="item"
                   monitor
@@ -416,67 +675,26 @@ onBeforeUnmount(closeDelete);
                   >
                     <SlidersHorizontal :size="14" /> Edit
                   </button>
-                  <div
-                    class="instance-more"
-                    @keydown.esc.stop="closeActions"
-                    @focusout="
-                      (event) => {
-                        if (
-                          !(event.currentTarget as HTMLElement).contains(
-                            event.relatedTarget as Node,
-                          )
-                        )
-                          actionMenu = undefined;
-                      }
-                    "
-                  >
+                  <div class="instance-more">
                     <button
                       class="icon-button"
                       :id="'more-' + item.id"
                       :aria-label="'More actions for ' + item.name"
-                      :aria-expanded="actionMenu === item.id"
-                      :aria-controls="'actions-' + item.id"
-                      @click="
-                        actionMenu =
-                          actionMenu === item.id ? undefined : item.id
+                      :aria-expanded="contextItem?.id === item.id"
+                      aria-haspopup="menu"
+                      aria-controls="profile-context-menu"
+                      @click.stop="
+                        contextItem?.id === item.id
+                          ? closeContext(true)
+                          : showContext($event, item)
                       "
                     >
                       <MoreHorizontal :size="18" />
                     </button>
-                    <div
-                      v-if="actionMenu === item.id"
-                      :id="'actions-' + item.id"
-                      class="instance-action-menu"
-                    >
-                      <button
-                        class="button secondary"
-                        :aria-label="'Copy settings for ' + item.name"
-                        :disabled="
-                          store.busy || store.loading || !store.libraryReady
-                        "
-                        @click="
-                          closeActions();
-                          open(item, true);
-                        "
-                      >
-                        <Copy :size="14" /> Copy settings</button
-                      ><button
-                        class="icon-button danger"
-                        :aria-label="'Delete ' + item.name"
-                        :disabled="
-                          store.busy || store.loading || !store.libraryReady
-                        "
-                        @click="
-                          closeActions();
-                          confirmDelete(item);
-                        "
-                      >
-                        <Trash2 :size="14" /> Remove instance
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
+              <p class="profile-last-played">{{ lastPlayed(item) }}</p>
             </article>
           </div>
         </section>
@@ -484,6 +702,98 @@ onBeforeUnmount(closeDelete);
     </div>
     <CommunitySidebar v-if="contextOpen" id="launcher-context" ads-only />
   </div>
+  <Teleport to="body"
+    ><div
+      id="profile-context-menu"
+      ref="contextMenu"
+      popover="manual"
+      class="profile-context-menu"
+      role="menu"
+      :aria-label="
+        contextItem ? `Actions for ${contextItem.name}` : 'Profile actions'
+      "
+      :style="contextPosition"
+      @keydown="contextKeys"
+    >
+      <template v-if="contextItem">
+        <header>{{ contextItem.name }}</header>
+        <button role="menuitem" @click="runContext('edit')">
+          <SlidersHorizontal :size="15" />Edit
+        </button>
+        <button role="menuitem" @click="runContext('settings')">
+          <Settings :size="15" />Settings
+        </button>
+        <hr />
+        <button role="menuitem" @click="runContext('duplicate')">
+          <Copy :size="15" />Duplicate
+        </button>
+        <button
+          role="menuitem"
+          :disabled="store.instances.length < 2"
+          @click="runContext('copy')"
+        >
+          <Files :size="15" />Copy from profile…
+        </button>
+        <button role="menuitem" @click="runContext('export')">
+          <Download :size="15" />Export…
+        </button>
+        <button role="menuitem" disabled>
+          <Share2 :size="15" />Profile sharing <small>Coming soon</small>
+        </button>
+        <button
+          role="menuitem"
+          :disabled="!desktop"
+          @click="runContext('folder')"
+        >
+          <FolderOpen :size="15" />Show in folder
+          <small v-if="!desktop">Desktop only</small>
+        </button>
+        <button role="menuitem" @click="runContext('pin')">
+          <Star :size="15" />{{
+            contextItem.favorite ? "Unpin from top" : "Pin to top"
+          }}
+        </button>
+        <hr />
+        <button role="menuitem" class="danger" @click="runContext('delete')">
+          <Trash2 :size="15" />Delete profile…
+        </button>
+      </template>
+    </div></Teleport
+  >
+  <dialog
+    ref="copyDialog"
+    class="instance-dialog small-dialog"
+    aria-labelledby="copy-title"
+    @cancel.prevent="closeCopy"
+  >
+    <h2 id="copy-title">Copy settings to {{ copyTarget?.name }}</h2>
+    <p class="muted">
+      Choose a source profile. You can review the copied name, loader, version,
+      memory and icon before saving. Worlds, files and launch overrides are not
+      copied.
+    </p>
+    <label
+      >Source profile<select v-model="copySource" aria-label="Source profile">
+        <option
+          v-for="item in store.instances.filter((i) => i.id !== copyTarget?.id)"
+          :key="item.id"
+          :value="item.id"
+        >
+          {{ item.name }}
+        </option>
+      </select></label
+    >
+    <div class="dialog-actions">
+      <button class="button secondary" @click="closeCopy">Cancel</button
+      ><button
+        class="button primary"
+        :disabled="!copySource || store.busy"
+        @click="reviewCopy"
+      >
+        Review settings
+      </button>
+    </div>
+  </dialog>
   <InstanceDialog
     v-if="showDialog"
     :instance="editing"
@@ -523,67 +833,4 @@ onBeforeUnmount(closeDelete);
   </dialog>
 </template>
 
-<style scoped>
-.play-page .instance-grid:not(.list-layout) {
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-.play-page .instance-grid:not(.list-layout) .instance-card {
-  overflow: hidden;
-  border-radius: 16px;
-  position: relative;
-  background: var(--panel-soft);
-}
-.profile-cover {
-  display: block;
-  height: 145px;
-  width: 100%;
-  background-size: cover;
-  background-position: center;
-  border-bottom: 1px solid var(--border);
-}
-.instance-grid:not(.list-layout) .instance-select {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  text-align: left;
-}
-.instance-grid:not(.list-layout) .tile-art {
-  display: none;
-}
-.instance-grid:not(.list-layout) .instance-title {
-  padding: 20px 20px 12px;
-}
-.instance-grid:not(.list-layout) .instance-title h3 {
-  font-size: 19px;
-}
-.instance-grid:not(.list-layout) .card-bottom {
-  padding: 8px 20px 18px;
-}
-.list-layout .profile-cover {
-  display: none;
-}
-</style>
-
-<style scoped>
-.play-page :deep(.community-ads) {
-  margin: auto 0;
-  align-content: center;
-}
-.instance-grid:not(.list-layout) .card-bottom {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.card-bottom :deep(.launch-control) {
-  flex: 1;
-}
-.card-bottom :deep(.launch-control > .button) {
-  width: 100%;
-  justify-content: center;
-}
-.card-bottom :deep(.launch-hint) {
-  display: none;
-}
-</style>
+<style scoped src="./profiles.css"></style>

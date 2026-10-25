@@ -70,7 +70,7 @@ test("Behaviour stages edits, resets, persists and applies library defaults", as
     page.getByRole("button", { name: "List view", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page
-    .getByRole("button", { name: "Friends & ads", exact: true })
+    .getByRole("button", { name: "Advertisements", exact: true })
     .click();
   await expect(
     page.getByRole("complementary", { name: "Advertisements" }),

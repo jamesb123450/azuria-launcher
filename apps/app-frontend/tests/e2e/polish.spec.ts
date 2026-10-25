@@ -101,11 +101,11 @@ test("populated library remains readable at desktop size", async ({ page }) => {
   await expect(page.locator(".instance-card")).toHaveCount(4);
   await expect(page.locator(".community-sidebar")).toBeVisible();
   await page
-    .getByRole("button", { name: "Friends & ads", exact: true })
+    .getByRole("button", { name: "Advertisements", exact: true })
     .click();
   await expect(page.locator(".community-sidebar")).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Friends & ads", exact: true })
+    .getByRole("button", { name: "Advertisements", exact: true })
     .click();
   await expect(page.locator(".community-sidebar")).toBeVisible();
   await page
@@ -128,8 +128,8 @@ test("populated library remains readable at desktop size", async ({ page }) => {
   });
   await more.click();
   await page
-    .getByRole("button", {
-      name: "Copy settings for Vanilla Survival",
+    .getByRole("menuitem", {
+      name: "Duplicate",
       exact: true,
     })
     .focus();
@@ -176,6 +176,9 @@ test("library states fit both themes at minimum and wide desktop sizes", async (
           width,
           height: width === 900 ? 650 : 1080,
         });
+        await page
+          .locator("#main-content")
+          .evaluate((el) => (el.scrollTop = 0));
         await expect(page.locator(".instance-card")).toHaveCount(count);
         await expect(page.locator(".instance-card.selected")).toHaveCount(
           count ? 1 : 0,
