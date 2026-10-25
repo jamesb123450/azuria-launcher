@@ -72,7 +72,7 @@ test("sponsors appear only in assigned slots and clicks open the default browser
     0,
   );
 });
-test("admin placement previews save the exact selected slots and UTC schedule", async ({
+test("admin previews save placements and confirm deletion of expired campaigns", async ({
   page,
 }) => {
   await page.goto("/#/");
@@ -97,13 +97,22 @@ test("admin placement previews save the exact selected slots and UTC schedule", 
         slots: ["home.top"],
         revision: 1,
       };
+      let deleted = false;
+      (window as any).expireSponsor = () => {
+        sample.ends_at = "2020-01-01T00:00:00Z" as any;
+      };
       const client = {
         rpc: async (name: string, args: any) => {
+          if (name === "sponsor_ads_admin_delete") {
+            deleted = true;
+            (window as any).deletedSponsor = args;
+            return { data: null };
+          }
           if (name === "sponsor_ads_admin_save") {
             (window as any).savedSponsor = args;
             return { data: sample };
           }
-          return { data: [sample] };
+          return { data: deleted ? [] : [sample] };
         },
         storage: {
           from: () => ({
@@ -178,4 +187,39 @@ test("admin placement previews save the exact selected slots and UTC schedule", 
   const result = await page.evaluate(() => (window as any).savedSponsor);
   expect(result.p_revision).toBe(1);
   expect(result.p_ad.starts_at).toBe("2026-10-25T10:00:00.000Z");
+  await page.evaluate(() => (window as any).expireSponsor());
+  await page
+    .getByRole("button", { name: "Edit advertisement", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Back to advertisements", exact: true })
+    .click();
+  await expect(page.locator(".sponsor-status.expired")).toHaveText("Expired");
+  await expect(page.locator(".sponsor-status.expired")).toHaveCSS(
+    "color",
+    "rgb(255, 180, 188)",
+  );
+  await page.screenshot({
+    path: test.info().outputPath("expired-advertisement.png"),
+  });
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page
+    .getByRole("button", { name: "Delete advertisement", exact: true })
+    .click();
+  expect(
+    await page.evaluate(() => (window as any).deletedSponsor),
+  ).toBeUndefined();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: "Delete advertisement", exact: true })
+    .click();
+  await expect(
+    page.getByText("No advertisements yet. Create a draft to get started.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => (window as any).deletedSponsor)).toEqual({
+    p_id: "campaign",
+    p_revision: 1,
+  });
 });

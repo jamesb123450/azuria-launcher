@@ -41,8 +41,13 @@ export async function advertisementsWorkspace({ client, ui }) {
     }
     return data;
   }
+  let view = 0,
+    expiryTimer;
   async function listing() {
+    clearTimeout(expiryTimer);
+    const current = ++view;
     const ads = await rpc("sponsor_ads_admin_list");
+    if (current !== view) return;
     root.replaceChildren(
       heading("Advertisements"),
       paragraph(
@@ -58,25 +63,70 @@ export async function advertisementsWorkspace({ client, ui }) {
       const item = document.createElement("article");
       item.className = "admin-panel";
       const now = Date.now();
-      const state = !ad.enabled
-        ? "Paused / draft"
-        : Date.parse(ad.starts_at) > now
-          ? "Scheduled"
-          : ad.ends_at && Date.parse(ad.ends_at) <= now
-            ? "Ended"
+      const expired = Boolean(ad.ends_at && Date.parse(ad.ends_at) <= now);
+      const state = expired
+        ? "Expired"
+        : !ad.enabled
+          ? "Paused / draft"
+          : Date.parse(ad.starts_at) > now
+            ? "Scheduled"
             : "Active";
+      const badge = document.createElement("span");
+      badge.className = `sponsor-status${expired ? " expired" : ""}`;
+      badge.textContent = state;
       item.append(
         heading(ad.title),
+        badge,
         paragraph(
-          `${state} · ${ad.slots.map((s) => s.replace(".", " · ")).join(", ")}`,
+          ad.slots.map((s) => s.replace(".", " · ")).join(", "),
           "fine",
         ),
         button("Edit advertisement", () => editor(ad)),
       );
+      if (expired)
+        item.append(
+          button(
+            "Delete advertisement",
+            async () => {
+              if (
+                !confirm(
+                  `Delete “${ad.title}”? The expired campaign will be removed. Uploaded artwork and administrator history are retained.`,
+                )
+              )
+                return;
+              await rpc("sponsor_ads_admin_delete", {
+                p_id: ad.id,
+                p_revision: ad.revision,
+              });
+              message("Expired advertisement deleted.");
+              await listing();
+            },
+            "sponsor-delete",
+          ),
+        );
       root.append(item);
     }
+    const nextEnd = ads
+      .map((a) => Date.parse(a.ends_at))
+      .filter((time) => time > Date.now())
+      .sort((a, b) => a - b)[0];
+    if (nextEnd)
+      expiryTimer = setTimeout(
+        () => {
+          if (root.isConnected && current === view)
+            void listing().catch(() =>
+              message(
+                "Could not refresh advertisements. Reopen Advertisements to try again.",
+                true,
+              ),
+            );
+        },
+        Math.min(2147483647, Math.max(1, nextEnd - Date.now() + 50)),
+      );
   }
   function editor(saved) {
+    view++;
+    clearTimeout(expiryTimer);
     let imagePath = saved?.image_path || "",
       dirty = false;
     const form = document.createElement("form");

@@ -30,6 +30,7 @@ before(async () => {
     "202610200003_admin.sql",
     "202610210001_news.sql",
     "202610250001_advertisements.sql",
+    "202610250002_expired_advertisements.sql",
   ])
     await db.exec(
       await readFile(
@@ -205,5 +206,60 @@ test("multiple placements work, overlapping schedules fail, and stale edits cann
   assert.equal(
     (await db.query("select * from public.sponsor_ad_history")).rows.length,
     5,
+  );
+});
+
+test("expired campaigns can be deleted while retaining the administrator audit", async () => {
+  await upload();
+  const expired = await save(
+    ad({ ends_at: "2021-01-01T00:00:00Z", enabled: false }),
+  );
+  await rpc(admin, "sponsor_ads_admin_delete", [expired.id, expired.revision]);
+  assert.equal((await rpc(admin, "sponsor_ads_admin_list")).length, 0);
+  const audit = (
+    await db.query(
+      "select * from public.sponsor_ad_history where action='deleted'",
+    )
+  ).rows;
+  assert.equal(audit.length, 1);
+  assert.equal(audit[0].actor_id, admin);
+  assert.equal(audit[0].ad_id, expired.id);
+  assert.equal(
+    (await db.query("select * from storage.objects")).rows.length,
+    1,
+  );
+});
+test("deletion requires admin MFA, an expired end time and the current revision", async () => {
+  await upload();
+  const active = await save();
+  await assert.rejects(
+    rpc(normal, "sponsor_ads_admin_delete", [active.id, active.revision]),
+    /Admin access/,
+  );
+  await assert.rejects(
+    rpc(admin, "sponsor_ads_admin_delete", [active.id, active.revision], {
+      claims: { aal: "aal1" },
+    }),
+    /Admin access/,
+  );
+  await assert.rejects(
+    rpc(admin, "sponsor_ads_admin_delete", [active.id, active.revision]),
+    /Only expired/,
+  );
+  const expired = await save(
+    ad({ enabled: false, ends_at: "2021-01-01T00:00:00Z" }),
+  );
+  await assert.rejects(
+    rpc(admin, "sponsor_ads_admin_delete", [expired.id, 99]),
+    /changed/,
+  );
+  const renewed = await save(
+    ad({ enabled: false, ends_at: "2099-01-01T00:00:00Z" }),
+    expired.id,
+    expired.revision,
+  );
+  await assert.rejects(
+    rpc(admin, "sponsor_ads_admin_delete", [renewed.id, renewed.revision]),
+    /Only expired/,
   );
 });
