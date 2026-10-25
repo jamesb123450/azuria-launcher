@@ -927,3 +927,70 @@ test("game monitor separates live logs and screenshots with two ad slots", async
     "Live line",
   );
 });
+
+test("launching an installed modpack returns Home with the exact profile and its version", async ({
+  page,
+}) => {
+  await setup(page, false, "fabric");
+  await page.goto("/#/");
+  await page.evaluate(
+    async ({ id }) => {
+      const apiPath = "/src/content-api.ts",
+        storePath = "/src/stores/launcher.ts";
+      const { contentApi } = await import(apiPath);
+      const { useLauncher } = await import(storePath);
+      useLauncher().instances.find((i: any) => i.id === id).name =
+        "Forest adventure";
+      contentApi.installedPacks = async () => ({
+        packs: [
+          {
+            instanceId: id,
+            pack: { provider: "modrinth", projectId: "forest", version: "v1" },
+          },
+        ],
+        unreadable: [],
+      });
+      contentApi.project = async () => {
+        throw Error("offline");
+      };
+    },
+    { id },
+  );
+  await page.getByRole("link", { name: "Versions", exact: true }).click();
+  await page.getByLabel("Version library").selectOption("modpacks");
+  await expect(page.locator(".version-context h2")).toHaveText(
+    "Forest adventure",
+  );
+  await page.getByRole("button", { name: "Launch game", exact: true }).click();
+  await expect(page).toHaveURL(/#\/$/);
+  await expect(page.locator(".launch-main")).toContainText("Forest adventure");
+  await expect(page.locator(".launch-main")).toContainText("Minecraft 1.21.1");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as any).gameCalls.filter(
+            (c: string) => c === "launch_instance",
+          ).length,
+      ),
+    )
+    .toBe(1);
+  expect(
+    await page.evaluate(() =>
+      (window as any).gameCalls.includes("open_game_monitor"),
+    ),
+  ).toBe(true);
+  expect(
+    await page.evaluate(() =>
+      (window as any).gameCalls.includes("create_instance"),
+    ),
+  ).toBe(false);
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("azuria-quick-play-v1")!).profileId,
+    ),
+  ).toBe(id);
+  await page.screenshot({
+    path: test.info().outputPath("modpack-home-launch.png"),
+  });
+});

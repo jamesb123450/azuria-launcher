@@ -18,7 +18,11 @@ import { useUpdates } from "../stores/updates";
 import { desktop } from "../api";
 import { loaderName } from "../types";
 import { launchMonitored } from "../monitor";
-const props = defineProps<{ compact?: boolean; monitor?: boolean }>();
+const props = defineProps<{
+  compact?: boolean;
+  monitor?: boolean;
+  returnHome?: boolean;
+}>();
 const opening = ref(false);
 const quick = useQuickPlay(),
   game = useGame(),
@@ -99,6 +103,7 @@ async function launch() {
   try {
     opening.value = true;
     const item = await quick.ensureSetup();
+    if (props.returnHome) await router.push("/");
     if (props.monitor) await launchMonitored(item.id, router, game.launch);
     else await game.launch(item.id);
   } catch (cause) {
@@ -126,16 +131,27 @@ async function launch() {
             label
           }}</strong
         ><span
-          ><Layers :size="12" />{{
-            quick.version
-              ? `Minecraft ${quick.version}`
-              : quick.loading
-                ? "Loading versions…"
-                : "Choose a version"
-          }}<template v-if="quick.version">
-            · {{ loaderName(quick.loader) }}</template
-          ></span
-        ></button
+          class="launch-selection"
+          :title="
+            quick.profileSelected
+              ? `${quick.setup?.name} · Minecraft ${quick.version} · ${loaderName(quick.loader)}`
+              : undefined
+          "
+        >
+          <Layers :size="12" /><span
+            ><template v-if="quick.profileSelected"
+              >{{ quick.setup?.name }} · </template
+            >{{
+              quick.version
+                ? `Minecraft ${quick.version}`
+                : quick.loading
+                  ? "Loading versions…"
+                  : "Choose a version"
+            }}<template v-if="quick.version">
+              · {{ loaderName(quick.loader) }}</template
+            ></span
+          >
+        </span></button
       ><RouterLink
         v-if="!compact"
         class="launch-dropdown"
@@ -254,3 +270,19 @@ async function launch() {
     </dialog>
   </div>
 </template>
+
+<style scoped>
+.launch-selection {
+  max-width: 100%;
+  min-width: 0;
+}
+.launch-selection > svg {
+  flex-shrink: 0;
+}
+.launch-selection > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+</style>

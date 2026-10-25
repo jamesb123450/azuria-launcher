@@ -12,6 +12,7 @@ interface Saved {
   version: string;
   loader: QuickLoader;
   setups: Record<string, string>;
+  profileId?: string;
 }
 function read(): Saved {
   try {
@@ -22,6 +23,7 @@ function read(): Saved {
           ? data.version
           : "",
       loader: data.loader === "fabric" ? "fabric" : "vanilla",
+      profileId: typeof data.profileId === "string" ? data.profileId : "",
       setups: Object.fromEntries(
         Object.entries(data.setups ?? {}).filter(
           ([k, v]) =>
@@ -49,7 +51,7 @@ export const useQuickPlay = defineStore("quick-play", () => {
   const selectionKey = computed(() => `${loader.value}:${version.value}`);
   const setup = computed(() => {
     const item = launcher.instances.find(
-      (i) => i.id === saved.setups[selectionKey.value],
+      (i) => i.id === (saved.profileId || saved.setups[selectionKey.value]),
     );
     return item?.minecraftVersion === version.value &&
       item.loader === loader.value
@@ -79,6 +81,7 @@ export const useQuickPlay = defineStore("quick-play", () => {
       preparing.value
     )
       return;
+    saved.profileId = "";
     version.value = game;
     loader.value = modLoader;
     error.value = "";
@@ -91,7 +94,7 @@ export const useQuickPlay = defineStore("quick-play", () => {
       preparing.value
     )
       return;
-    saved.setups[`${item.loader}:${item.minecraftVersion}`] = item.id;
+    saved.profileId = item.id;
     version.value = item.minecraftVersion;
     loader.value = item.loader as QuickLoader;
     persist();
@@ -123,6 +126,10 @@ export const useQuickPlay = defineStore("quick-play", () => {
   async function ensureSetup(): Promise<Instance> {
     if (creation) return creation;
     if (setup.value) return setup.value;
+    if (saved.profileId)
+      throw new Error(
+        "Your selected profile changed or is no longer available. Choose a profile or Minecraft version again.",
+      );
     if (!launcher.libraryReady || launcher.loading || launcher.busy)
       throw new Error(
         "Your saved setups are not ready. Retry loading them before launching.",
@@ -175,6 +182,9 @@ export const useQuickPlay = defineStore("quick-play", () => {
     preparing,
     storageError,
     setup,
+    profileSelected: computed(() =>
+      Boolean(setup.value && saved.profileId === setup.value.id),
+    ),
     choose,
     load,
     ensureSetup,

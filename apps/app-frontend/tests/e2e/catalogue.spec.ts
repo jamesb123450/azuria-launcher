@@ -49,6 +49,22 @@ test("installed modpacks use portrait cards and update the sidebar without chang
     async ({ id }) => {
       const path = "/src/content-api.ts";
       const { contentApi } = await import(path);
+      contentApi.project = async () => ({
+        project: {
+          id: "pack1234",
+          name: "Forest adventure",
+          description: "A modpack",
+          author: "Pack author",
+          url: "https://modrinth.com/modpack/forest",
+          downloads: 100,
+          categories: [],
+          iconUrl: "https://cdn.modrinth.com/data/pack1234/icon.png",
+        },
+        body: "",
+        bodyHtml: false,
+        followers: 0,
+        gallery: [],
+      });
       contentApi.installedPacks = async () => ({
         packs: [
           {
@@ -65,6 +81,15 @@ test("installed modpacks use portrait cards and update the sidebar without chang
     },
     { id },
   );
+  await page.route("https://cdn.modrinth.com/**", (route) =>
+    route.fulfill({
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/5xkAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    }),
+  );
   await page.getByLabel("Version library").selectOption("modpacks");
   await expect(
     page.getByRole("heading", { name: "Installed modpacks" }),
@@ -76,6 +101,15 @@ test("installed modpacks use portrait cards and update the sidebar without chang
     "Forest adventure",
   );
   await expect(page.locator(".pack-loader")).toContainText("fabric");
+  await expect(
+    page.locator(".pack-poster-identity .content-icon img"),
+  ).toHaveAttribute("src", "https://cdn.modrinth.com/data/pack1234/icon.png");
+  await expect(
+    page.locator(".pack-context-art .content-icon img"),
+  ).toHaveAttribute("src", "https://cdn.modrinth.com/data/pack1234/icon.png");
+  await expect(
+    page.locator(".pack-poster-identity .instance-symbol"),
+  ).toHaveCount(0);
   await expect(page.locator(".modpack-grid .version-art")).toHaveCount(1);
   for (const width of [900, 1024, 1280, 1588]) {
     await page.setViewportSize({ width, height: 900 });
