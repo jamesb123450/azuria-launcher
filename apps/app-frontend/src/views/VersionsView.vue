@@ -17,7 +17,7 @@ import {
 import InstanceDialog from "../components/InstanceDialog.vue";
 import LibraryView from "./LibraryView.vue";
 import LaunchControl from "../components/LaunchControl.vue";
-import InstanceIcon from "../components/InstanceIcon.vue";
+import ContentIcon from "../components/ContentIcon.vue";
 import { useLauncher } from "../stores/launcher";
 import { contentApi, type InstalledPackEntry } from "../content-api";
 import QuickLaunch from "../components/QuickLaunch.vue";
@@ -59,6 +59,8 @@ const sort = ref("newest"),
   packs = ref<InstalledPackEntry[]>([]),
   packsLoading = ref(false),
   packsError = ref("");
+const packIcons = ref<Record<string, string | null>>({});
+const projectIcons = new Map<string, string | null>();
 let generation = 0;
 async function loadPacks() {
   if (!library.libraryReady || library.loading) return;
@@ -69,6 +71,35 @@ async function loadPacks() {
     const result = await contentApi.installedPacks();
     if (current !== generation) return;
     packs.value = result.packs;
+    packsLoading.value = false;
+    // Resolve provider artwork separately: an unavailable provider must not hide installed packs.
+    const projects = new Map(
+      result.packs.map((entry) => [
+        `${entry.pack.provider}:${entry.pack.projectId}`,
+        entry,
+      ]),
+    );
+    await Promise.allSettled(
+      [...projects].map(async ([key, entry]) => {
+        if (!projectIcons.has(key)) {
+          try {
+            const details = await contentApi.project(
+              entry.pack.provider,
+              entry.pack.projectId,
+            );
+            projectIcons.set(key, details.project.iconUrl ?? null);
+          } catch {
+            return;
+          }
+        }
+        if (current !== generation) return;
+        for (const pack of result.packs.filter(
+          (p) => `${p.pack.provider}:${p.pack.projectId}` === key,
+        ))
+          packIcons.value[pack.instanceId] = projectIcons.get(key) ?? null;
+      }),
+    );
+    if (current !== generation) return;
     if (result.unreadable.length)
       packsError.value =
         "Some profiles could not be checked. Refresh to try again; you can still find them in Saved profiles.";
@@ -324,10 +355,9 @@ function tab(value: string) {
                     alt=""
                     loading="lazy"
                   /><span class="pack-poster-identity"
-                    ><InstanceIcon
-                      :icon="pack.instance.icon"
-                      :loader="pack.instance.loader"
-                      :seed="pack.instanceId"
+                    ><ContentIcon
+                      :url="packIcons[pack.instanceId]"
+                      :name="pack.instance.name"
                     /><span>INSTALLED MODPACK</span
                     ><strong>{{ pack.instance.name }}</strong></span
                   ></span
@@ -461,10 +491,9 @@ function tab(value: string) {
                   "
                   alt=""
                 /><span class="context-edition">INSTALLED MODPACK</span
-                ><InstanceIcon
-                  :icon="selectedPack.instance.icon"
-                  :loader="selectedPack.instance.loader"
-                  :seed="selectedPack.instanceId"
+                ><ContentIcon
+                  :url="packIcons[selectedPack.instanceId]"
+                  :name="selectedPack.instance.name"
                 />
               </div>
               <div class="version-context-copy" aria-live="polite">
@@ -494,7 +523,11 @@ function tab(value: string) {
                     aria-label="Open instance page"
                   >
                     <Settings :size="18" /></button
-                  ><LaunchControl :instance="selectedPack.instance" monitor />
+                  ><LaunchControl
+                    :instance="selectedPack.instance"
+                    monitor
+                    return-home
+                  />
                 </div>
               </div>
             </div>
@@ -598,7 +631,7 @@ function tab(value: string) {
                   >
                     <Settings :size="18" />
                   </button>
-                  <QuickLaunch compact monitor />
+                  <QuickLaunch compact monitor return-home />
                 </div>
               </div>
             </div>

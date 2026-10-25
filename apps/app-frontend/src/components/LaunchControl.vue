@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { Play, LoaderCircle, Square, RotateCcw } from "@lucide/vue";
 import { useGame, terminalStages } from "../stores/game";
+import { useQuickPlay } from "../stores/quick-play";
 import { useUpdates } from "../stores/updates";
 import { useAccount } from "../stores/account";
 import { desktop } from "../api";
@@ -11,8 +12,13 @@ import { launchMonitored } from "../monitor";
 const router = useRouter(),
   opening = ref(false),
   error = ref("");
-const props = defineProps<{ instance: Instance; monitor?: boolean }>();
+const props = defineProps<{
+  instance: Instance;
+  monitor?: boolean;
+  returnHome?: boolean;
+}>();
 const game = useGame();
+const quick = useQuickPlay();
 const updates = useUpdates();
 const account = useAccount();
 const launch = computed(() => game.launches[props.instance.id]);
@@ -68,6 +74,10 @@ async function toggle() {
     }
     opening.value = true;
     try {
+      if (props.returnHome) {
+        quick.adoptSetup(props.instance);
+        await router.push("/");
+      }
       if (props.monitor) await launchMonitored(id, router, game.launch);
       else await game.launch(id);
     } catch (e) {
@@ -87,6 +97,7 @@ async function toggle() {
       class="button primary"
       :disabled="
         opening ||
+        (returnHome && quick.preparing) ||
         !supported ||
         !game.ready ||
         !!game.stopping[instance.id] ||

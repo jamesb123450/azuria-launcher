@@ -147,3 +147,44 @@ it("restores the automatic setup id across app sessions", async () => {
   expect((await restored.ensureSetup()).id).toBe(item.id);
   expect(mocks.create).toHaveBeenCalledTimes(1);
 });
+
+it("keeps an explicitly selected modpack across sessions without replacing an automatic setup", async () => {
+  const launcher = useLauncher();
+  await launcher.init();
+  const q = useQuickPlay();
+  q.choose("1.21.1", "fabric");
+  const automatic = await q.ensureSetup();
+  const pack = { ...automatic, id: "modpack", name: "Forest adventure" };
+  launcher.instances.push(pack);
+  q.adoptSetup(pack);
+  expect((await q.ensureSetup()).id).toBe("modpack");
+  expect(q.profileSelected).toBe(true);
+  setActivePinia(createPinia());
+  mocks.list.mockResolvedValue([automatic, pack]);
+  await useLauncher().init();
+  const restored = useQuickPlay();
+  expect(restored.setup?.name).toBe("Forest adventure");
+  restored.choose("1.21.1", "fabric");
+  expect(restored.setup?.id).toBe(automatic.id);
+  expect(restored.profileSelected).toBe(false);
+  expect(mocks.create).toHaveBeenCalledTimes(1);
+});
+it("does not create a replacement when a selected modpack is removed", async () => {
+  const launcher = useLauncher();
+  await launcher.init();
+  const q = useQuickPlay();
+  const pack = {
+    id: "pack",
+    name: "Forest",
+    loader: "fabric" as const,
+    minecraftVersion: "1.21.1",
+    memoryMb: 4096,
+    favorite: false,
+    createdAt: 1,
+  };
+  launcher.instances.push(pack);
+  q.adoptSetup(pack);
+  launcher.instances = [];
+  await expect(q.ensureSetup()).rejects.toThrow("no longer available");
+  expect(mocks.create).not.toHaveBeenCalled();
+});

@@ -353,13 +353,13 @@
   text-align: left;
   color: #fff;
 }
-.pack-poster-identity > .instance-symbol {
+.pack-poster-identity > .content-icon {
   width: 58px;
   height: 58px;
   border-radius: 12px;
   margin-bottom: auto;
 }
-.pack-poster-identity > span:not(.instance-symbol) {
+.pack-poster-identity > span:not(.content-icon) {
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -373,7 +373,7 @@
 .versions-page .pack-context-art > img {
   filter: brightness(0.65);
 }
-.versions-page .pack-context-art > .instance-symbol {
+.versions-page .pack-context-art > .content-icon {
   position: absolute;
   left: 17px;
   bottom: 17px;

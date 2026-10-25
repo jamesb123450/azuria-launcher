@@ -60,6 +60,17 @@ test("poster selection stays on Versions with patch and loader controls, art and
   );
   for (const width of [900, 1024, 1280, 1588]) {
     await page.setViewportSize({ width, height: 900 });
+    // Launch may scroll its control into view. Measure top alignment from the top,
+    // rather than comparing a sticky panel with a toolbar scrolled out of view.
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      document
+        .getElementById("main-content")
+        ?.scrollTo({ top: 0, behavior: "instant" });
+    });
+    await expect
+      .poll(() => page.locator("#main-content").evaluate((el) => el.scrollTop))
+      .toBe(0);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
