@@ -343,25 +343,20 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     "Preparation cancelled",
   );
 });
-test("account failure stays actionable and does not invent a running process", async ({
+test("an unverified account opens sign-in without starting a game", async ({
   page,
 }) => {
   await setup(page, true);
   await page.goto(`/#/instances/${id}`);
   await page.getByRole("button", { name: "Play", exact: true }).click();
   await expect(
-    page
-      .locator(".launch-status")
-      .getByRole("alert")
-      .or(page.locator(".launch-status[role=alert]")),
-  ).toContainText("Minecraft Services denied access");
-  await expect(
-    page.getByRole("button", { name: "Retry launch", exact: true }),
-  ).toBeEnabled();
-  await page.getByRole("link", { name: "View logs", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "No game logs yet" }),
+    page.getByRole("dialog", { name: "Settings", exact: true }),
   ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      (window as any).gameCalls.filter((c: string) => c === "launch_instance"),
+    ),
+  ).toEqual([]);
 });
 
 test("wardrobe applies an owned cape and supports hiding it", async ({
@@ -993,12 +988,14 @@ test("launching an installed modpack returns Home with the exact profile and its
     },
     { id },
   );
-  await page.getByRole("link", { name: "Versions", exact: true }).click();
-  await page.getByLabel("Version library").selectOption("modpacks");
-  await expect(page.locator(".version-context h2")).toHaveText(
+  await page.getByRole("link", { name: "Profiles", exact: true }).click();
+  await expect(page.locator(".instance-card")).toContainText(
     "Forest adventure",
   );
-  await page.getByRole("button", { name: "Launch game", exact: true }).click();
+  await page
+    .locator(".instance-card")
+    .getByRole("button", { name: "Play", exact: true })
+    .click();
   await expect(page).toHaveURL(/#\/$/);
   await expect(page.locator(".home-profile-card")).toContainText(
     "Forest adventure",

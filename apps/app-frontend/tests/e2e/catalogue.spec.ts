@@ -90,27 +90,14 @@ test("installed modpacks use portrait cards and update the sidebar without chang
       ),
     }),
   );
-  await page.getByLabel("Version library").selectOption("modpacks");
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await page.getByRole("link", { name: "Profiles", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Installed modpacks" }),
+    page.locator(".profile-icon-badge .content-icon img"),
+  ).toHaveAttribute("src", "https://cdn.modrinth.com/data/pack1234/icon.png");
+  await expect(
+    page.getByRole("heading", { name: "Forest adventure", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Choose modpack Forest adventure" })
-    .click();
-  await expect(page.locator(".version-context h2")).toHaveText(
-    "Forest adventure",
-  );
-  await expect(page.locator(".pack-loader")).toContainText("fabric");
-  await expect(
-    page.locator(".pack-poster-identity .content-icon img"),
-  ).toHaveAttribute("src", "https://cdn.modrinth.com/data/pack1234/icon.png");
-  await expect(
-    page.locator(".pack-context-art .content-icon img"),
-  ).toHaveAttribute("src", "https://cdn.modrinth.com/data/pack1234/icon.png");
-  await expect(
-    page.locator(".pack-poster-identity .instance-symbol"),
-  ).toHaveCount(0);
-  await expect(page.locator(".modpack-grid .version-art")).toHaveCount(1);
   for (const width of [900, 1024, 1280, 1588]) {
     await page.setViewportSize({ width, height: 900 });
     expect(
@@ -123,7 +110,7 @@ test("installed modpacks use portrait cards and update the sidebar without chang
     path: test.info().outputPath("installed-modpacks.png"),
     animations: "disabled",
   });
-  await page.getByRole("button", { name: "Open instance page" }).click();
+  await page.getByRole("button", { name: "Open Forest adventure" }).click();
   await expect(page).toHaveURL(new RegExp(`/instances/${id}`));
   expect(
     await page.evaluate(
@@ -132,22 +119,16 @@ test("installed modpacks use portrait cards and update the sidebar without chang
     ),
   ).toBe(1);
 });
-test("empty modpacks offer discovery and return to Minecraft without a Lunar option", async ({
+test("legacy modpack library URLs now show Profiles without separate catalogues", async ({
   page,
 }) => {
   await page.goto("/#/versions?tab=modpacks");
   await expect(
-    page.getByRole("heading", { name: "No installed modpacks" }),
+    page.getByRole("heading", { name: "Profiles", exact: true }),
   ).toBeVisible();
+  await expect(page.getByLabel("Version library")).toHaveCount(0);
   await expect(
-    page.getByRole("link", { name: "Discover modpacks" }),
-  ).toHaveAttribute("href", /#\/discover\?kind=modpacks/);
-  await expect(page.getByLabel("Version library").locator("option")).toHaveText(
-    ["Minecraft", "Modpacks", "Saved profiles"],
-  );
-  await page.getByLabel("Version library").selectOption("minecraft");
-  await expect(
-    page.getByRole("button", { name: "Choose Minecraft 1.21.1", exact: true }),
+    page.getByRole("button", { name: "New profile", exact: true }),
   ).toBeVisible();
 });
 test("the account dropdown supports keyboard navigation, dismissal and working destinations", async ({

@@ -101,7 +101,7 @@ function played(id: string) {
         <h1 class="home-welcome">Welcome to <strong>Azuria</strong></h1>
       </div>
       <RouterLink class="text-link" to="/versions"
-        >Explore versions <ArrowUpRight :size="14"
+        >Browse profiles <ArrowUpRight :size="14"
       /></RouterLink>
     </header>
     <div class="home-dashboard">
@@ -175,7 +175,7 @@ function played(id: string) {
               first profile.
             </p>
             <RouterLink class="button secondary" to="/versions"
-              ><Plus :size="15" />Choose a version</RouterLink
+              ><Plus :size="15" />Create profile</RouterLink
             >
           </div>
           <article

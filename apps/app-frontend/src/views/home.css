@@ -231,8 +231,7 @@
   font-size: 12px;
   gap: 6px;
 }
-.home-profile-actions :deep(.launch-hint),
-.home-profile-actions :deep(.launch-status) {
+.home-profile-actions :deep(.launch-hint) {
   display: none;
 }
 .home-profile-actions .icon-button {
@@ -611,4 +610,10 @@
   white-space: normal;
   overflow-wrap: anywhere;
   max-width: 100%;
+}
+
+.home-profile-actions :deep(.launch-status) {
+  max-width: 240px;
+  font-size: 10px;
+  overflow-wrap: anywhere;
 }

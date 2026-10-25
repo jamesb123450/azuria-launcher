@@ -24,6 +24,8 @@ import {
   Coffee,
   Download,
   FileText,
+  Share2,
+  AppWindow,
 } from "@lucide/vue";
 import { useLauncher } from "../stores/launcher";
 import { desktop } from "../api";
@@ -82,9 +84,10 @@ const settings = ref(false);
 const settingsSection = ref("files");
 const settingsSearch = ref("");
 const settingsItems = [
-  { id: "files", label: "Files", icon: FolderOpen },
+  { id: "files", label: "General", icon: FolderOpen },
   { id: "java", label: "Java Environment", icon: Coffee },
-  { id: "versions", label: "Versions", icon: Boxes },
+  { id: "versions", label: "Install", icon: Boxes },
+  { id: "window", label: "Window", icon: AppWindow },
   { id: "notes", label: "Notes", icon: FileText },
   { id: "export", label: "Export", icon: Download },
 ];
@@ -194,7 +197,7 @@ async function saveInstallation() {
     if (followHome) quick.adoptSetup(result);
   }, "Version and loader saved.");
 }
-const settingsDialog = ref<HTMLDialogElement>();
+const settingsDialog = ref<HTMLElement>();
 const settingsClose = ref<HTMLButtonElement>();
 let settingsTrigger: HTMLElement | null = null;
 async function openSettings(section = "general") {
@@ -213,13 +216,13 @@ async function openSettings(section = "general") {
   await loadPreferences();
   void loadSection(settingsSection.value);
   await nextTick();
-  settingsDialog.value?.showModal();
+  settingsDialog.value?.focus({ preventScroll: true });
   settingsClose.value?.focus();
 }
 async function closeSettings() {
   if (!leave()) return;
   if (preferencesReady.value) discard();
-  settingsDialog.value?.close();
+
   settings.value = false;
   settingsTrigger?.focus();
   if (route.query.settings) await router.replace({ query: {} });
@@ -320,7 +323,6 @@ const section = computed<Section>(() =>
 watch(
   () => instance.value?.id,
   () => {
-    settingsDialog.value?.close();
     settings.value = false;
     allowLeave = false;
     noteLoaded.value = false;
@@ -531,7 +533,7 @@ watch(
       void openSettings(String(route.query.settings));
     else if (previous?.[0] && settings.value) {
       if (preferencesReady.value) discard();
-      settingsDialog.value?.close();
+
       settings.value = false;
     }
   },
@@ -598,42 +600,26 @@ const prettySize = (size: number) =>
           </div>
           <nav class="instance-tabs" aria-label="Instance sections">
             <button
-              v-if="instance.loader !== 'vanilla'"
-              :aria-pressed="sectionView === 'content' && tab === 'mods'"
               @click="
+                closeSettings();
                 sectionView = 'content';
-                tab = 'mods';
               "
+              :aria-pressed="!settings && sectionView === 'content'"
             >
-              <Boxes :size="15" />Mods
-            </button>
-            <button
-              :aria-pressed="
-                sectionView === 'content' && tab === 'resourcePacks'
-              "
-              @click="
-                sectionView = 'content';
-                tab = 'resourcePacks';
-              "
-            >
-              <FolderOpen :size="15" />Resource packs
-            </button>
-            <button
-              :aria-pressed="sectionView === 'content' && tab === 'shaderPacks'"
-              @click="
-                sectionView = 'content';
-                tab = 'shaderPacks';
-              "
-            >
-              <SlidersHorizontal :size="15" />Shaders
+              <Boxes :size="15" />Content
             </button>
             <button
               :aria-pressed="sectionView === 'worlds'"
-              @click="sectionView = 'worlds'"
+              @click="
+                closeSettings();
+                sectionView = 'worlds';
+              "
             >
               <Globe :size="15" />Worlds
             </button>
-            <RouterLink class="instance-section-link" :to="`/monitor/${id}`"
+            <RouterLink
+              class="instance-section-link"
+              :to="`/instances/${id}?tab=logs`"
               ><ScrollText :size="15" />Logs</RouterLink
             >
             <RouterLink
@@ -641,8 +627,11 @@ const prettySize = (size: number) =>
               :to="`/screenshots?instance=${id}`"
               ><Camera :size="15" />Gallery</RouterLink
             >
-            <button @click="openSettings()">
+            <button :aria-pressed="settings" @click="openSettings()">
               <Settings :size="15" />Settings
+            </button>
+            <button disabled class="instance-share-soon">
+              <Share2 :size="15" />Share <small>Coming soon</small>
             </button>
           </nav>
           <div class="instance-inline-actions">
@@ -702,12 +691,15 @@ const prettySize = (size: number) =>
             </details>
           </div>
         </header>
-        <dialog
+        <section
           v-if="settings"
+          role="dialog"
+          aria-modal="false"
+          tabindex="-1"
           ref="settingsDialog"
-          class="instance-settings-modal"
+          class="instance-settings-modal instance-settings-inline"
           aria-labelledby="instance-settings-title"
-          @cancel.prevent="closeSettings"
+          @keydown.esc.stop.prevent="closeSettings"
         >
           <header class="settings-modal-heading">
             <div>
@@ -759,7 +751,40 @@ const prettySize = (size: number) =>
               </p>
               <template v-if="preferencesReady">
                 <section v-if="settingsSection === 'files'">
-                  <h2>Files</h2>
+                  <h2>General</h2>
+                  <h3>Profile identity</h3>
+                  <form @submit.prevent="saveGeneral">
+                    <fieldset :disabled="actionBusy">
+                      <div class="general-identity-fields">
+                        <label class="instance-field"
+                          >Instance name<input
+                            v-model="general.name"
+                            maxlength="80"
+                            required
+                        /></label>
+                        <IconPicker
+                          v-model="general.icon"
+                          :loader="instance.loader"
+                          :seed="instance.id"
+                        />
+                      </div>
+                      <p class="muted">
+                        Renaming also renames the instance folder. Duplicate
+                        names receive a numbered suffix.
+                      </p>
+                      <div class="instance-save-bar">
+                        <button class="button primary">Save details</button
+                        ><button
+                          type="button"
+                          class="button secondary"
+                          :disabled="!dirty"
+                          @click="discard"
+                        >
+                          Discard changes
+                        </button>
+                      </div>
+                    </fieldset>
+                  </form>
                   <section class="instance-setting-block">
                     <h3>Game directory</h3>
                     <p class="muted">
@@ -801,39 +826,7 @@ const prettySize = (size: number) =>
                       </button>
                     </div>
                   </section>
-                  <h3>Instance identity</h3>
-                  <form @submit.prevent="saveGeneral">
-                    <fieldset :disabled="actionBusy">
-                      <div class="general-identity-fields">
-                        <label class="instance-field"
-                          >Instance name<input
-                            v-model="general.name"
-                            maxlength="80"
-                            required
-                        /></label>
-                        <IconPicker
-                          v-model="general.icon"
-                          :loader="instance.loader"
-                          :seed="instance.id"
-                        />
-                      </div>
-                      <p class="muted">
-                        Renaming also renames the instance folder. Duplicate
-                        names receive a numbered suffix.
-                      </p>
-                      <div class="instance-save-bar">
-                        <button class="button primary">Save details</button
-                        ><button
-                          type="button"
-                          class="button secondary"
-                          :disabled="!dirty"
-                          @click="discard"
-                        >
-                          Discard changes
-                        </button>
-                      </div>
-                    </fieldset>
-                  </form>
+
                   <section class="instance-setting-block">
                     <h3>Duplicate instance</h3>
                     <p class="muted">
@@ -864,7 +857,7 @@ const prettySize = (size: number) =>
                   </section>
                 </section>
                 <section v-else-if="settingsSection === 'versions'">
-                  <h2>Versions</h2>
+                  <h2>Install</h2>
                   <form
                     class="profile-version-form"
                     @submit.prevent="saveInstallation"
@@ -969,14 +962,27 @@ const prettySize = (size: number) =>
                     </button>
                   </section>
                 </section>
-                <section v-else-if="settingsSection === 'java'">
-                  <h2>Java Environment</h2>
+                <section
+                  v-else-if="
+                    settingsSection === 'java' || settingsSection === 'window'
+                  "
+                >
+                  <h2>
+                    {{
+                      settingsSection === "window"
+                        ? "Window"
+                        : "Java Environment"
+                    }}
+                  </h2>
                   <p class="muted">
                     Use launcher defaults, or enable a custom setting for this
                     instance. Saved settings apply on the next supported launch.
                   </p>
                   <form @submit.prevent="saveOverrides">
                     <LaunchOptionsEditor
+                      :section="
+                        settingsSection === 'window' ? 'window' : 'java'
+                      "
                       v-model="options"
                       v-model:enabled="flags"
                       inheritance
@@ -1108,15 +1114,14 @@ const prettySize = (size: number) =>
           <p v-if="notice" class="instance-feedback" role="status">
             {{ notice }}
           </p>
-        </dialog>
-        <template v-if="true">
+        </section>
+        <template v-if="!settings">
           <LiveLogs v-if="showLiveLogs" :id="id" />
           <InstanceContent
             v-else-if="sectionView === 'content'"
             :key="id"
             :id="id"
             :loader="instance.loader"
-            :section="tab"
             :inventory="inventory"
             :checking="inventoryBusy"
             :check-error="inventoryError"
@@ -1190,6 +1195,8 @@ const prettySize = (size: number) =>
       </div>
       <InstanceLaunchPanel
         :instance="instance"
+        :pack="inventory.pack?.project"
+        :managed-count="inventory.projects.length"
         @settings="openSettings('files')"
         @versions="openSettings('versions')"
       />

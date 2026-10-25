@@ -111,7 +111,7 @@ const page = computed(() =>
               : route.path === "/screenshots"
                 ? "Screenshots"
                 : route.path === "/versions"
-                  ? "Versions"
+                  ? "Profiles"
                   : "Home",
 );
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -229,10 +229,10 @@ async function storagePrepared() {
           <RouterLink
             to="/versions"
             class="rail-link"
-            aria-label="Versions"
-            title="Versions"
+            aria-label="Profiles"
+            title="Profiles"
             ><Gamepad2 :size="21" /><span class="rail-tooltip"
-              >Versions</span
+              >Profiles</span
             ></RouterLink
           >
           <RouterLink
