@@ -350,3 +350,33 @@ test("Home launch arrow and hero settings route to saved setups and memory", asy
       .getByRole("heading", { name: "Java Environment", exact: true }),
   ).toBeVisible();
 });
+
+test("instance tabs fit their content without an empty stretched strip", async ({
+  page,
+}) => {
+  await page.goto(`/#/instances/${id}`);
+  const tabs = page.getByRole("navigation", { name: "Instance sections" });
+  await expect(tabs).toBeVisible();
+  for (const width of [900, 1024, 1280, 1588]) {
+    await page.setViewportSize({ width, height: 900 });
+    const bounds = await tabs.boundingBox();
+    const first = await tabs
+      .getByRole("button", { name: "Mods", exact: true })
+      .boundingBox();
+    expect(first!.x - bounds!.x).toBeLessThanOrEqual(8);
+    for (const button of await tabs.locator("button, a").all()) {
+      const box = await button.boundingBox();
+      const glyph = await button.locator("svg").boundingBox();
+      expect(glyph!.x - box!.x).toBeGreaterThanOrEqual(8);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(
+        bounds!.x + bounds!.width,
+      );
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.screenshot({ path: test.info().outputPath("instance-tabs.png") });
+});

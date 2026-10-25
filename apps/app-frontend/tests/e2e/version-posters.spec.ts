@@ -67,6 +67,30 @@ test("poster selection stays on Versions with patch and loader controls, art and
     ).toBe(true);
     const panel = await page.locator(".version-context").boundingBox();
     const grid = await page.locator(".versions-catalogue").boundingBox();
+    const toolbar = await page
+      .locator(".versions-browser-toolbar")
+      .boundingBox();
+    expect(Math.abs(panel!.y - toolbar!.y)).toBeLessThan(2);
+    expect(toolbar!.x + toolbar!.width).toBeLessThanOrEqual(panel!.x);
+    const newProfile = await page
+      .getByRole("button", { name: "New profile", exact: true })
+      .boundingBox();
+    expect(newProfile!.x + newProfile!.width).toBeLessThanOrEqual(panel!.x);
+    for (const button of await page
+      .getByRole("group", { name: "Versions mod loader" })
+      .getByRole("button")
+      .all()) {
+      const bounds = await button.boundingBox();
+      const glyph = await button.locator("svg").boundingBox();
+      expect(glyph!.x - bounds!.x).toBeGreaterThanOrEqual(8);
+      expect(glyph!.y - bounds!.y).toBeGreaterThanOrEqual(8);
+      expect(
+        bounds!.x + bounds!.width - glyph!.x - glyph!.width,
+      ).toBeGreaterThanOrEqual(8);
+      expect(
+        bounds!.y + bounds!.height - glyph!.y - glyph!.height,
+      ).toBeGreaterThanOrEqual(8);
+    }
     expect(grid!.x + grid!.width).toBeLessThanOrEqual(panel!.x);
     const launch = await page
       .locator(".version-launch-row .launch-main")
