@@ -837,44 +837,27 @@ test("topbar Stop reaches the native cancellation command", async ({
     .toBe(true);
 });
 
-test("Home creates one automatic setup without background preparation and reuses it", async ({
+test("Home launches the existing profile without creating another setup", async ({
   page,
 }) => {
   await setup(page);
-  await page.route("https://piston-meta.mojang.com/**", (r) =>
-    r.fulfill({ json: { versions: [{ id: "1.21.1", type: "release" }] } }),
-  );
   await page.goto("/");
-  const launch = page.locator(".launch-main");
-  await expect(launch).toBeEnabled();
-  await launch.click();
+  await expect(page.locator(".launch-main")).toHaveCount(0);
+  await page
+    .locator(".home-profile-card")
+    .getByRole("button", { name: "Play", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: /Cancel launch/ }),
-  ).toBeVisible();
-  const result = await page.evaluate(() => ({
-    calls: (window as any).gameCalls,
-    input: (window as any).createdInput,
-    prepare: (window as any).createdPrepare,
-  }));
-  expect(result.prepare).toBe(false);
-  expect(result.input.loader).toBe("vanilla");
-  expect(
-    result.calls.filter((c: string) => c === "create_instance"),
-  ).toHaveLength(1);
-  expect(
-    result.calls.filter((c: string) => c === "launch_instance"),
-  ).toHaveLength(1);
-  expect(
-    result.calls.filter((c: string) => c === "prepare_instance"),
-  ).toHaveLength(0);
-  await page.evaluate(() => (window as any).finishQuickGame());
-  await expect(launch).toContainText("Launch game");
-  await launch.click();
+    page
+      .locator(".home-profile-card")
+      .getByRole("button", { name: "Stop", exact: true }),
+  ).toBeEnabled();
   const calls = await page.evaluate(
     () => (window as any).gameCalls as string[],
   );
-  expect(calls.filter((c) => c === "create_instance")).toHaveLength(1);
-  expect(calls.filter((c) => c === "launch_instance")).toHaveLength(2);
+  expect(calls.filter((c) => c === "create_instance")).toHaveLength(0);
+  expect(calls.filter((c) => c === "launch_instance")).toHaveLength(1);
+  expect(calls).toContain("open_game_monitor");
 });
 
 test("task panel retains completed work and notifications without inventing downloads", async ({
@@ -1017,8 +1000,12 @@ test("launching an installed modpack returns Home with the exact profile and its
   );
   await page.getByRole("button", { name: "Launch game", exact: true }).click();
   await expect(page).toHaveURL(/#\/$/);
-  await expect(page.locator(".launch-main")).toContainText("Forest adventure");
-  await expect(page.locator(".launch-main")).toContainText("Minecraft 1.21.1");
+  await expect(page.locator(".home-profile-card")).toContainText(
+    "Forest adventure",
+  );
+  await expect(page.locator(".home-profile-card")).toContainText(
+    "Minecraft 1.21.1",
+  );
   await expect
     .poll(() =>
       page.evaluate(

@@ -319,7 +319,7 @@ test("profile popup keeps notes and exports only portable setup preferences", as
   await expect(popup.getByLabel("Memory allocation in MB")).toBeEnabled();
 });
 
-test("Home launch arrow and hero settings route to saved setups and memory", async ({
+test("Home versions link and hero settings route to versions and memory", async ({
   page,
 }) => {
   await page.route("https://piston-meta.mojang.com/**", (r) =>
@@ -327,7 +327,7 @@ test("Home launch arrow and hero settings route to saved setups and memory", asy
   );
   await page.goto("/");
   await page
-    .getByRole("link", { name: "Open Minecraft versions", exact: true })
+    .getByRole("link", { name: "Explore versions", exact: true })
     .click();
   await expect(page).toHaveURL(/#\/versions$/);
   await page.getByRole("link", { name: "Home", exact: true }).click();

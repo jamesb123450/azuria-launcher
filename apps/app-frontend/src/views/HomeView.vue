@@ -3,7 +3,6 @@ import { computed, ref, watch, onBeforeUnmount } from "vue";
 import { Clock3, Settings, Plus, Compass, ArrowUpRight } from "@lucide/vue";
 import NewsFeed from "../components/NewsFeed.vue";
 import HeroSettingsMenu from "../components/HeroSettingsMenu.vue";
-import QuickLaunch from "../components/QuickLaunch.vue";
 import LaunchControl from "../components/LaunchControl.vue";
 import CommunitySidebar from "../components/CommunitySidebar.vue";
 import SkinModel from "../components/SkinModel.vue";
@@ -146,8 +145,8 @@ function played(id: string) {
                   : "Sign in to use your skin"
             }}</small>
           </div>
+          <HeroSettingsMenu />
         </section>
-        <div class="hero-launch-bar"><QuickLaunch /><HeroSettingsMenu /></div>
         <section class="home-profiles" aria-labelledby="home-profiles-heading">
           <div class="home-section-heading">
             <h2 id="home-profiles-heading">

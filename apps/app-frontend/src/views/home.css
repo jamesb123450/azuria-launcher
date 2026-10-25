@@ -144,40 +144,6 @@
   right: 50%;
   transform: translateX(50%);
 }
-.hero-launch-bar {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 16px;
-  z-index: 3;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-.hero-launch-bar :deep(.quick-launch) {
-  width: 100%;
-  min-width: 0;
-}
-.hero-launch-bar :deep(.launch-main) {
-  min-height: 62px;
-  padding: 11px 16px;
-}
-.hero-launch-bar :deep(.launch-main strong) {
-  font-size: 20px;
-  font-weight: 700;
-}
-.hero-launch-bar :deep(.launch-selection) {
-  font-size: 10px;
-}
-.hero-launch-bar :deep(.quick-version-trigger) {
-  margin-top: 7px;
-  font-size: 10px;
-}
-.hero-launch-bar :deep(.hero-settings) {
-  position: relative;
-  inset: auto;
-  flex-shrink: 0;
-}
 .home-section-heading {
   display: flex;
   align-items: center;
@@ -473,13 +439,6 @@
   }
 }
 
-.hero-launch-bar :deep(.hero-settings-menu) {
-  position: relative;
-  inset: auto;
-  flex: 0 0 auto;
-  margin-top: 12px;
-}
-
 /* Home keeps profiles beneath the scene and news above Friends. */
 .home-dashboard {
   grid-template-columns: minmax(0, 1fr) 280px 230px;
@@ -550,19 +509,6 @@
 }
 .player-account small {
   color: var(--muted);
-}
-.hero-launch-bar {
-  position: relative;
-  inset: auto;
-  min-height: 90px;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 0 12px;
-  gap: 12px;
-}
-.hero-launch-bar :deep(.quick-launch) {
-  width: min(100%, 390px);
-  flex: 0 1 390px;
 }
 .home-secondary {
   display: flex;
