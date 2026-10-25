@@ -2,6 +2,7 @@
 import { nextTick, onBeforeUnmount, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Settings, SlidersHorizontal, FolderCog } from "@lucide/vue";
+import { useLauncher } from "../stores/launcher";
 import { useQuickPlay } from "../stores/quick-play";
 const router = useRouter(),
   quick = useQuickPlay();
@@ -33,8 +34,10 @@ async function choose(profile: boolean) {
   error.value = "";
   try {
     if (profile) {
-      const setup = await quick.ensureSetup();
-      await router.push(`/instances/${setup.id}?settings=java`);
+      const setup = quick.setup ?? useLauncher().selected;
+      await router.push(
+        setup ? `/instances/${setup.id}?settings=java` : "/versions",
+      );
     } else await router.push("/settings#launch-defaults");
     open.value = false;
   } catch (e) {

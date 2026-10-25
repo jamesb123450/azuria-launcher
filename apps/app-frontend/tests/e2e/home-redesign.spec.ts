@@ -63,12 +63,10 @@ test("Home without profiles offers version browsing without a standalone launch"
   await expect(
     page.getByRole("button", { name: "Choose version and loader" }),
   ).toHaveCount(0);
-  await page
-    .getByRole("link", { name: "Choose a version", exact: true })
-    .click();
+  await page.getByRole("link", { name: "Create profile", exact: true }).click();
   await expect(page).toHaveURL(/#\/versions$/);
   await expect(
-    page.getByRole("button", { name: "Choose Minecraft 1.21.1", exact: true }),
+    page.getByRole("button", { name: "New profile", exact: true }),
   ).toBeVisible();
 });
 test("Home profile settings opens the chosen profile directly", async ({

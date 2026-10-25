@@ -224,7 +224,7 @@ test("navigation highlights only the current page and screenshot tab matches its
   await page.goto("/#/versions?tab=setups");
   const library = page
     .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "Versions", exact: true });
+    .getByRole("link", { name: "Profiles", exact: true });
   const quick = page.locator(".instance-card").getByRole("link").first();
   await expect(library).toHaveClass(/router-link-exact-active/);
 
@@ -232,7 +232,7 @@ test("navigation highlights only the current page and screenshot tab matches its
 
   await expect(library).not.toHaveClass(/router-link-exact-active/);
   const tabs = page.getByRole("navigation", { name: "Instance sections" });
-  const content = tabs.getByRole("button", { name: "Mods", exact: true });
+  const content = tabs.getByRole("button", { name: "Content", exact: true });
   const shots = tabs.getByRole("link", { name: "Gallery", exact: true });
   expect(await shots.evaluate((e) => getComputedStyle(e).fontWeight)).toBe(
     await content.evaluate((e) => getComputedStyle(e).fontWeight),
@@ -327,7 +327,7 @@ test("Home versions link and hero settings route to versions and memory", async 
   );
   await page.goto("/");
   await page
-    .getByRole("link", { name: "Explore versions", exact: true })
+    .getByRole("link", { name: "Browse profiles", exact: true })
     .click();
   await expect(page).toHaveURL(/#\/versions$/);
   await page.getByRole("link", { name: "Home", exact: true }).click();
@@ -361,7 +361,7 @@ test("instance tabs fit their content without an empty stretched strip", async (
     await page.setViewportSize({ width, height: 900 });
     const bounds = await tabs.boundingBox();
     const first = await tabs
-      .getByRole("button", { name: "Mods", exact: true })
+      .getByRole("button", { name: "Content", exact: true })
       .boundingBox();
     expect(first!.x - bounds!.x).toBeLessThanOrEqual(8);
     for (const button of await tabs.locator("button, a").all()) {

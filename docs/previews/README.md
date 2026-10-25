@@ -14,3 +14,7 @@ Minecraft scenery attribution remains in Home's Image credits; existing version 
 
 - `review-profile-menu.webp`: the shared right-click / ellipsis menu.
 - `review-profile-delete.webp`: confirmation before deleting a profile, with Cancel focused first.
+
+- `review-profile-content.webp`: left profile summary and inline content management.
+- `review-profile-settings.webp`: inline General settings, with Share marked coming soon.
+- `review-profile-window.webp`: separate Window settings.

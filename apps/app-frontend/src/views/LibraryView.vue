@@ -120,11 +120,6 @@ const categories = computed(() => [
     label: "Custom",
     count: store.instances.filter((i) => i.loader !== "vanilla").length,
   },
-  {
-    id: "modpacks",
-    label: "Modpacks",
-    count: store.instances.filter((i) => packIds.value.has(i.id)).length,
-  },
 ]);
 const contextItem = ref<Instance>();
 const contextMenu = ref<HTMLDivElement>();
