@@ -562,34 +562,6 @@ onBeforeUnmount(() => {
   font-size: 12px;
   line-height: 1.6;
 }
-.content-install-dialog {
-  width: min(620px, calc(100vw - 48px));
-  max-height: calc(100dvh - 80px);
-  overflow-y: auto;
-}
-.content-install-dialog :deep(.version-picker),
-.content-install-dialog .instance-field {
-  margin-block: 18px;
-}
-.content-plan {
-  margin-block: 20px;
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  padding: 18px;
-}
-.content-plan h3 {
-  margin: 0 0 10px;
-}
-.content-plan p {
-  font-size: 13px;
-  line-height: 1.6;
-}
-.content-plan ul {
-  max-height: 140px;
-  overflow: auto;
-  padding-left: 20px;
-  font-size: 13px;
-}
 .discover-empty .text-link {
   display: block;
   margin-top: 16px;

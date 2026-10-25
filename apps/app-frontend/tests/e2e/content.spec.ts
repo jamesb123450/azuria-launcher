@@ -43,6 +43,19 @@ async function setup(page: Page, mode = "default") {
                 favorite: false,
                 createdAt: 1,
               },
+              ...(mode === "installer"
+                ? [
+                    {
+                      id: "vanilla",
+                      name: "Vanilla world",
+                      loader: "vanilla",
+                      minecraftVersion: "1.21.1",
+                      memoryMb: 4096,
+                      favorite: false,
+                      createdAt: 2,
+                    },
+                  ]
+                : []),
             ];
           if (cmd === "get_settings") return { theme: "dark" };
           if (cmd === "account_status")
@@ -205,6 +218,27 @@ async function setup(page: Page, mode = "default") {
                 releaseType: "release",
               },
             ];
+          if (cmd === "content_versions" && mode === "installer") {
+            const releases = [
+              {
+                id: "current",
+                name: "Fabric 1.21 release",
+                gameVersions: ["1.21.1"],
+                loaders: ["fabric"],
+                releaseType: "release",
+                published: "2026-10-20T00:00:00Z",
+              },
+              {
+                id: "older",
+                name: "Fabric 1.20 release",
+                gameVersions: ["1.20.1"],
+                loaders: ["fabric"],
+                releaseType: "release",
+                published: "2026-10-10T00:00:00Z",
+              },
+            ];
+            return args.instanceId ? releases.slice(0, 1) : releases;
+          }
           if (cmd === "content_versions")
             return mode === "pack"
               ? [
@@ -349,7 +383,16 @@ test("compatible mod install requires a reviewed native plan", async ({
     .click();
   const dialog = page.getByRole("dialog");
   await expect(
-    dialog.getByRole("combobox", { name: "Content version" }),
+    dialog.getByRole("heading", {
+      name: "Compatible profiles (1)",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "Install into Fabric instance", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("radiogroup", { name: "Content version" }),
   ).toBeVisible();
   expect(
     await page.evaluate(() =>
@@ -391,6 +434,9 @@ test("modpacks create a new instance and datapacks select a world", async ({
     .getByRole("button", { name: "Install Test project", exact: true })
     .click();
   dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("button", { name: "Install into Fabric instance", exact: true })
+    .click();
   await expect(
     dialog.getByRole("combobox", { name: "Install datapack into world" }),
   ).toBeVisible();
@@ -469,8 +515,10 @@ test("project artwork opens description, versions and gallery fetched from provi
     .getByRole("button", { name: "Install Compatible release", exact: true })
     .click();
   await expect(
-    page.getByRole("dialog").getByRole("combobox", { name: "Content version" }),
-  ).toBeVisible();
+    page
+      .getByRole("dialog")
+      .getByRole("radio", { name: "Compatible release", exact: true }),
+  ).toBeChecked();
 });
 test("pack instance separates managed and extra content and reviews updates", async ({
   page,
@@ -653,9 +701,144 @@ test("profile content reviews exact updates and carries the destination into Dis
   await page
     .getByRole("button", { name: "Install Test project", exact: true })
     .click();
+  const installDialog = page.getByRole("dialog");
+  await expect(installDialog.locator(".install-target")).toContainText(
+    "Fabric instance",
+  );
   await expect(
-    page
-      .getByRole("dialog")
-      .getByRole("combobox", { name: "Install into instance" }),
-  ).toContainText("Fabric instance");
+    installDialog.getByRole("radiogroup", { name: "Content version" }),
+  ).toBeVisible();
+  await expect(installDialog.getByLabel("Search profiles")).toHaveCount(0);
+});
+
+test("Discover mod installs search profiles, separate incompatible profiles and preserve the chosen target", async ({
+  page,
+}) => {
+  await setup(page, "installer");
+  await page
+    .getByRole("combobox", { name: "Content type", exact: true })
+    .selectOption("mods");
+  await page
+    .getByRole("button", { name: "Install Test project", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("heading", {
+      name: "Compatible profiles (1)",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await dialog.getByText("Incompatible profiles (1)", { exact: true }).click();
+  await expect(
+    dialog.getByText("Vanilla world", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("button", {
+      name: "Install into Vanilla world",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await dialog.getByLabel("Search profiles").fill("no matches");
+  await expect(
+    dialog.getByText("No matching compatible profiles.", { exact: true }),
+  ).toBeVisible();
+  await dialog.getByLabel("Search profiles").fill("");
+  await dialog.getByRole("button", { name: "Create", exact: true }).click();
+  await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await expect(dialog.getByLabel("Search profiles")).toBeVisible();
+  await page.screenshot({
+    path: test.info().outputPath("discover-profile-picker.png"),
+  });
+  await dialog
+    .getByRole("button", { name: "Install into Fabric instance", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("radio", { name: "Fabric 1.21 release", exact: true }),
+  ).toBeChecked();
+  await dialog.getByLabel("Show incompatible", { exact: true }).check();
+  await expect(
+    dialog.getByText("Fabric 1.20 release", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("radio", { name: "Fabric 1.20 release", exact: true }),
+  ).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Profiles", exact: true }).click();
+  await expect(dialog.getByLabel("Search profiles")).toBeVisible();
+});
+test("modpack filters choose a release while keeping a separate profile and file review", async ({
+  page,
+}) => {
+  await setup(page, "installer");
+  await page
+    .getByRole("button", { name: "Install Test project", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("combobox", { name: "Game version", exact: true })
+    .selectOption("1.20.1");
+  await dialog
+    .getByRole("combobox", { name: "Loader", exact: true })
+    .selectOption("fabric");
+  await expect(dialog.getByRole("radio")).toHaveCount(1);
+  await expect(
+    dialog.getByRole("radio", { name: "Fabric 1.20 release", exact: true }),
+  ).toBeChecked();
+  await expect(
+    dialog.getByText("Installs into a separate profile folder."),
+  ).toBeVisible();
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate(
+      (theme) => (document.documentElement.dataset.theme = theme),
+      theme,
+    );
+    await page.setViewportSize({ width: 900, height: 650 });
+    const bounds = await dialog.boundingBox();
+    expect(bounds!.width).toBeLessThan(900);
+    expect(bounds!.height).toBeLessThan(650);
+    await expect(
+      dialog.getByRole("button", { name: "Review installation", exact: true }),
+    ).toBeInViewport();
+    await page.screenshot({
+      path: test.info().outputPath(`modpack-install-${theme}.png`),
+    });
+  }
+  await dialog
+    .getByRole("button", { name: "Review installation", exact: true })
+    .click();
+  await expect(
+    dialog.getByText("Required library", { exact: true }),
+  ).toBeVisible();
+  const plans = await page.evaluate(() =>
+    (window as any).contentCalls.filter((c: any) => c.cmd === "content_plan"),
+  );
+  expect(plans.at(-1).args).toMatchObject({
+    version: "older",
+    instanceId: null,
+  });
+});
+test("an instance install opens the compatible release list without a profile picker", async ({
+  page,
+}) => {
+  await setup(page, "installer");
+  await page.goto("/#/discover?kind=mods&instance=fabric");
+  await page
+    .getByRole("button", { name: "Install Test project", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator(".install-target")).toContainText(
+    "Fabric instance",
+  );
+  await expect(dialog.getByLabel("Search profiles")).toHaveCount(0);
+  await expect(
+    dialog.getByRole("radio", { name: "Fabric 1.21 release", exact: true }),
+  ).toBeChecked();
+  await page.screenshot({
+    path: test.info().outputPath("instance-content-install.png"),
+  });
+  await dialog
+    .getByRole("button", { name: "Review installation", exact: true })
+    .click();
+  await expect(
+    dialog.getByText("Required library", { exact: true }),
+  ).toBeVisible();
 });
