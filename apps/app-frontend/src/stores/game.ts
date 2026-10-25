@@ -1,3 +1,4 @@
+import { useRecentPlay } from "./recent-play";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { invoke } from "@tauri-apps/api/core";
@@ -33,6 +34,12 @@ export const useGame = defineStore("game", () => {
     ),
   );
   function update(value: GameLaunch) {
+    if (
+      value.stage === "running" &&
+      !value.prepareOnly &&
+      launches.value[value.id]?.stage !== "running"
+    )
+      useRecentPlay().remember(value.id);
     launches.value = { ...launches.value, [value.id]: value };
     if (terminalStages.includes(value.stage)) stopping.value[value.id] = false;
   }

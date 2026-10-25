@@ -75,3 +75,32 @@ it("prepares files without launching, and treats prepared as an idle state", asy
     id: "one",
   });
 });
+
+it("records recent play only once Minecraft reaches running, never for preparation", async () => {
+  const { useRecentPlay } = await import("../../src/stores/recent-play");
+  const store = useGame();
+  await store.init();
+  const history = useRecentPlay();
+  const remember = vi.spyOn(history, "remember");
+  const callback = mocks.listen.mock.calls.find(
+    ([name]) => name === "game-progress",
+  )?.[1];
+  const progress = (stage: string, prepareOnly = false) =>
+    callback({
+      payload: {
+        id: "one",
+        stage,
+        prepareOnly,
+        message: stage,
+        completed: 0,
+        total: 0,
+        exitCode: null,
+      },
+    });
+  progress("preparing");
+  progress("prepared", true);
+  expect(remember).not.toHaveBeenCalled();
+  progress("running");
+  progress("running");
+  expect(remember).toHaveBeenCalledExactlyOnceWith("one");
+});

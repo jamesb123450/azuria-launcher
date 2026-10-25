@@ -16,6 +16,7 @@ const props = defineProps<{
   instance: Instance;
   monitor?: boolean;
   returnHome?: boolean;
+  compactLabel?: boolean;
 }>();
 const game = useGame();
 const quick = useQuickPlay();
@@ -50,7 +51,7 @@ const label = computed(() =>
             : "Retry download"
           : launch.value?.stage === "error" || launch.value?.stage === "crashed"
             ? "Retry launch"
-            : props.monitor
+            : props.monitor && !props.compactLabel
               ? "Launch game"
               : "Play",
 );

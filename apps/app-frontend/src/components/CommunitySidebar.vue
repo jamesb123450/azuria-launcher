@@ -2,7 +2,7 @@
 import { useFriends } from "../stores/friends";
 import { useAzuriaAccount } from "../stores/azuria-account";
 import { UsersRound, ArrowUpRight, MessageCircle } from "@lucide/vue";
-defineProps<{ adsOnly?: boolean }>();
+defineProps<{ adsOnly?: boolean; friendsOnly?: boolean }>();
 import { useMessages } from "../stores/messages";
 import { useRouter, useRoute } from "vue-router";
 import { computed } from "vue";
@@ -109,7 +109,7 @@ const account = useAzuriaAccount();
         </button>
       </template>
     </section>
-    <div class="community-ads">
+    <div v-if="!friendsOnly" class="community-ads">
       <SponsorSlot
         v-for="slot in 2"
         :key="slot"

@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onBeforeUnmount, watch } from "vue";
+import {
+  computed,
+  ref,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   UserRound,
@@ -16,6 +23,10 @@ import {
 } from "@lucide/vue";
 import SkinHead from "./SkinHead.vue";
 import { useAccount } from "../stores/account";
+const props = defineProps<{ hero?: boolean }>();
+const menuId = computed(() =>
+  props.hero ? "minecraft-account-menu-hero" : "minecraft-account-menu",
+);
 const account = useAccount(),
   route = useRoute(),
   router = useRouter();
@@ -124,13 +135,15 @@ watch(
         { 'needs-auth': account.view.account && !account.view.verified },
       ]"
       :aria-label="
-        account.view.account
-          ? 'Manage Minecraft account'
-          : 'Sign in to Minecraft'
+        hero
+          ? 'Player scene account options'
+          : account.view.account
+            ? 'Manage Minecraft account'
+            : 'Sign in to Minecraft'
       "
       aria-haspopup="menu"
       :aria-expanded="open"
-      aria-controls="minecraft-account-menu"
+      :aria-controls="menuId"
       @click="toggle"
       @keydown.down.prevent="!open && toggle()"
     >
@@ -151,7 +164,7 @@ watch(
     <Transition name="account-drop"
       ><div
         v-if="open"
-        id="minecraft-account-menu"
+        :id="menuId"
         ref="panel"
         class="account-dropdown"
         role="menu"

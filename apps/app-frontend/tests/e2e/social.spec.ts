@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 async function seed(page: Page) {
   await page.goto("/");
-  await page.locator(".community-sidebar").waitFor();
+  await page.locator(".friends-placeholder").waitFor();
   await page.evaluate(async () => {
     const friendsPath = "/src/friends-api.ts",
       accountPath = "/src/stores/azuria-account.ts";

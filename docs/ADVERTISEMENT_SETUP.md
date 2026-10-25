@@ -7,7 +7,7 @@ Deploy the accounts website and install the new launcher release. Existing `AZUR
 Open the accounts website → Admin → Advertisements. Administrator access requires the existing authenticator verification.
 
 1. Create advertisement. Enter the sponsor/campaign name, an HTTPS destination and an image description.
-2. Upload square PNG, JPG or WebP artwork, no more than 2 MB. Around 600 × 600 pixels works well. Uploads use public, immutable URLs, including drafts.
+2. Upload square or portrait PNG, JPG or WebP artwork, no more than 2 MB. Use a width-to-height ratio from 1:1 to 1:2. 600 × 600 or 600 × 900 pixels works well. Home uses taller portrait slots; other pages retain square slots. Artwork is fitted without cropping or stretching. Uploads use public, immutable URLs, including drafts.
 3. Set Start and optionally End, in your browser's local time zone. End is exclusive. Dates are saved as UTC instants.
 4. Select one or more labelled placements in the page previews:
 

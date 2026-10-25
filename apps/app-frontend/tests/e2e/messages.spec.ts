@@ -3,7 +3,7 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
   page,
 }) => {
   await page.goto("/");
-  await page.locator(".community-sidebar").waitFor();
+  await page.locator(".friends-placeholder").waitFor();
   await page.evaluate(async () => {
     const friendsPath = "/src/friends-api.ts",
       accountPath = "/src/stores/azuria-account.ts";

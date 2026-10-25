@@ -245,7 +245,7 @@ test("navigation highlights only the current page and screenshot tab matches its
 
   await library.click();
 });
-test("community sidebar shows signed-out friends guidance and two square ad slots", async ({
+test("Home shows signed-out friends guidance and two portrait ad slots", async ({
   page,
 }) => {
   await page.goto("/");
@@ -260,11 +260,11 @@ test("community sidebar shows signed-out friends guidance and two square ad slot
   for (const width of [900, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const slot of [1, 2]) {
-      const ad = sidebar.getByRole("region", {
+      const ad = page.locator(".home-sponsor-rail").getByRole("region", {
         name: `Advertisement slot ${slot}`,
       });
       const box = await ad.boundingBox();
-      expect(Math.abs(box!.height - box!.width)).toBeLessThan(2);
+      expect(Math.abs(box!.height - box!.width * 1.5)).toBeLessThan(2);
     }
   }
 });
