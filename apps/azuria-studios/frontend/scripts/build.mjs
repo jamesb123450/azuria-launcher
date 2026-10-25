@@ -44,7 +44,7 @@ await writeFile(
   render(
     "Azuria Studios — Gaming & Software Projects",
     home,
-    "Discover Azuria Studios, the team behind Azuria Launcher for Minecraft Java Edition. Explore our gaming and software projects and what comes next.",
+    "Meet Azuria Studios and Azuria Launcher for Windows: Minecraft Java, mods, modpacks, friends and encrypted messaging. Explore our projects and what comes next.",
   ),
 );
 for (const [slug, content, title] of [

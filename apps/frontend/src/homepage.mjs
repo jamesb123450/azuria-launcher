@@ -52,7 +52,7 @@ export function renderHomepage({
           Keep your Minecraft versions, mods and worlds<br
             class="desktop-break"
           />
-          together in one launcher.
+          together, with friends one click away.
         </p>
         <div class="premium-actions">
           ${download("Download for Windows")}<a
@@ -86,7 +86,7 @@ export function renderHomepage({
     >
       <span>${icon("layers", 18)}Separate instances</span
       ><span>${icon("check", 18)}Mods &amp; modpacks</span
-      ><span>${icon("sun", 18)}Your appearance</span>
+      ><span>${icon("chat", 18)}Friends &amp; messaging</span>
     </div>
     <section
       id="features"
@@ -138,8 +138,8 @@ export function renderHomepage({
             <h2 id="content-heading">Find mods for<br />your next setup.</h2>
           </div>
           <p>
-            Browse projects from Modrinth and CurseForge. Check what is
-            supported before installing.
+            Browse Modrinth and CurseForge in Discover. Find content for your
+            version, review compatible files and install it into your setup.
           </p>
         </div>
         <div class="premium-providers">
@@ -190,6 +190,39 @@ export function renderHomepage({
             >
           </div>
           ${shot("create.jpg", "Azuria’s instance creation screen with its Custom setup option.")}
+        </div>
+      </div>
+    </section>
+    <section class="premium-section" aria-labelledby="social-heading">
+      <div class="container premium-split" data-reveal>
+        <div class="section-intro">
+          <p class="premium-kicker">Friends and messaging</p>
+          <h2 id="social-heading">Your friends.<br />A little closer.</h2>
+          <p>
+            Connect your Azuria account, add friends by username and keep your
+            conversations together in Social. Switch between Friends and Chats,
+            search your list and pick up where you left off.
+          </p>
+          <a class="text-link" href="${link("help/")}#social"
+            >How friends and messaging work ${icon("arrow", 17)}</a
+          >
+        </div>
+        <div>
+          <h3>Private conversations, simple controls.</h3>
+          <ul class="premium-checks">
+            <li>Send friend requests and chat with accepted friends</li>
+            <li>See unread messages and load earlier conversations</li>
+            <li>Manage requests, remove friends or block an account</li>
+          </ul>
+          <p>
+            New messages are end-to-end encrypted. Save an encrypted recovery
+            file to restore your messaging key on another Windows PC.
+          </p>
+          <p class="small-note">
+            Older messages sent before encryption remain unencrypted and are
+            labelled in the launcher. Your Azuria account is separate from the
+            Microsoft account used to play Minecraft.
+          </p>
         </div>
       </div>
     </section>
