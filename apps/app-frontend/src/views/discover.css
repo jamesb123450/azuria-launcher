@@ -586,7 +586,7 @@
   border-radius: 0;
   margin: 0;
   padding: 20px 0;
-  grid-template-columns: 64px minmax(0, 1fr) 130px;
+  grid-template-columns: 64px minmax(0, 1fr) 164px;
   gap: 18px;
 }
 .discover-project:hover {
@@ -625,7 +625,7 @@
 }
 .discover-project-meta {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
   justify-items: stretch;
   align-content: center;
@@ -633,8 +633,11 @@
 }
 .discover-project-meta .discover-view,
 .discover-project-meta .discover-install {
-  padding: 8px 9px;
-  min-height: 32px;
+  padding: 8px 10px;
+  min-width: 0;
+  min-height: 34px;
+  box-sizing: border-box;
+  white-space: nowrap;
   justify-content: center;
   font-size: 10px;
   gap: 5px;
@@ -782,4 +785,30 @@
   .discover-page .discover-project-meta .content-project-link {
     display: none;
   }
+}
+
+/* Keep project content and actions within their own column. */
+.discover-project-body,
+.discover-project-title h2,
+.discover-project-title > span,
+.discover-tags > span {
+  overflow-wrap: anywhere;
+}
+.discover-project-meta > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.discover-project-meta svg {
+  flex-shrink: 0;
+}
+.discover-filters {
+  min-width: 0;
+}
+.discover-filters fieldset:last-of-type {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.discover-filters .discover-filter-option {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
