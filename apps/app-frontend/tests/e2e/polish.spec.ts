@@ -61,7 +61,7 @@ test("polished screens retain their layout at minimum size", async ({
       animations: "disabled",
     });
     await page
-      .getByRole("button", { name: "Create instance", exact: true })
+      .getByRole("button", { name: /New profile|Create instance/, exact: true })
       .click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.screenshot({
@@ -177,7 +177,7 @@ test("library states fit both themes at minimum and wide desktop sizes", async (
           height: width === 900 ? 650 : 1080,
         });
         await expect(page.locator(".instance-card")).toHaveCount(count);
-        await expect(page.locator(".selected-instance")).toHaveCount(
+        await expect(page.locator(".instance-card.selected")).toHaveCount(
           count ? 1 : 0,
         );
         expect(
@@ -186,12 +186,20 @@ test("library states fit both themes at minimum and wide desktop sizes", async (
             .evaluate((el) => el.scrollWidth <= el.clientWidth),
         ).toBe(true);
         await expect(
-          page.getByRole("button", { name: "Create instance", exact: true }),
+          page.getByRole("button", {
+            name: /New profile|Create instance/,
+            exact: true,
+          }),
         ).toBeInViewport();
-        if (count)
+        if (count) {
+          await page.locator(".instance-card").first().scrollIntoViewIfNeeded();
           await expect(
-            page.getByRole("button", { name: "Edit instance", exact: true }),
+            page
+              .locator(".instance-card")
+              .first()
+              .getByRole("button", { name: /^Edit / }),
           ).toBeInViewport();
+        }
         await page.screenshot({
           path: `test-results/library-${theme}-${count}-${width}.png`,
         });

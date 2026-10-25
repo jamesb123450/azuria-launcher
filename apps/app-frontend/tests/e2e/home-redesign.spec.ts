@@ -32,7 +32,7 @@ test("Home matches the launch-first design, with honest preview and no generated
   ).toBeVisible();
   await expect(page.locator(".home-scenery")).toHaveJSProperty(
     "naturalWidth",
-    1024,
+    1600,
   );
   await expect(page.getByRole("button", { name: /Launch game/ })).toBeEnabled();
   for (const width of [900, 1024, 1280, 1588]) {
@@ -129,6 +129,12 @@ test("light appearance keeps log colours scoped and returns to Home cleanly", as
   await expect(page.locator(".launch-main")).toBeVisible();
   await page
     .getByRole("link", { name: "Skins and capes", exact: true })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
     .click();
   await expect(
     page.getByRole("button", { name: "Refresh saved skins" }),

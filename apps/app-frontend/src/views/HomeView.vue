@@ -110,9 +110,9 @@ function played(id: string) {
         <section class="home-hero player-scene" aria-label="Launch Minecraft">
           <img
             class="home-scenery"
-            src="/scenery/cherry-grove.webp"
-            width="1024"
-            height="1024"
+            src="/scenery/home-panorama.webp"
+            width="1600"
+            height="600"
             alt=""
           />
           <div class="player-scene-heading">
@@ -148,6 +148,7 @@ function played(id: string) {
           </div>
           <div class="hero-launch-bar"><QuickLaunch /><HeroSettingsMenu /></div>
         </section>
+        <NewsFeed />
         <section class="home-profiles" aria-labelledby="home-profiles-heading">
           <div class="home-section-heading">
             <h2 id="home-profiles-heading">
@@ -256,7 +257,7 @@ function played(id: string) {
         </details>
       </div>
       <aside class="home-secondary" aria-label="News and friends">
-        <NewsFeed /><CommunitySidebar friends-only />
+        <CommunitySidebar friends-only />
       </aside>
       <aside class="home-sponsor-rail" aria-label="Home advertisements">
         <div class="home-section-heading">

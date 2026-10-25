@@ -90,7 +90,46 @@ onBeforeUnmount(() => {
         @error="failed = true"
       />
     </button>
-    <Sparkles v-else :size="24" :stroke-width="1" aria-hidden="true" />
+    <svg
+      v-else
+      class="ad-placeholder-image"
+      width="600"
+      height="600"
+      viewBox="0 0 600 600"
+      role="img"
+      aria-label="600 by 600 advertisement placeholder"
+    >
+      <rect
+        x="200"
+        y="210"
+        width="200"
+        height="150"
+        rx="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        opacity=".18"
+      />
+      <path
+        d="m220 340 55-55 40 35 35-25 30 45"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        opacity=".18"
+      />
+      <circle cx="350" cy="250" r="12" fill="currentColor" opacity=".18" />
+      <text
+        x="300"
+        y="410"
+        text-anchor="middle"
+        fill="currentColor"
+        font-size="22"
+        letter-spacing="3"
+        opacity=".45"
+      >
+        600 × 600
+      </text>
+    </svg>
     <p v-if="error" role="alert" class="sponsor-error">{{ error }}</p>
   </section>
 </template>
@@ -124,5 +163,15 @@ onBeforeUnmount(() => {
   padding: 8px;
   background: var(--panel);
   font-size: 11px;
+}
+</style>
+
+<style scoped>
+.ad-placeholder-image {
+  width: 100%;
+  height: 100%;
+  max-width: 600px;
+  max-height: 600px;
+  color: var(--muted);
 }
 </style>

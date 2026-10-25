@@ -10,7 +10,7 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    feed.value = await newsApi.load();
+    feed.value = (await newsApi.load()) ?? { url: "", stories: [] };
   } catch {
     error.value = "News could not be loaded. Please try again.";
   } finally {
@@ -52,15 +52,25 @@ onMounted(load);
     </div>
     <div
       v-if="!loading && !error && !feed.stories.length"
-      class="news-coming-soon"
+      class="news-placeholder-grid"
     >
-      <Newspaper :size="30" aria-hidden="true" />
-      <h3>No news yet</h3>
-      <p>Updates from Azuria Studios will appear here.</p>
+      <article v-for="n in 2" :key="n" class="news-placeholder">
+        <div class="news-placeholder-art">
+          <Newspaper :size="28" /><span>COMING SOON</span>
+        </div>
+        <h3>{{ n === 1 ? "No news yet" : "More from Azuria" }}</h3>
+        <p>
+          {{
+            n === 1
+              ? "Updates from Azuria Studios will appear here."
+              : "Stories and announcements, coming soon."
+          }}
+        </p>
+      </article>
     </div>
     <div v-if="feed.stories.length" class="home-news-grid">
       <button
-        v-for="story in feed.stories"
+        v-for="story in feed.stories.slice(0, 2)"
         :key="story.slug"
         class="home-news-card"
         @click="open(storyURL(story.slug))"
@@ -173,5 +183,46 @@ onMounted(load);
   .home-news-card:hover {
     transform: none;
   }
+}
+</style>
+
+<style scoped>
+.news-placeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.news-placeholder {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--panel-soft);
+}
+.news-placeholder-art {
+  height: 130px;
+  background:
+    radial-gradient(ellipse at 15% 10%, #bf8bc42b, transparent 70%),
+    linear-gradient(135deg, var(--panel), var(--bg));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--muted);
+}
+.news-placeholder-art span {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+.news-placeholder h3 {
+  font-size: 14px;
+  margin: 15px 16px 8px;
+}
+.news-placeholder p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 16px 18px;
+  line-height: 1.6;
 }
 </style>

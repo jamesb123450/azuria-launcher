@@ -138,7 +138,7 @@ function viewportChanged(event: Event) {
     opened.value &&
     !(event.target instanceof Node && popup.value?.contains(event.target))
   )
-    close();
+    place();
 }
 onMounted(() => {
   window.addEventListener("resize", viewportChanged);

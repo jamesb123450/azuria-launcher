@@ -259,6 +259,7 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Play", exact: true }).click();
+  await page.getByRole("link", { name: "Saved setups", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Stop", exact: true }),
   ).toBeEnabled();
@@ -368,10 +369,21 @@ test("wardrobe applies an owned cape and supports hiding it", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
-  await expect(
-    page.getByRole("heading", { name: "Skin selector" }),
-  ).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByRole("heading", { name: "Wardrobe" })).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Capes Your owned Minecraft capes",
+      exact: true,
+    })
+    .click();
   await page.getByRole("button", { name: "Test cape" }).click();
+  await page.getByRole("button", { name: "Equip cape", exact: true }).click();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -382,6 +394,7 @@ test("wardrobe applies an owned cape and supports hiding it", async ({
     )
     .toBe(true);
   await page.getByRole("button", { name: "No cape" }).click();
+  await page.getByRole("button", { name: "Hide cape", exact: true }).click();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -459,6 +472,12 @@ test("the account menu shows the player skin head", async ({ page }) => {
   await page
     .getByRole("link", { name: "Skins and capes", exact: true })
     .click();
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   await expect(
     page.getByRole("img", { name: "Current Minecraft skin preview" }),
   ).toBeVisible();
@@ -495,6 +514,18 @@ test("owned capes show cropped wearable faces instead of the atlas", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Capes Your owned Minecraft capes",
+      exact: true,
+    })
+    .click();
   const cape = page.getByRole("img", { name: "Test cape cape preview" });
   await expect(cape).toBeVisible();
   await expect(cape.locator(".cape-front")).toHaveCSS(
@@ -513,6 +544,12 @@ test("saved skin cards expose edit actions and changes save locally before accou
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   const card = page.locator(".saved-skin-card").first();
   await card.hover();
   await page.getByRole("button", { name: "Edit My skin", exact: true }).click();
@@ -555,6 +592,12 @@ test("adding, cancelling and removing a saved skin keep account changes explicit
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   await page.getByRole("button", { name: /Add skin/ }).click();
   let editor = page.getByRole("dialog", { name: "Add skin", exact: true });
   await editor.getByRole("button", { name: "Choose texture" }).click();
@@ -592,6 +635,12 @@ test("the skin preview rotates with pointer and keyboard controls", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   const model = page.locator(".skin-current .skin-model-person");
   await expect(model).toBeVisible();
   const before = await model.getAttribute("style");
@@ -624,6 +673,12 @@ test("a native PNG drop opens the editor without changing the account", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   await expect(
     page.getByRole("button", { name: "Preview My skin" }),
   ).toBeVisible();
@@ -731,18 +786,17 @@ test("creating Fabric pins Stable and starts download-only preparation", async (
   );
   await page.goto("/#/versions?tab=setups");
   await page
-    .getByRole("button", { name: "Create instance", exact: true })
+    .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
-  await page.getByRole("button", { name: /Custom setup/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("New Fabric");
   await page.getByRole("button", { name: "Fabric", exact: true }).click();
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Create instance", exact: true })
+    .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Stop", exact: true }),
+    page.getByRole("button", { name: "Stop", exact: true }).first(),
   ).toBeEnabled();
   expect(
     await page.evaluate(

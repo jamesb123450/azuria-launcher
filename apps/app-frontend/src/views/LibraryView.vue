@@ -22,6 +22,7 @@ import InstanceIcon from "../components/InstanceIcon.vue";
 import VersionPicker from "../components/VersionPicker.vue";
 import CommunitySidebar from "../components/CommunitySidebar.vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
+import { versionArt } from "../lib/version-art";
 import { useBehaviour } from "../stores/behaviour";
 import { useLauncher } from "../stores/launcher";
 import { useUpdates } from "../stores/updates";
@@ -35,7 +36,7 @@ const updates = useUpdates();
 const search = ref("");
 const filter = ref("all");
 const sort = ref("newest");
-const grouping = ref("loader");
+const grouping = ref("none");
 const collapsed = ref(new Set<string>());
 const jumpOpen = ref(true);
 const showDialog = ref(false);
@@ -162,7 +163,7 @@ onBeforeUnmount(closeDelete);
   <div :class="['play-page', { 'context-collapsed': !contextOpen }]">
     <div class="play-main" :aria-busy="store.loading || store.busy">
       <div class="library-page-heading">
-        <h2>Saved setups</h2>
+        <h2>Profiles</h2>
         <button
           class="button secondary context-toggle"
           :aria-expanded="contextOpen"
@@ -176,95 +177,6 @@ onBeforeUnmount(closeDelete);
           Friends &amp; ads
         </button>
       </div>
-      <section
-        v-if="store.selected"
-        class="selected-instance"
-        aria-labelledby="selected-instance-name"
-      >
-        <InstanceIcon
-          :loader="store.selected.loader"
-          :seed="store.selected.id"
-          :icon="store.selected.icon"
-        />
-        <div class="selected-identity">
-          <span class="muted">Selected instance</span>
-          <h2 id="selected-instance-name">{{ store.selected.name }}</h2>
-          <p>
-            {{ loaderName(store.selected.loader) }} · Minecraft
-            {{ store.selected.minecraftVersion
-            }}<template v-if="store.selected.loaderVersion">
-              · Loader {{ store.selected.loaderVersion }}</template
-            >
-          </p>
-          <p class="launch-availability" id="launch-availability">
-            Open an instance to manage its worlds, files and game logs.
-          </p>
-        </div>
-        <div class="selected-actions">
-          <button
-            class="button primary"
-            :disabled="store.busy || store.loading || !store.libraryReady"
-            @click="open(store.selected)"
-          >
-            <SlidersHorizontal :size="16" /> Edit instance
-          </button>
-          <LaunchControl :instance="store.selected" />
-        </div>
-      </section>
-      <section
-        v-if="store.instances.length > 2"
-        class="jump-section"
-        aria-labelledby="jump-heading"
-      >
-        <h2 id="jump-heading" class="jump-heading">
-          <button
-            class="section-toggle"
-            :aria-expanded="jumpOpen"
-            aria-controls="jump-instances"
-            @click="jumpOpen = !jumpOpen"
-          >
-            <span>Other instances</span>
-            <ChevronDown :size="18" :class="{ flipped: jumpOpen }" />
-          </button>
-        </h2>
-        <div v-if="jumpOpen" id="jump-instances" class="jump-grid">
-          <article
-            v-for="item in recent"
-            :key="item.id"
-            :class="['jump-row', { selected: store.selected?.id === item.id }]"
-          >
-            <button
-              class="jump-select"
-              :aria-label="'Switch to ' + item.name"
-              :aria-pressed="store.selected?.id === item.id"
-              @click="store.selectedId = item.id"
-            >
-              <InstanceIcon
-                :loader="item.loader"
-                :seed="item.id"
-                :icon="item.icon"
-              />
-              <span class="jump-identity"
-                ><strong>{{ item.name }}</strong>
-                <span
-                  >{{ loaderName(item.loader) }}
-                  {{ item.minecraftVersion }}
-                  <span class="meta-dot">·</span> Created
-                  {{ created(item) }}</span
-                ></span
-              >
-            </button>
-            <button
-              class="icon-button"
-              :aria-label="'Manage ' + item.name"
-              :disabled="store.busy || store.loading || !store.libraryReady"
-              @click="open(item)"
-            >
-              <SlidersHorizontal :size="16" />
-            </button>
-          </article>
-        </div>
-      </section>
       <section class="library-section" aria-labelledby="instances-heading">
         <h2 id="instances-heading">
           Your instances <span class="count">{{ store.instances.length }}</span>
@@ -287,7 +199,7 @@ onBeforeUnmount(closeDelete);
             :disabled="store.loading || store.busy || !store.libraryReady"
             @click="open()"
           >
-            <Plus :size="17" /> Create instance
+            <Plus :size="17" /> New profile
           </button>
         </div>
         <div class="library-toolbar">
@@ -453,7 +365,13 @@ onBeforeUnmount(closeDelete);
                   router.push(`/instances/${item.id}`);
                 "
               >
-                <span class="tile-art"
+                <span
+                  class="profile-cover"
+                  :style="{
+                    backgroundImage: `url(${versionArt[item.minecraftVersion.split('.').slice(0, 2).join('.')]?.image || '/scenery/home-panorama.webp'})`,
+                  }"
+                ></span
+                ><span class="tile-art"
                   ><InstanceIcon
                     :loader="item.loader"
                     :seed="item.id"
@@ -481,6 +399,12 @@ onBeforeUnmount(closeDelete);
                 />
               </button>
               <div class="card-bottom">
+                <LaunchControl
+                  :instance="item"
+                  monitor
+                  return-home
+                  compact-label
+                />
                 <div class="card-tools">
                   <button
                     class="icon-button"
@@ -558,7 +482,7 @@ onBeforeUnmount(closeDelete);
         </section>
       </section>
     </div>
-    <CommunitySidebar v-if="contextOpen" id="launcher-context" />
+    <CommunitySidebar v-if="contextOpen" id="launcher-context" ads-only />
   </div>
   <InstanceDialog
     v-if="showDialog"
@@ -598,3 +522,68 @@ onBeforeUnmount(closeDelete);
     </div>
   </dialog>
 </template>
+
+<style scoped>
+.play-page .instance-grid:not(.list-layout) {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+.play-page .instance-grid:not(.list-layout) .instance-card {
+  overflow: hidden;
+  border-radius: 16px;
+  position: relative;
+  background: var(--panel-soft);
+}
+.profile-cover {
+  display: block;
+  height: 145px;
+  width: 100%;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid var(--border);
+}
+.instance-grid:not(.list-layout) .instance-select {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+}
+.instance-grid:not(.list-layout) .tile-art {
+  display: none;
+}
+.instance-grid:not(.list-layout) .instance-title {
+  padding: 20px 20px 12px;
+}
+.instance-grid:not(.list-layout) .instance-title h3 {
+  font-size: 19px;
+}
+.instance-grid:not(.list-layout) .card-bottom {
+  padding: 8px 20px 18px;
+}
+.list-layout .profile-cover {
+  display: none;
+}
+</style>
+
+<style scoped>
+.play-page :deep(.community-ads) {
+  margin: auto 0;
+  align-content: center;
+}
+.instance-grid:not(.list-layout) .card-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.card-bottom :deep(.launch-control) {
+  flex: 1;
+}
+.card-bottom :deep(.launch-control > .button) {
+  width: 100%;
+  justify-content: center;
+}
+.card-bottom :deep(.launch-hint) {
+  display: none;
+}
+</style>

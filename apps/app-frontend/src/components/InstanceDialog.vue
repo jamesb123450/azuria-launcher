@@ -48,7 +48,7 @@ const nameInput = ref<HTMLInputElement>();
 const setupButton = ref<HTMLButtonElement>();
 const fileInput = ref<HTMLInputElement>();
 const edit = Boolean(props.instance && !props.duplicate);
-const step = ref<"choose" | "setup">(props.instance ? "setup" : "choose");
+
 const error = ref("");
 const iconBusy = ref(false);
 const resolvingLoader = ref(false);
@@ -181,8 +181,7 @@ onMounted(async () => {
   previousFocus = document.activeElement as HTMLElement;
   dialog.value?.showModal();
   await nextTick();
-  if (step.value === "choose") setupButton.value?.focus();
-  else nameInput.value?.focus();
+  nameInput.value?.focus();
   void loadVersions();
   if (loaderPolicy.value === "other") void loadLoaderVersions();
 });
@@ -212,19 +211,7 @@ async function loadVersions() {
     if (!disposed) versionsLoading.value = false;
   }
 }
-async function customSetup() {
-  step.value = "setup";
-  if (!form.minecraftVersion && !manualVersion.value)
-    form.minecraftVersion = versionChoice.value;
-  await nextTick();
-  nameInput.value?.focus();
-}
-async function back() {
-  step.value = "choose";
-  error.value = "";
-  await nextTick();
-  setupButton.value?.focus();
-}
+
 function selectVersion(value: string) {
   versionChoice.value = value;
   versionTouched = true;
@@ -352,75 +339,13 @@ async function save() {
       </button>
     </header>
 
-    <div v-if="step === 'choose'" class="create-choice-body">
-      <label class="create-search-label" for="create-search"
-        >Already know what you want to play?</label
-      >
-      <div class="create-search">
-        <Search :size="18" /><input
-          id="create-search"
-          disabled
-          placeholder="Modpack search coming soon"
-        />
-      </div>
-      <div class="create-divider"><span>or</span></div>
-      <h3>Choose instance type</h3>
-      <div class="create-options">
-        <button
-          ref="setupButton"
-          type="button"
-          class="create-option available"
-          @click="customSetup"
-        >
-          <span class="create-option-icon"><Boxes :size="26" /></span>
-          <span
-            ><strong>Custom setup</strong
-            ><small
-              >Start fresh with your choice of loader and game version.</small
-            ></span
-          >
-          <span class="option-arrow">→</span>
-        </button>
-        <button
-          v-for="option in [
-            {
-              title: 'Start from a mod or modpack',
-              description: 'Choose a project and use its latest version.',
-              icon: Compass,
-            },
-            {
-              title: 'Upload a modpack',
-              description: 'Install a modpack from a file on your device.',
-              icon: Upload,
-            },
-            {
-              title: 'Import instance',
-              description: 'Bring an instance from another launcher.',
-              icon: PackageOpen,
-            },
-          ]"
-          :key="option.title"
-          type="button"
-          class="create-option"
-          disabled
-        >
-          <span class="create-option-icon"
-            ><component :is="option.icon" :size="24"
-          /></span>
-          <span
-            ><strong>{{ option.title }}</strong
-            ><small>{{ option.description }}</small></span
-          >
-          <span class="coming-label">Soon</span>
-        </button>
-      </div>
-      <p class="create-footnote">
-        Your instances and settings stay on your device.
-      </p>
-    </div>
-
-    <form v-else class="create-setup-body" @submit.prevent="save">
+    <form class="create-setup-body" @submit.prevent="save">
       <div class="setup-scroll">
+        <div class="profile-setup-banner">
+          <span>MAKE IT YOURS</span>
+          <h3>One profile. Your way to play.</h3>
+          <p>Choose your Minecraft version and loader together.</p>
+        </div>
         <fieldset
           :disabled="store.busy || iconBusy || resolvingLoader"
           class="setup-fields"
@@ -645,16 +570,6 @@ async function save() {
       </p>
       <footer class="create-actions">
         <button
-          v-if="!props.instance"
-          type="button"
-          class="button secondary"
-          :disabled="store.busy || iconBusy || resolvingLoader"
-          @click="back"
-        >
-          <ArrowLeft :size="16" />Back
-        </button>
-        <button
-          v-else
           type="button"
           class="button secondary"
           :disabled="store.busy || iconBusy || resolvingLoader"
@@ -682,3 +597,30 @@ async function save() {
 </template>
 
 <style src="./instance-dialog.css"></style>
+
+<style scoped>
+.profile-setup-banner {
+  padding: 24px;
+  border-radius: 12px;
+  margin: 0 0 22px;
+  background: linear-gradient(115deg, #b686c228, #8babe01a);
+  border: 1px solid var(--border);
+}
+.profile-setup-banner span {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--pink);
+}
+.profile-setup-banner h3 {
+  font-size: 22px;
+  margin: 9px 0;
+}
+.profile-setup-banner p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+.create-dialog {
+  width: min(860px, calc(100vw - 48px));
+}
+</style>

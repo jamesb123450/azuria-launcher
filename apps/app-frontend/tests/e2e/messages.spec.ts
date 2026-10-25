@@ -25,7 +25,7 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
           if (cmd !== "azuria_messages") return null;
           if (args.action === "send")
             rows.push({
-              id: 2,
+              id: rows.length + 1,
               sender_id: "alice",
               recipient_id: "bob",
               body: args.body,
@@ -74,6 +74,22 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
       },
     };
   });
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const popup = page.getByRole("dialog", { name: "Chat", exact: true });
+  await popup.getByRole("button", { name: "B Bob", exact: true }).click();
+  await expect(popup.getByLabel("Messages", { exact: true })).toContainText(
+    "<b>Hello</b>",
+  );
+  await expect(popup.locator(".message-bubble b")).toHaveCount(0);
+  await popup
+    .getByLabel("Message", { exact: true })
+    .fill("Sent from the popup");
+  await popup.getByLabel("Message", { exact: true }).press("Enter");
+  await expect(popup.locator(".message-bubble.mine")).toContainText(
+    "Sent from the popup",
+  );
+  await page.keyboard.press("Escape");
+  await expect(popup).not.toBeVisible();
   await page.locator(".sidebar-friend").click();
   const dialog = page.getByRole("region", { name: "Social", exact: true });
   await expect(dialog.getByLabel("Messages", { exact: true })).toContainText(
@@ -107,7 +123,9 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
     .click();
   await dialog.getByLabel("Message", { exact: true }).fill("Hi Bob");
   await dialog.getByLabel("Message", { exact: true }).press("Enter");
-  await expect(dialog.locator(".message-bubble.mine")).toContainText("Hi Bob");
+  await expect(dialog.locator(".message-bubble.mine").last()).toContainText(
+    "Hi Bob",
+  );
   await expect(dialog.getByLabel("Message", { exact: true })).toHaveValue("");
   await dialog.getByRole("button", { name: "Back to friends" }).click();
   await expect(

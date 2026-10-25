@@ -254,7 +254,7 @@ function tab(value: string) {
         ><input v-model="snapshots" type="checkbox" />Snapshots &amp; older
         builds</label
       >
-      <button class="button primary" @click="create = true">
+      <button v-if="!saved" class="button primary" @click="create = true">
         <Plus :size="16" />New profile
       </button>
     </div>

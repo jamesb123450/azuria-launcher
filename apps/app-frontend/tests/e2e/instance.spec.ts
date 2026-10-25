@@ -245,7 +245,7 @@ test("navigation highlights only the current page and screenshot tab matches its
 
   await library.click();
 });
-test("Home shows signed-out friends guidance and two portrait ad slots", async ({
+test("Home shows signed-out friends guidance and two square ad slots", async ({
   page,
 }) => {
   await page.goto("/");
@@ -264,7 +264,7 @@ test("Home shows signed-out friends guidance and two portrait ad slots", async (
         name: `Advertisement slot ${slot}`,
       });
       const box = await ad.boundingBox();
-      expect(Math.abs(box!.height - box!.width * 1.5)).toBeLessThan(2);
+      expect(Math.abs(box!.height - box!.width)).toBeLessThan(2);
     }
   }
 });
