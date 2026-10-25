@@ -480,195 +480,114 @@
   margin-top: 12px;
 }
 
-/* Wide player stage; square sponsor artwork is centred in its own rail. */
+/* Home keeps profiles beneath the scene and news above Friends. */
 .home-dashboard {
-  grid-template-columns: minmax(0, 1fr) 230px;
-}
-.home-primary {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-}
-.home-secondary {
-  grid-column: 2;
-  grid-row: 2;
-  display: block;
-}
-.home-secondary :deep(.community-sidebar) {
-  display: none;
-}
-.home-sponsor-rail {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: stretch;
-}
-.home-sponsor-rail :deep(.community-ads) {
-  align-items: center;
-  justify-content: center;
-  min-height: 600px;
-}
-.home-sponsor-rail :deep(.square-ad) {
-  width: 100%;
-  max-width: 600px;
-  aspect-ratio: 1;
-}
-.player-home .player-scene {
-  height: auto;
-  min-height: 360px;
-  aspect-ratio: 8/3;
-}
-.hero-character {
-  top: 25px;
-  height: 220px;
-}
-.hero-character :deep(.skin-model-stage) {
-  height: 220px;
-  transform: scale(1.2);
-}
-.player-account {
-  top: auto;
-  bottom: 112px;
-}
-.home-primary :deep(.home-news-grid) {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.home-primary :deep(.home-news-card) {
-  min-width: 0;
-}
-@media (min-width: 1450px) {
-  .player-home .player-scene {
-    min-height: 410px;
-  }
-  .hero-character {
-    top: 45px;
-  }
-  .hero-character :deep(.skin-model-stage) {
-    transform: scale(1.45);
-  }
-}
-@media (max-width: 1100px) {
-  .home-dashboard {
-    grid-template-columns: minmax(0, 1fr) 180px;
-  }
-  .home-sponsor-rail {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .home-secondary {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  .home-primary {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-}
-@media (max-width: 760px) {
-  .home-dashboard {
-    display: flex;
-    flex-direction: column;
-  }
-  .home-sponsor-rail {
-    width: 100%;
-  }
-  .home-sponsor-rail :deep(.community-ads) {
-    min-height: 0;
-  }
-  .home-primary {
-    width: 100%;
-  }
-}
-.home-dashboard {
-  grid-template-columns: minmax(0, 1fr) 260px 230px;
+  grid-template-columns: minmax(0, 1fr) 280px 230px;
   gap: 20px;
 }
 .home-primary {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
 }
 .player-home .player-scene {
-  grid-column: 1;
-  grid-row: 1;
+  height: 360px;
   min-height: 360px;
+  overflow: visible;
+  isolation: isolate;
 }
-.home-primary > :not(.player-scene) {
-  grid-column: 1 / span 2;
+.player-home .home-scenery {
+  border-radius: 16px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
 }
-.home-primary > :deep(.home-news) {
-  grid-row: 2;
-}
-.home-secondary {
-  grid-column: 2;
-  grid-row: 1;
-  display: block;
-}
-.home-secondary :deep(.community-sidebar) {
-  display: block;
-  min-height: 360px;
-}
-.home-sponsor-rail {
-  grid-column: 3;
-  grid-row: 1 / span 6;
-}
-.home-sponsor-rail :deep(.community-ads) {
-  min-height: 600px;
-  justify-content: center;
-}
-@media (max-width: 1300px) {
-  .home-dashboard {
-    grid-template-columns: minmax(0, 1fr) 220px 180px;
-    gap: 16px;
-  }
-  .home-sponsor-rail {
-    padding-left: 12px;
-  }
-}
-@media (max-width: 1100px) {
-  .home-dashboard {
-    grid-template-columns: minmax(0, 1fr) 180px;
-  }
-  .player-home .player-scene {
-    grid-column: 1;
-  }
-  .home-primary > :not(.player-scene) {
-    grid-column: 1;
-  }
-  .home-secondary {
-    grid-column: 1;
-    grid-row: auto;
-  }
-  .home-secondary :deep(.community-sidebar) {
-    min-height: 0;
-  }
-  .home-sponsor-rail {
-    grid-column: 2;
-    grid-row: 1 / span 8;
-  }
-}
-@media (max-width: 760px) {
-  .home-dashboard {
-    display: flex;
-  }
-  .home-primary {
-    display: contents;
-  }
-  .home-secondary {
-    width: 100%;
-  }
-}
-
-.player-account {
-  bottom: 132px;
+.player-home .player-scene:before {
+  border-radius: 16px;
 }
 .hero-character {
-  top: 25px;
-  height: 180px;
+  top: 40px;
+  height: 240px;
+  width: 240px;
 }
 .hero-character :deep(.skin-model-stage) {
-  height: 180px;
-  transform: scale(1.05);
+  height: 240px;
+  transform: scale(1.35);
 }
-.home-primary :deep(.home-news) {
-  margin: 4px 16px 0;
+.player-account {
+  top: auto;
+  bottom: -1px;
+  background: var(--bg);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 18px 8px;
+  gap: 5px;
+  min-width: 220px;
+  box-shadow: 0 -1px 0 var(--border);
+}
+.player-account:before,
+.player-account:after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+}
+.player-account:before {
+  left: -16px;
+  border-radius: 0 0 16px 0;
+  box-shadow: 8px 0 0 var(--bg);
+}
+.player-account:after {
+  right: -16px;
+  border-radius: 0 0 0 16px;
+  box-shadow: -8px 0 0 var(--bg);
+}
+.player-account :deep(.topbar-account) {
+  min-width: 190px;
+  border-radius: 9px;
+}
+.player-account small {
+  color: var(--muted);
+}
+.hero-launch-bar {
+  position: relative;
+  inset: auto;
+  min-height: 90px;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 12px;
+  gap: 12px;
+}
+.hero-launch-bar :deep(.quick-launch) {
+  width: min(100%, 390px);
+  flex: 0 1 390px;
+}
+.home-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.home-secondary :deep(.news-placeholder-grid) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.home-secondary :deep(.news-placeholder-art) {
+  height: 100px;
+}
+.home-secondary :deep(.news-placeholder h3) {
+  font-size: 12px;
+  margin: 12px 14px 7px;
+}
+.home-secondary :deep(.news-placeholder p) {
+  font-size: 10px;
+  margin: 0 14px 14px;
+}
+.home-secondary :deep(.community-sidebar) {
+  height: auto;
+  min-height: 0;
 }
 .home-sponsor-rail :deep(.community-ads) {
   display: flex;
@@ -676,4 +595,74 @@
   gap: 18px;
   margin: 0;
   min-height: 600px;
+  justify-content: center;
+}
+.home-sponsor-rail :deep(.square-ad) {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 1;
+}
+@media (max-width: 1300px) {
+  .home-dashboard {
+    grid-template-columns: minmax(0, 1fr) 230px 180px;
+    gap: 16px;
+  }
+  .home-sponsor-rail {
+    padding-left: 12px;
+  }
+  .player-scene-heading h2 {
+    font-size: 18px;
+  }
+}
+@media (max-width: 1100px) {
+  .home-dashboard {
+    grid-template-columns: minmax(0, 1fr) 180px;
+  }
+  .home-primary {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .home-secondary {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-sponsor-rail {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .hero-character {
+    top: 35px;
+  }
+}
+@media (max-width: 760px) {
+  .home-dashboard {
+    display: flex;
+    flex-direction: column;
+  }
+  .home-primary,
+  .home-secondary,
+  .home-sponsor-rail {
+    width: 100%;
+  }
+  .home-secondary {
+    display: flex;
+  }
+  .home-sponsor-rail :deep(.community-ads) {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.home-secondary :deep(.community-sidebar),
+.home-secondary :deep(.friends-placeholder) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.home-secondary :deep(.friends-placeholder p) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }

@@ -146,9 +146,8 @@ function played(id: string) {
                   : "Sign in to use your skin"
             }}</small>
           </div>
-          <div class="hero-launch-bar"><QuickLaunch /><HeroSettingsMenu /></div>
         </section>
-        <NewsFeed />
+        <div class="hero-launch-bar"><QuickLaunch /><HeroSettingsMenu /></div>
         <section class="home-profiles" aria-labelledby="home-profiles-heading">
           <div class="home-section-heading">
             <h2 id="home-profiles-heading">
@@ -257,7 +256,7 @@ function played(id: string) {
         </details>
       </div>
       <aside class="home-secondary" aria-label="News and friends">
-        <CommunitySidebar friends-only />
+        <NewsFeed /><CommunitySidebar friends-only />
       </aside>
       <aside class="home-sponsor-rail" aria-label="Home advertisements">
         <div class="home-section-heading">
