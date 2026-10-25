@@ -11,6 +11,8 @@ import {
   Plus,
   Layers3,
   ArrowUpRight,
+  Check,
+  Spool,
 } from "@lucide/vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
 import LibraryView from "./LibraryView.vue";
@@ -466,7 +468,6 @@ function tab(value: string) {
                 />
               </div>
               <div class="version-context-copy" aria-live="polite">
-                <span class="catalogue-eyebrow">READY IN YOUR LIBRARY</span>
                 <h2>{{ selectedPack.instance.name }}</h2>
                 <p>
                   Minecraft {{ selectedPack.instance.minecraftVersion }} ·
@@ -476,15 +477,11 @@ function tab(value: string) {
                       : "CurseForge"
                   }}
                 </p>
-                <p>Your worlds, mods and settings stay with this profile.</p>
               </div>
               <div class="version-context-controls">
                 <div class="pack-loader">
                   <span>Installed loader</span
-                  ><strong>{{ selectedPack.instance.loader }}</strong
-                  ><small
-                    >This modpack keeps its installed loader and version.</small
-                  >
+                  ><strong>{{ selectedPack.instance.loader }}</strong>
                 </div>
                 <p v-if="profileError" class="inline-error" role="alert">
                   {{ profileError }}
@@ -512,7 +509,6 @@ function tab(value: string) {
                 }}</span>
               </div>
               <div class="version-context-copy" aria-live="polite">
-                <span class="catalogue-eyebrow">MINECRAFT JAVA EDITION</span>
                 <h2>Minecraft {{ selected.id }}</h2>
                 <p>
                   {{
@@ -526,8 +522,9 @@ function tab(value: string) {
                   href="https://www.minecraft.net/en-us/updates"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >Minecraft updates ↗</a
-                >
+                  aria-label="Read more about Minecraft updates"
+                  >Read more <ArrowUpRight :size="12"
+                /></a>
               </div>
               <div class="version-context-controls">
                 <label class="version-patch"
@@ -549,41 +546,54 @@ function tab(value: string) {
                   </select></label
                 >
                 <div class="version-loader-row">
-                  <span>Loader</span>
+                  <span>Loaders</span>
                   <div
                     class="quick-loaders"
                     role="group"
                     aria-label="Versions mod loader"
                   >
                     <button
+                      aria-label="Vanilla"
+                      title="Vanilla"
                       :aria-pressed="quick.loader === 'vanilla'"
                       :disabled="quick.preparing"
                       @click="quick.choose(quick.version, 'vanilla')"
                     >
-                      Vanilla</button
+                      <InstanceIcon loader="vanilla" /><Check
+                        v-if="quick.loader === 'vanilla'"
+                        class="loader-selected"
+                        :size="10"
+                      /></button
                     ><button
+                      aria-label="Fabric"
+                      title="Fabric"
                       :aria-pressed="quick.loader === 'fabric'"
                       :disabled="quick.preparing"
                       @click="quick.choose(quick.version, 'fabric')"
                     >
-                      Fabric
+                      <Spool :size="22" /><Check
+                        v-if="quick.loader === 'fabric'"
+                        class="loader-selected"
+                        :size="10"
+                      />
                     </button>
                   </div>
                 </div>
                 <RouterLink
                   class="version-setup-link"
+                  :aria-label="
+                    quick.setup ? 'Open saved setup' : 'Saved setups'
+                  "
                   :to="
                     quick.setup
                       ? `/instances/${quick.setup.id}`
                       : '/versions?tab=setups'
                   "
-                  ><FolderOpen :size="16" />{{
-                    quick.setup ? "Open saved setup" : "Saved setups"
-                  }}</RouterLink
-                >
-                <p class="version-setup-note">
-                  Your worlds and settings stay with this profile.
-                </p>
+                  ><FolderOpen :size="14" /><span>{{
+                    quick.setup?.name ?? "Separate profile"
+                  }}</span
+                  ><ArrowUpRight :size="12"
+                /></RouterLink>
                 <p v-if="profileError" class="inline-error" role="alert">
                   {{ profileError }}
                 </p>

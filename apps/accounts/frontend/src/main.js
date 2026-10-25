@@ -1,3 +1,4 @@
+import { accountStorage } from "./account-storage.js";
 import { createClient } from "@supabase/supabase-js";
 import "./style.css";
 import { showLauncherHandoff } from "./launcher-handoff.js";
@@ -12,7 +13,7 @@ import {
 const $ = (id) => document.getElementById(id);
 const url = import.meta.env.VITE_SUPABASE_URL;
 const publicKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-// Browser sessions are scoped to this tab; launcher sessions use the native vault.
+// Browser sessions persist on this device; launcher credentials stay in the native vault.
 const configured =
   /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url ?? "") &&
   Boolean(publicKey?.startsWith("sb_publishable_")) &&
@@ -22,7 +23,9 @@ const client = configured
       auth: {
         flowType: "pkce",
         detectSessionInUrl: false,
-        storage: sessionStorage,
+        storage: accountStorage(localStorage, sessionStorage),
+        persistSession: true,
+        autoRefreshToken: true,
         storageKey: "azuria-account",
       },
     })
@@ -553,7 +556,7 @@ function legalPage(type) {
         ],
         [
           "Passwords and sessions",
-          "Your password is handled by the authentication service. The website uses essential browser session storage to keep you signed in within this tab. The launcher keeps its saved sign-in credential in Windows Credential Manager. No advertising or analytics scripts run on these account pages.",
+          "Your password is handled by the authentication service. The website uses essential local browser storage to keep you signed in on this browser after closing tabs or restarting it. Signing out, clearing site data or revoking the session removes access. The launcher keeps its saved sign-in credential in Windows Credential Manager. No advertising or analytics scripts run on these account pages.",
         ],
         [
           "Account connections",

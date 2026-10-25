@@ -1,4 +1,5 @@
-import { computed, ref } from "vue";
+import { sessionResume } from "../lib/session-resume";
+import { computed, ref, onScopeDispose } from "vue";
 import { defineStore } from "pinia";
 import {
   accountApi,
@@ -15,6 +16,9 @@ export const useAccount = defineStore("account", () => {
   const error = ref("");
   const ready = ref(false);
   let generation = 0;
+  let retryable = false;
+  let stopResume = () => {};
+  onScopeDispose(() => stopResume());
   const privacy = usePrivacy();
   const label = computed(() =>
     privacy.options.hideAccount
@@ -32,6 +36,7 @@ export const useAccount = defineStore("account", () => {
           ? "microsoft"
           : "storage";
     error.value = "";
+    retryable = false;
     let stop: (() => void) | undefined;
     try {
       stop = await accountApi.progress((value) => {
@@ -43,6 +48,17 @@ export const useAccount = defineStore("account", () => {
     } catch (cause) {
       if (current !== generation) return;
       error.value = accountError(cause);
+      const code =
+        typeof cause === "object" && cause !== null && "code" in cause
+          ? String(cause.code)
+          : "";
+      retryable = [
+        "network",
+        "response",
+        "http",
+        "timeout",
+        "service",
+      ].includes(code);
       try {
         const status = await accountApi.status();
         if (current === generation) view.value = status;
@@ -72,6 +88,15 @@ export const useAccount = defineStore("account", () => {
     await privacy.load();
     if (view.value.supported && privacy.ready && privacy.options.restoreAccount)
       await operate("restore");
+    stopResume = sessionResume(
+      () =>
+        ready.value &&
+        !busy.value &&
+        retryable &&
+        view.value.hasSavedSession &&
+        privacy.options.restoreAccount,
+      () => operate("restore"),
+    );
   }
   async function cancel() {
     if (!busy.value || cancelling.value) return;

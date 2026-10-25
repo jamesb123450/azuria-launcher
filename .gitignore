@@ -20,3 +20,6 @@ apps/app/update-build.json
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Generated for the exact source range of each release.
+apps/app/release-notes.generated.md

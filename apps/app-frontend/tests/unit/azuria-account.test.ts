@@ -113,3 +113,44 @@ it("native callback errors leave the manual fallback available and cancel invali
   expect(ipc.invoke).toHaveBeenLastCalledWith("azuria_cancel", undefined);
   expect(store.pending).toBe(false);
 });
+
+it("retries a saved Azuria session after reconnect without starting an interactive handoff", async () => {
+  const target = new EventTarget();
+  vi.stubGlobal("window", target);
+  let statuses = 0;
+  ipc.invoke.mockImplementation(async (command: string) => {
+    if (command === "azuria_status") {
+      if (++statuses === 1)
+        throw "Could not reach Azuria. Your saved session has been kept.";
+      return signed;
+    }
+    if (command === "azuria_connection")
+      return { connecting: false, view: null, error: null };
+    return blank;
+  });
+  try {
+    const store = useAzuriaAccount();
+    await store.init();
+    target.dispatchEvent(new Event("online"));
+    await vi.waitFor(() => expect(store.view.account?.id).toBe("user-id"));
+    expect(statuses).toBe(2);
+    expect(
+      ipc.invoke.mock.calls.some(([command]) => command === "azuria_begin"),
+    ).toBe(false);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("clears cached identity when the native service confirms session revocation", async () => {
+  const store = useAzuriaAccount();
+  await store.init();
+  ipc.invoke.mockResolvedValueOnce(signed);
+  await store.refresh();
+  ipc.invoke.mockRejectedValueOnce(
+    "Your Azuria session has expired or was revoked. Sign in again.",
+  );
+  await store.refresh();
+  expect(store.view.account).toBeNull();
+  expect(store.error).toContain("revoked");
+});

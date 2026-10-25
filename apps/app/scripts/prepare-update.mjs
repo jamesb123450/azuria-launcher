@@ -34,9 +34,7 @@ if (original !== installer) {
 }
 const manifest = {
   version,
-  notes: (
-    await readFile(new URL("../docs/RELEASE_NOTES.md", import.meta.url), "utf8")
-  ).trim(),
+  notes: (await readFile("release-notes.generated.md", "utf8")).trim(),
   pub_date: new Date().toISOString(),
   platforms: {
     "windows-x86_64": {

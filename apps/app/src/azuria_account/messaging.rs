@@ -214,11 +214,7 @@ pub(super) async fn request(
     }
     let _operation = state.operation()?;
     let config = config().ok_or("Azuria accounts are not configured in this build.")?;
-    let tokens = refresh(
-        &config,
-        saved()?.ok_or("Sign in to your Azuria account first.")?,
-    )
-    .await?;
+    let tokens = state.tokens(&config).await?;
     if tokens.user.email_confirmed_at.is_none() {
         return Err("Verify your email first.".into());
     }

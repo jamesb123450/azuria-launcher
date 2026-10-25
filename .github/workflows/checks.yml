@@ -143,6 +143,7 @@ jobs:
         env:
           AZURIA_RELEASES_TOKEN: ${{ secrets.AZURIA_RELEASES_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURIA_RELEASE_BEFORE: ${{ github.event.before }}
       - name: Build signed update
         run: npm run desktop:build -- --config update-build.json
         env:
