@@ -985,3 +985,24 @@ dialog::backdrop {
   width: auto;
   margin: 0;
 }
+
+.sponsor-status {
+  display: inline-block;
+  padding: 5px 9px;
+  margin: 0 0 8px;
+  border: 1px solid #ffffff26;
+  border-radius: 6px;
+  color: #d9d5e4;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sponsor-status.expired {
+  color: #ffb4bc;
+  background: #8c233333;
+  border-color: #ec6b7a66;
+}
+.sponsor-delete {
+  margin-left: 10px;
+  color: #ffb4bc;
+  border-color: #ec6b7a66;
+}
