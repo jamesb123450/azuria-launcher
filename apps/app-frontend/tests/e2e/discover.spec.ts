@@ -94,3 +94,42 @@ test("right-hand filters and provider cards fit the minimum window in both theme
     await page.screenshot({ path: `test-results/discover-live-${theme}.png` });
   }
 });
+
+test("project actions stay inside each result and clear of the filters", async ({
+  page,
+}) => {
+  await page.goto("/#/discover");
+  await expect(page.locator(".discover-project")).toHaveCount(6);
+  for (const width of [900, 1100, 1101, 1280, 1588]) {
+    await page.setViewportSize({ width, height: 900 });
+    const sidebar = await page.locator(".discover-filters").boundingBox();
+    for (const row of await page.locator(".discover-project").all()) {
+      const bounds = await row.boundingBox();
+      for (const action of await row
+        .locator(
+          ".discover-project-meta .discover-view, .discover-project-meta .discover-install",
+        )
+        .all()) {
+        const box = await action.boundingBox();
+        expect(box!.x).toBeGreaterThanOrEqual(bounds!.x);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(
+          bounds!.x + bounds!.width + 1,
+        );
+        expect(box!.x + box!.width).toBeLessThan(sidebar!.x);
+        const icon = await action.locator("svg").boundingBox();
+        expect(icon!.x - box!.x).toBeGreaterThanOrEqual(8);
+      }
+      const view = await row.locator(".discover-view").boundingBox();
+      const install = await row.locator(".discover-install").boundingBox();
+      expect(view!.x + view!.width).toBeLessThanOrEqual(install!.x - 7);
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.screenshot({
+    path: test.info().outputPath("discover-actions.png"),
+  });
+});
