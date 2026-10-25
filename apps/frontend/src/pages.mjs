@@ -27,7 +27,7 @@ const icon = (name, size = 20) =>
     stroke-linejoin="round"
     aria-hidden="true"
   >
-    ${{ arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>', download: '<path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/>', menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', layers: '<path d="m12 3 10 5-10 5L2 8l10-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>', check: '<path d="m5 12 4 4L19 6"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/>', refresh: '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>', external: '<path d="M14 4h6v6m0-6L10 14M10 4H4v16h16v-6"/>', windows: '<path d="m3 5 8-1v8H3V5Zm10-1 8-1v9h-8V4ZM3 14h8v7l-8-1v-6Zm10 0h8v9l-8-1v-8Z"/>' }[name] || ""}
+    ${{ chat: '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/>', arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>', download: '<path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/>', menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', layers: '<path d="m12 3 10 5-10 5L2 8l10-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>', check: '<path d="m5 12 4 4L19 6"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/>', refresh: '<path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>', external: '<path d="M14 4h6v6m0-6L10 14M10 4H4v16h16v-6"/>', windows: '<path d="m3 5 8-1v8H3V5Zm10-1 8-1v9h-8V4ZM3 14h8v7l-8-1v-6Zm10 0h8v9l-8-1v-8Z"/>' }[name] || ""}
   </svg>`;
 const date = (value) =>
   new Intl.DateTimeFormat("en-GB", {
@@ -111,7 +111,7 @@ export function render(
     404: "Page not found — Azuria Launcher",
   };
   const descriptions = {
-    home: "A Windows Minecraft Java launcher with Vanilla and Fabric launching, saved skins, instance controls and automatic updates.",
+    home: "A Minecraft Java launcher for Windows with Vanilla and Fabric, mods and modpacks, friends, encrypted messaging, skins and automatic updates.",
     downloads:
       "Download the Azuria development preview for Windows x64. Installation instructions, requirements and in-app update guidance.",
     news: "News and updates from Azuria Studios and Azuria Launcher.",
@@ -418,7 +418,8 @@ export function render(
         <nav class="help-navigation" aria-label="Help topics">
           <a href="#status">Current capabilities</a
           ><a href="#installation">Installation</a><a href="#updates">Updates</a
-          ><a href="#accounts">Microsoft sign-in</a
+          ><a href="#accounts">Accounts & sign-in</a
+          ><a href="#social">Friends & messaging</a
           ><a href="#privacy">Privacy & storage</a
           ><a href="#support">Get help</a>
         </nav>
@@ -445,7 +446,7 @@ export function render(
                   <td>Available</td>
                 </tr>
                 <tr>
-                  <th scope="row">Dark, light and system themes</th>
+                  <th scope="row">Dark, light, OLED and system themes</th>
                   <td>Available</td>
                 </tr>
                 <tr>
@@ -470,7 +471,14 @@ export function render(
                 </tr>
                 <tr>
                   <th scope="row">Discover catalogue</th>
-                  <td>Fictional local preview; no installation</td>
+                  <td>
+                    Browse Modrinth and CurseForge; install supported content.
+                    Some CurseForge files require a website download.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Friends and encrypted messaging</th>
+                  <td>Available with an Azuria account and accepted friends</td>
                 </tr>
                 <tr>
                   <th scope="row">Microsoft / Minecraft account connection</th>
@@ -496,14 +504,30 @@ export function render(
             ${faq("How do I update?", "Azuria checks at startup and downloads signed updates automatically. When ready, a restart countdown installs the update. Choose Later to postpone, then use Settings → Updates to restart when convenient. Active games block installation.")}${faq("What is the .sig file?", "It is the installer’s update signature, not a private signing key. The updater checks signed downloads against the public key included in the app. You normally do not need to handle the signature file yourself.")}${faq("What if an update fails?", "Check your connection and retry from Settings. If needed, use the latest installer from the project’s GitHub release page. Include the error and your Azuria version when reporting a problem; do not include account tokens.")}
           </section>
           <section id="accounts">
-            <h2>Microsoft sign-in</h2>
+            <h2>Accounts & sign-in</h2>
             <p>
               Azuria opens your default browser for Microsoft sign-in. The
               native app then checks Xbox and Minecraft Services access. Sign in
               with a personal Microsoft account that owns Minecraft Java
               Edition.
             </p>
-            ${faq("Why does Minecraft Services deny Azuria access?", "Use the latest Azuria release and an account that owns Minecraft Java Edition, then try reconnecting. If access is still denied, report the exact error and launcher version. A generic HTTP 403 alone does not identify the cause; never include account tokens in a report.")}${faq("Which account should I use?", "A personal Microsoft account with Minecraft Java Edition access. An organisation owning the app registration does not mean players should use a work or school account.")}${faq("What does signing out remove?", "Signing out removes the saved Azuria account from Windows Credential Manager. Your browser may stay signed in to Microsoft. Failed or cancelled account switches preserve the previously saved account.")}
+            ${faq("Why does Minecraft Services deny Azuria access?", "Use the latest Azuria release and an account that owns Minecraft Java Edition, then try reconnecting. If access is still denied, report the exact error and launcher version. A generic HTTP 403 alone does not identify the cause; never include account tokens in a report.")}${faq("Which account should I use?", "A personal Microsoft account with Minecraft Java Edition access. An organisation owning the app registration does not mean players should use a work or school account.")}${faq("What does signing out remove?", "Signing out of Minecraft removes its saved sign-in from Windows Credential Manager. Your browser may stay signed in to Microsoft. Your separate Azuria account has its own sign-out control. Failed or cancelled Minecraft account switches preserve the previously saved account.")}
+          </section>
+          <section id="social">
+            <h2>Friends & messaging</h2>
+            <p>
+              Create or sign in to your Azuria account at
+              <a href="https://accounts.azuriasmp.org/"
+                >accounts.azuriasmp.org</a
+              >, then connect it in the launcher. This account is for Azuria’s
+              social features; you still need Microsoft sign-in and Minecraft
+              Java Edition access to play.
+            </p>
+            ${faq("How do I add a friend?", "Open Social and use Manage friends to send a request by username. Once accepted, select your friend to open a text conversation. You can also manage incoming requests, remove friends and block accounts.")}
+            ${faq("Are messages encrypted?", "New messages are end-to-end encrypted in the launcher. You can compare a conversation’s security code with your friend through another trusted channel. Older messages sent before encryption remain unencrypted and are labelled. Encryption does not hide who you message or when, and this protocol has not had an independent security audit.")}
+            ${faq("Can I read messages on another PC?", "First save an encrypted recovery file from Messaging encryption & recovery and keep its passphrase safe. On the other PC, sign in to the same Azuria account and restore that file. Without your original key or a usable recovery file, Azuria cannot recover your encrypted messages. There is no automatic messaging-key sync between devices.")}
+            ${faq("Will sign-in stay saved?", "The accounts website remembers your sign-in in the same browser, and the Windows launcher saves refresh credentials in Windows Credential Manager. Temporary connection failures preserve saved sign-in and the launcher can retry when you reconnect. Signing out, clearing browser site data or an expired or revoked session can require signing in again. Minecraft reconnection also follows your launcher privacy preference.")}
+            ${faq("When do new messages appear?", "Social refreshes while it is open and the launcher window is visible. Background push notifications, typing indicators, voice calls and online status are not available in this version.")}
           </section>
           <section id="privacy">
             <h2>Privacy & storage</h2>
