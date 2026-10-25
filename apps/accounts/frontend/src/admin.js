@@ -1,3 +1,4 @@
+import { advertisementsWorkspace } from "./admin-advertisements.js";
 import { feedbackWorkspace } from "./admin-feedback.js";
 import { newsWorkspace } from "./admin-news.js";
 import {
@@ -373,6 +374,8 @@ export async function showAdmin({ client, user, ui }) {
     else if (page === "activity") content.append(audit);
     else if (page === "feedback")
       content.append(await feedbackWorkspace({ client, ui }));
+    else if (page === "advertisements")
+      content.append(await advertisementsWorkspace({ client, ui }));
     else if (page === "news")
       content.append(await newsWorkspace({ client, ui }));
     else {

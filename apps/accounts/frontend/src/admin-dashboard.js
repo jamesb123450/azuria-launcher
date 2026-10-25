@@ -1,4 +1,10 @@
 export const adminSections = [
+  {
+    id: "advertisements",
+    label: "Advertisements",
+    group: "Manage",
+    icon: "speaker",
+  },
   { id: "overview", label: "Overview", group: "Workspace", icon: "overview" },
   { id: "accounts", label: "Accounts", group: "Workspace", icon: "users" },
   {

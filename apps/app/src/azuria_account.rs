@@ -830,3 +830,48 @@ pub fn receive_callback(app: tauri::AppHandle, raw: &str) {
         notify_connection(&app, update);
     });
 }
+
+#[derive(Deserialize, Serialize)]
+pub struct SponsorAd {
+    id: String,
+    title: String,
+    image_path: String,
+    image_alt: String,
+    destination: String,
+    slots: Vec<String>,
+    ends_at: Option<String>,
+}
+#[derive(Serialize)]
+pub struct SponsorFeed {
+    url: String,
+    ads: Vec<SponsorAd>,
+}
+/// Public sponsor artwork only; no account session, impressions or message data.
+#[tauri::command]
+pub async fn azuria_advertisements() -> Result<SponsorFeed, String> {
+    let Some(config) = config() else {
+        return Ok(SponsorFeed {
+            url: String::new(),
+            ads: vec![],
+        });
+    };
+    let response = client()?
+        .post(format!("{}/rest/v1/rpc/sponsor_ads_public", config.url))
+        .header("apikey", config.key)
+        .json(&serde_json::json!({}))
+        .send()
+        .await
+        .map_err(|_| "Sponsor artwork could not be loaded.")?;
+    if !response.status().is_success() {
+        return Err("Sponsor artwork is unavailable.".into());
+    }
+    let mut ads: Vec<SponsorAd> = response
+        .json()
+        .await
+        .map_err(|_| "Sponsor artwork could not be read.")?;
+    ads.truncate(8);
+    Ok(SponsorFeed {
+        url: config.url,
+        ads,
+    })
+}

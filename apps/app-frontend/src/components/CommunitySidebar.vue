@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { useFriends } from "../stores/friends";
 import { useAzuriaAccount } from "../stores/azuria-account";
-import { UsersRound, Sparkles, ArrowUpRight, MessageCircle } from "@lucide/vue";
+import { UsersRound, ArrowUpRight, MessageCircle } from "@lucide/vue";
 defineProps<{ adsOnly?: boolean }>();
 import { useMessages } from "../stores/messages";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+import { computed } from "vue";
+import SponsorSlot from "./SponsorSlot.vue";
 import type { Relationship } from "../friends-api";
 const messages = useMessages();
 const friends = useFriends();
 const router = useRouter();
+const route = useRoute();
+const adPage = computed(() =>
+  route.path.startsWith("/monitor/")
+    ? "monitor"
+    : route.path === "/social"
+      ? "social"
+      : route.path === "/versions"
+        ? "library"
+        : "home",
+);
 function chat(row: Relationship) {
   void router.push({ path: "/social", query: { friend: row.account_id } });
 }
@@ -98,16 +110,12 @@ const account = useAzuriaAccount();
       </template>
     </section>
     <div class="community-ads">
-      <section
+      <SponsorSlot
         v-for="slot in 2"
         :key="slot"
-        class="square-ad"
-        role="region"
-        :aria-label="`Advertisement slot ${slot}`"
-      >
-        <span>Advertisement</span
-        ><Sparkles :size="24" :stroke-width="1" aria-hidden="true" />
-      </section>
+        :number="slot"
+        :placement="`${adPage}.${slot === 1 ? 'top' : 'bottom'}`"
+      />
     </div>
   </aside>
 </template>
