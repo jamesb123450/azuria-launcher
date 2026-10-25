@@ -11,7 +11,7 @@ import {
   Plus,
   Layers3,
   ArrowUpRight,
-  Check,
+  Box,
   Spool,
 } from "@lucide/vue";
 import InstanceDialog from "../components/InstanceDialog.vue";
@@ -184,7 +184,7 @@ function tab(value: string) {
 }
 </script>
 <template>
-  <div class="versions-page">
+  <div :class="['versions-page', { 'has-version-context': !saved }]">
     <div class="versions-browser-toolbar">
       <div class="catalogue-searchbar">
         <label class="catalogue-mode"
@@ -559,11 +559,7 @@ function tab(value: string) {
                       :disabled="quick.preparing"
                       @click="quick.choose(quick.version, 'vanilla')"
                     >
-                      <InstanceIcon loader="vanilla" /><Check
-                        v-if="quick.loader === 'vanilla'"
-                        class="loader-selected"
-                        :size="10"
-                      /></button
+                      <Box :size="19" aria-hidden="true" /></button
                     ><button
                       aria-label="Fabric"
                       title="Fabric"
@@ -571,11 +567,7 @@ function tab(value: string) {
                       :disabled="quick.preparing"
                       @click="quick.choose(quick.version, 'fabric')"
                     >
-                      <Spool :size="22" /><Check
-                        v-if="quick.loader === 'fabric'"
-                        class="loader-selected"
-                        :size="10"
-                      />
+                      <Spool :size="19" aria-hidden="true" />
                     </button>
                   </div>
                 </div>

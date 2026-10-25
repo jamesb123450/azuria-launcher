@@ -759,8 +759,10 @@
 }
 .instance-page-header .instance-tabs {
   display: flex;
-  flex: 1 1 490px;
-  justify-content: flex-end;
+  flex: 0 1 auto;
+  max-width: 100%;
+  width: fit-content;
+  justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
   gap: 3px;
@@ -894,7 +896,8 @@
 @media (max-width: 1300px) {
   .instance-page-header .instance-tabs {
     order: 3;
-    flex-basis: 100%;
+    flex-basis: auto;
+    max-width: 100%;
     justify-content: flex-start;
   }
 }
