@@ -1880,3 +1880,10 @@ html[data-theme="light"] .settings-version {
     min-width: 150px;
   }
 }
+.sidebar-bottom .rail-play-bottom {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  color: var(--pink);
+  margin-top: 8px;
+}

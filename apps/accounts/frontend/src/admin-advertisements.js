@@ -166,7 +166,7 @@ export async function advertisementsWorkspace({ client, ui }) {
     alt.required = true;
     alt.maxLength = 240;
     const file = field(
-      "Sponsor artwork · square JPG, PNG or WebP, up to 2 MB",
+      "Sponsor artwork · square or portrait JPG, PNG or WebP, up to 2 MB",
       "file",
     );
     file.accept = "image/jpeg,image/png,image/webp";
@@ -194,11 +194,11 @@ export async function advertisementsWorkspace({ client, ui }) {
       } catch {
         fail("This file is not a readable image.");
       }
-      const square = bitmap.width === bitmap.height;
+      const ratio = bitmap.width / bitmap.height;
       bitmap.close();
-      if (!square)
+      if (ratio < 0.5 || ratio > 1)
         fail(
-          "Use a square image so the artwork fits without cropping. 600 × 600 pixels works well.",
+          "Use square or portrait artwork between 1:1 and 1:2. Try 600 × 600 or 600 × 900 pixels.",
         );
       const { data, error } = await client.auth.getUser();
       if (error || !data.user) fail("Verify admin access before uploading.");

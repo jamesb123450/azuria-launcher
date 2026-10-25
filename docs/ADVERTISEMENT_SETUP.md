@@ -7,14 +7,14 @@ Deploy the accounts website and install the new launcher release. Existing `AZUR
 Open the accounts website → Admin → Advertisements. Administrator access requires the existing authenticator verification.
 
 1. Create advertisement. Enter the sponsor/campaign name, an HTTPS destination and an image description.
-2. Upload square PNG, JPG or WebP artwork, no more than 2 MB. Around 600 × 600 pixels works well. Uploads use public, immutable URLs, including drafts.
+2. Upload square or portrait PNG, JPG or WebP artwork, no more than 2 MB. Use a width-to-height ratio from 1:1 to 1:2. 600 × 600 or 600 × 900 pixels works well. Home and the other pages use square slots, centred in the sidebar. Artwork is fitted without cropping or stretching. Uploads use public, immutable URLs, including drafts.
 3. Set Start and optionally End, in your browser's local time zone. End is exclusive. Dates are saved as UTC instants.
 4. Select one or more labelled placements in the page previews:
 
 | Page                                   | Upper square  | Lower square     |
 | -------------------------------------- | ------------- | ---------------- |
 | Home                                   | `home.top`    | `home.bottom`    |
-| Saved profiles (right sidebar visible) | `library.top` | `library.bottom` |
+| Saved profiles / wardrobe (sidebar visible) | `library.top` | `library.bottom` |
 | Social                                 | `social.top`  | `social.bottom`  |
 | Game monitor                           | `monitor.top` | `monitor.bottom` |
 
@@ -27,3 +27,5 @@ The launcher fetches only currently active campaigns without accessing an accoun
 The dashboard displays the most recently updated 200 campaigns. Expired campaigns show a red Expired badge, including paused campaigns whose end date has passed. Administrators can delete them after confirmation; the server checks expiry, MFA and the current revision. Apply `202610250002_expired_advertisements.sql` after the first advertisements migration to enable deletion. Deleting removes the campaign, while uploaded artwork and administrator audit history are retained.
 
 There is no billing, automatic sponsor signup, analytics or asset deletion in this version. Database write history records the administrator and revision. Keep artwork and destination rights agreed with the sponsor separately.
+
+Home, profile and wardrobe placeholders use a 600 × 600 canvas, scaled proportionally to the sidebar. Wardrobe shares the `library.top` and `library.bottom` placements with the profiles page.

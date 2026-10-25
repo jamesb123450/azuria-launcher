@@ -64,16 +64,16 @@ test("Behaviour stages edits, resets, persists and applies library defaults", as
     .getByRole("button", { name: "Close settings", exact: true })
     .click();
   await expect(
-    page.getByRole("complementary", { name: "Friends and advertisements" }),
+    page.getByRole("complementary", { name: "Advertisements" }),
   ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "List view", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page
-    .getByRole("button", { name: "Friends & ads", exact: true })
+    .getByRole("button", { name: "Advertisements", exact: true })
     .click();
   await expect(
-    page.getByRole("complementary", { name: "Friends and advertisements" }),
+    page.getByRole("complementary", { name: "Advertisements" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Grid view", exact: true }).click();
   await expect(
@@ -84,7 +84,7 @@ test("Behaviour stages edits, resets, persists and applies library defaults", as
     page.getByRole("button", { name: "List view", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.getByRole("complementary", { name: "Friends and advertisements" }),
+    page.getByRole("complementary", { name: "Advertisements" }),
   ).toHaveCount(0);
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await dialog.getByRole("button", { name: "Behaviour", exact: true }).click();

@@ -10,7 +10,19 @@ import {
 } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { Plus, Pencil, Trash2, X, Upload, Check, RotateCcw } from "@lucide/vue";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Upload,
+  Check,
+  RotateCcw,
+  Shirt,
+  Flag,
+  Package,
+  Sparkles,
+} from "@lucide/vue";
 import { useAccount } from "../stores/account";
 import { useWardrobe } from "../stores/wardrobe";
 import {
@@ -18,6 +30,7 @@ import {
   type SavedSkin,
   type SkinDraft,
 } from "../stores/skin-library";
+import CommunitySidebar from "../components/CommunitySidebar.vue";
 import SkinHead from "../components/SkinHead.vue";
 import SkinModel from "../components/SkinModel.vue";
 import CapePreview from "../components/CapePreview.vue";
@@ -28,7 +41,43 @@ const library = useSkinLibrary();
 const accountId = computed(() => account.view.account?.minecraftId ?? "");
 const selected = ref<string | null>(null);
 const visibleCount = ref(24);
-const visibleSkins = computed(() => library.skins.slice(0, visibleCount.value));
+const section = ref<"inventory" | "skins" | "capes" | "registry">("inventory");
+const skinSearch = ref("");
+const selectedCape = ref<string | null | undefined>(undefined);
+const capeSearch = ref("");
+const visibleSkins = computed(() =>
+  library.skins
+    .filter((s) =>
+      s.name.toLowerCase().includes(skinSearch.value.toLowerCase()),
+    )
+    .slice(0, visibleCount.value),
+);
+const capeChoices = computed(
+  () =>
+    wardrobe.profile?.capes.filter((c) =>
+      c.alias.toLowerCase().includes(capeSearch.value.toLowerCase()),
+    ) ?? [],
+);
+const selectedCapeImage = computed(
+  () =>
+    wardrobe.profile?.capes.find((c) => c.id === selectedCape.value)?.image ??
+    null,
+);
+async function equipCape() {
+  if (
+    selectedCape.value === undefined ||
+    !account.view.verified ||
+    locked.value ||
+    wardrobe.busy
+  )
+    return;
+  await wardrobe.change(
+    selectedCape.value === null ? "hideCape" : "selectCape",
+    accountId.value,
+    selectedCape.value ?? undefined,
+  );
+  selectedCape.value = undefined;
+}
 const dialog = ref<HTMLDialogElement>();
 const nameField = ref<HTMLInputElement>();
 const trigger = ref<HTMLElement | null>(null);
@@ -228,6 +277,7 @@ watch(accountId, () => {
   dialog.value?.close();
   editorOpen.value = false;
   selected.value = null;
+  selectedCape.value = undefined;
   localError.value = "";
   notice.value = "";
 });
@@ -253,200 +303,322 @@ onBeforeUnmount(() => {
 });
 </script>
 <template>
-  <section class="page-heading">
-    <div>
-      <h1>Skin selector</h1>
-      <p class="muted">Your Minecraft appearance, ready for your next world.</p>
-    </div>
-    <button
-      class="button secondary"
-      :disabled="wardrobe.busy || locked || !accountId || !desktop"
-      @click="wardrobe.load(accountId)"
-    >
-      Refresh account
-    </button>
-  </section>
-  <p v-if="!desktop" class="muted">
-    Saved skins and account changes are available in the Windows desktop app.
-  </p>
-  <p v-else-if="!account.view.verified" class="muted">
-    Connect your Minecraft Java account in Settings to apply skins. You can
-    still organise your local library.
-  </p>
-  <p
-    v-if="wardrobe.error || library.error || (!editorOpen && localError)"
-    role="alert"
-    class="inline-error"
-  >
-    {{ localError || library.error || wardrobe.error }}
-  </p>
-  <p v-if="notice" role="status" class="instance-feedback">{{ notice }}</p>
-  <p v-if="applying" role="status" class="muted">
-    Updating your Minecraft appearance…
-  </p>
-  <div class="skin-selector-layout">
-    <aside class="skin-current">
-      <div class="skin-current-identity">
-        <span class="skin-small-head"><SkinHead /></span
-        ><strong>{{ account.label }}</strong>
-      </div>
-      <h2>{{ chosen?.name ?? "Current appearance" }}</h2>
-      <SkinModel
-        :skin="shown.image"
-        :variant="shown.variant"
-        :cape="previewCape"
-        interactive
-        label="Current Minecraft skin preview"
-      />
-      <div class="skin-current-actions">
-        <button
-          v-if="chosen"
-          class="button primary"
-          :disabled="locked || wardrobe.busy || !account.view.verified"
-          @click="apply(chosen)"
-        >
-          Use skin</button
-        ><button
-          class="button secondary"
-          :disabled="locked || !shown.image"
-          @click="openEditor(chosen, !chosen)"
-        >
-          <Pencil :size="15" />Edit skin</button
-        ><button v-if="chosen" class="text-link" @click="selected = null">
-          Show current account skin
-        </button>
-      </div>
-    </aside>
-    <div
-      class="skin-collections"
-      @dragover.prevent="dropActive = true"
-      @dragleave="dropActive = false"
-      @drop="dropped"
-    >
-      <details open class="saved-skin-section">
-        <summary>
-          <h2>Saved skins</h2>
-          <span>{{ library.skins.length }}</span>
-        </summary>
-        <div class="saved-skin-tools">
-          <button
-            class="icon-button"
-            aria-label="Refresh saved skins"
-            :disabled="locked"
-            @click="library.load"
-          >
-            <RotateCcw :size="15" />
-          </button>
+  <div class="wardrobe-workspace">
+    <div class="wardrobe-main">
+      <section class="page-heading">
+        <div>
+          <h1>Wardrobe</h1>
+          <p class="muted">
+            Your Minecraft appearance, ready for your next world.
+          </p>
         </div>
-        <div class="saved-skin-grid" :class="{ 'drop-active': dropActive }">
-          <button
-            class="skin-add-card"
-            :disabled="locked || !desktop"
-            @click="openEditor()"
+        <button
+          class="button secondary"
+          :disabled="wardrobe.busy || locked || !accountId || !desktop"
+          @click="wardrobe.load(accountId)"
+        >
+          Refresh account
+        </button>
+      </section>
+      <p v-if="!desktop" class="muted">
+        Saved skins and account changes are available in the Windows desktop
+        app.
+      </p>
+      <p v-else-if="!account.view.verified" class="muted">
+        Connect your Minecraft Java account in Settings to apply skins. You can
+        still organise your local library.
+      </p>
+      <p
+        v-if="wardrobe.error || library.error || (!editorOpen && localError)"
+        role="alert"
+        class="inline-error"
+      >
+        {{ localError || library.error || wardrobe.error }}
+      </p>
+      <p v-if="notice" role="status" class="instance-feedback">{{ notice }}</p>
+      <p v-if="applying" role="status" class="muted">
+        Updating your Minecraft appearance…
+      </p>
+      <nav class="wardrobe-tabs" aria-label="Wardrobe sections">
+        <button
+          v-for="tab in [
+            {
+              id: 'inventory',
+              title: 'Inventory',
+              detail: 'Your Azuria cosmetics',
+              icon: Package,
+            },
+            {
+              id: 'skins',
+              title: 'Skins',
+              detail: 'Your Minecraft appearance',
+              icon: Shirt,
+            },
+            {
+              id: 'capes',
+              title: 'Capes',
+              detail: 'Your owned Minecraft capes',
+              icon: Flag,
+            },
+            {
+              id: 'registry',
+              title: 'Registry',
+              detail: 'Explore Azuria cosmetics',
+              icon: Sparkles,
+            },
+          ]"
+          :key="tab.id"
+          :aria-pressed="section === tab.id"
+          @click="section = tab.id as typeof section"
+        >
+          <component :is="tab.icon" :size="22" /><span
+            ><strong>{{ tab.title }}</strong
+            ><small>{{ tab.detail }}</small></span
+          ><em v-if="tab.id === 'inventory' || tab.id === 'registry'"
+            >Coming soon</em
           >
-            <Plus :size="30" /><strong>Add skin</strong
-            ><span>Choose a PNG or drag and drop</span>
-          </button>
-          <article
-            v-for="skin in visibleSkins"
-            :key="skin.id"
-            class="saved-skin-card"
-            :class="{ selected: selected === skin.id }"
-          >
+        </button>
+      </nav>
+      <section
+        v-if="section === 'inventory' || section === 'registry'"
+        class="wardrobe-coming"
+      >
+        <span class="coming-soon-banner">COMING SOON</span
+        ><Package :size="42" />
+        <h2>
+          {{
+            section === "inventory"
+              ? "A little more you."
+              : "Made for your next adventure."
+          }}
+        </h2>
+        <p>
+          Azuria cosmetics are on the way. Your Minecraft skins and owned capes
+          are ready to use now.
+        </p>
+        <button class="button primary" @click="section = 'skins'">
+          Explore your skins
+        </button>
+      </section>
+      <div
+        v-if="section === 'skins' || section === 'capes'"
+        class="skin-selector-layout"
+      >
+        <aside class="skin-current">
+          <div class="skin-current-identity">
+            <span class="skin-small-head"><SkinHead /></span
+            ><strong>{{ account.label }}</strong>
+          </div>
+          <h2>{{ chosen?.name ?? "Current appearance" }}</h2>
+          <SkinModel
+            :skin="shown.image || '/appearance/steve.png'"
+            :variant="shown.variant"
+            :cape="
+              section === 'capes' && selectedCape !== undefined
+                ? selectedCapeImage
+                : previewCape
+            "
+            interactive
+            label="Current Minecraft skin preview"
+          />
+          <div v-if="section === 'capes'" class="skin-current-actions">
             <button
-              class="skin-select-target"
-              :aria-label="`Preview ${skin.name}`"
-              :aria-pressed="selected === skin.id"
-              @click="selected = skin.id"
+              class="button primary"
+              :disabled="
+                selectedCape === undefined ||
+                locked ||
+                wardrobe.busy ||
+                !account.view.verified
+              "
+              @click="equipCape"
             >
-              <SkinModel
-                :skin="skin.image"
-                :variant="skin.variant"
-                :cape="
-                  wardrobe.profile?.capes.find((c) => c.id === skin.capeId)
-                    ?.image ?? null
-                "
-                :label="`${skin.name} skin preview`"
-              /><strong>{{ skin.name }}</strong
-              ><Check
-                v-if="selected === skin.id"
-                :size="18"
-                class="skin-selected-mark"
-              />
+              {{
+                selectedCape === null
+                  ? "Hide cape"
+                  : selectedCape === undefined
+                    ? "Equipped"
+                    : "Equip cape"
+              }}</button
+            ><button
+              class="button secondary"
+              :disabled="selectedCape === undefined"
+              @click="selectedCape = undefined"
+            >
+              Cancel preview
             </button>
-            <div class="skin-card-actions">
+          </div>
+          <div v-else class="skin-current-actions">
+            <button
+              v-if="chosen"
+              class="button primary"
+              :disabled="locked || wardrobe.busy || !account.view.verified"
+              @click="apply(chosen)"
+            >
+              Use skin</button
+            ><button
+              class="button secondary"
+              :disabled="locked || !shown.image"
+              @click="openEditor(chosen, !chosen)"
+            >
+              <Pencil :size="15" />Edit skin</button
+            ><button v-if="chosen" class="text-link" @click="selected = null">
+              Show current account skin
+            </button>
+          </div>
+        </aside>
+        <div
+          class="skin-collections"
+          @dragover.prevent="dropActive = true"
+          @dragleave="dropActive = false"
+          @drop="dropped"
+        >
+          <details v-if="section === 'skins'" open class="saved-skin-section">
+            <summary>
+              <h2>Saved skins</h2>
+              <span>{{ library.skins.length }}</span>
+            </summary>
+            <div class="saved-skin-tools">
+              <input
+                v-model="skinSearch"
+                aria-label="Search saved skins"
+                placeholder="Search your skins…"
+              />
               <button
-                class="button primary"
+                class="icon-button"
+                aria-label="Refresh saved skins"
                 :disabled="locked"
-                :aria-label="`Edit ${skin.name}`"
-                @click="openEditor(skin)"
+                @click="library.load"
               >
-                <Pencil :size="14" />Edit</button
-              ><button
-                class="button secondary danger"
-                :disabled="locked"
-                :aria-label="`Remove ${skin.name}`"
-                @click="remove(skin)"
-              >
-                <Trash2 :size="15" />
+                <RotateCcw :size="15" />
               </button>
             </div>
-          </article>
+            <div class="saved-skin-grid" :class="{ 'drop-active': dropActive }">
+              <button
+                class="skin-add-card"
+                :disabled="locked || !desktop"
+                @click="openEditor()"
+              >
+                <Plus :size="30" /><strong>Add skin</strong
+                ><span>Choose a PNG or drag and drop</span>
+              </button>
+              <article
+                v-for="skin in visibleSkins"
+                :key="skin.id"
+                class="saved-skin-card"
+                :class="{ selected: selected === skin.id }"
+              >
+                <button
+                  class="skin-select-target"
+                  :aria-label="`Preview ${skin.name}`"
+                  :aria-pressed="selected === skin.id"
+                  @click="selected = skin.id"
+                >
+                  <SkinModel
+                    :skin="skin.image"
+                    :variant="skin.variant"
+                    :cape="
+                      wardrobe.profile?.capes.find((c) => c.id === skin.capeId)
+                        ?.image ?? null
+                    "
+                    :label="`${skin.name} skin preview`"
+                  /><strong>{{ skin.name }}</strong
+                  ><Check
+                    v-if="selected === skin.id"
+                    :size="18"
+                    class="skin-selected-mark"
+                  />
+                </button>
+                <div class="skin-card-actions">
+                  <button
+                    class="button primary"
+                    :disabled="locked"
+                    :aria-label="`Edit ${skin.name}`"
+                    @click="openEditor(skin)"
+                  >
+                    <Pencil :size="14" />Edit</button
+                  ><button
+                    class="button secondary danger"
+                    :disabled="locked"
+                    :aria-label="`Remove ${skin.name}`"
+                    @click="remove(skin)"
+                  >
+                    <Trash2 :size="15" />
+                  </button>
+                </div>
+              </article>
+            </div>
+            <button
+              v-if="library.skins.length > visibleCount"
+              class="button secondary"
+              @click="visibleCount += 24"
+            >
+              Show more skins
+            </button>
+            <p class="muted skin-library-note">
+              Saved on this computer in AzuriaLauncher\skins. Previewing a skin
+              does not change your account.
+            </p>
+          </details>
+          <section v-if="section === 'skins'" class="skin-default-section">
+            <h2>Default appearance</h2>
+            <p class="muted">
+              Return to the Minecraft default skin assigned to your account.
+            </p>
+            <button
+              class="button secondary"
+              :disabled="locked || wardrobe.busy || !account.view.verified"
+              @click="reset"
+            >
+              <RotateCcw :size="15" />Reset to Minecraft default
+            </button>
+          </section>
+          <section v-if="section === 'capes'" class="skin-owned-capes">
+            <input
+              v-model="capeSearch"
+              aria-label="Search owned capes"
+              placeholder="Search your capes…"
+            />
+            <h2>Owned capes</h2>
+            <p class="muted">
+              Select a cape to preview it, then equip it when you are ready.
+            </p>
+            <div class="cape-grid">
+              <button
+                class="cape-card"
+                :aria-pressed="
+                  selectedCape === null ||
+                  (selectedCape === undefined && !activeCape)
+                "
+                :disabled="locked || wardrobe.busy"
+                @click="selectedCape = null"
+              >
+                <span class="no-cape" aria-hidden="true">∅</span
+                ><strong>No cape</strong></button
+              ><button
+                v-for="cape in capeChoices"
+                :key="cape.id"
+                class="cape-card"
+                :aria-pressed="
+                  selectedCape === cape.id ||
+                  (selectedCape === undefined && cape.active)
+                "
+                :disabled="locked || wardrobe.busy"
+                @click="selectedCape = cape.id"
+              >
+                <CapePreview :image="cape.image" :name="cape.alias" /><strong>{{
+                  cape.alias
+                }}</strong
+                ><span v-if="cape.active">Equipped</span>
+              </button>
+            </div>
+          </section>
         </div>
-        <button
-          v-if="library.skins.length > visibleCount"
-          class="button secondary"
-          @click="visibleCount += 24"
-        >
-          Show more skins
-        </button>
-        <p class="muted skin-library-note">
-          Saved on this computer in AzuriaLauncher\skins. Previewing a skin does
-          not change your account.
-        </p>
-      </details>
-      <section class="skin-default-section">
-        <h2>Default appearance</h2>
-        <p class="muted">
-          Return to the Minecraft default skin assigned to your account.
-        </p>
-        <button
-          class="button secondary"
-          :disabled="locked || wardrobe.busy || !account.view.verified"
-          @click="reset"
-        >
-          <RotateCcw :size="15" />Reset to Minecraft default
-        </button>
-      </section>
-      <section class="skin-owned-capes">
-        <h2>Owned capes</h2>
-        <p class="muted">
-          Choose a cape in the skin editor, or apply one directly below.
-        </p>
-        <div class="cape-grid">
-          <button
-            class="cape-card"
-            :aria-pressed="!activeCape"
-            :disabled="locked || wardrobe.busy || !account.view.verified"
-            @click="wardrobe.change('hideCape', accountId)"
-          >
-            <span class="no-cape">∅</span><strong>No cape</strong></button
-          ><button
-            v-for="cape in wardrobe.profile?.capes"
-            :key="cape.id"
-            class="cape-card"
-            :aria-pressed="cape.active"
-            :disabled="locked || wardrobe.busy"
-            @click="wardrobe.change('selectCape', accountId, cape.id)"
-          >
-            <CapePreview :image="cape.image" :name="cape.alias" /><strong>{{
-              cape.alias
-            }}</strong
-            ><span v-if="cape.active">Equipped</span>
-          </button>
-        </div>
-      </section>
+      </div>
     </div>
+    <aside class="wardrobe-sponsors" aria-label="Wardrobe advertisements">
+      <h2>Advertisements</h2>
+      <CommunitySidebar ads-only placement-page="library" />
+    </aside>
   </div>
   <input
     ref="fileInput"
@@ -950,5 +1122,205 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: flex-end;
   margin: -12px 0 8px;
+}
+</style>
+
+<style scoped>
+.wardrobe-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  border-radius: 14px;
+  margin: 26px 0;
+}
+.wardrobe-tabs button {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  padding: 18px 14px;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 10px;
+  color: var(--muted);
+}
+.wardrobe-tabs button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--accent-wash);
+  border-color: var(--border-strong);
+}
+.wardrobe-tabs strong {
+  font-size: 14px;
+  display: block;
+}
+.wardrobe-tabs small {
+  font-size: 10px;
+  display: block;
+  margin-top: 6px;
+}
+.wardrobe-tabs em {
+  position: absolute;
+  right: 8px;
+  top: 4px;
+  font-size: 8px;
+  font-style: normal;
+  color: var(--pink);
+}
+.wardrobe-coming {
+  position: relative;
+  min-height: 430px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 50% 40%, #b686c21c, transparent 65%),
+    var(--panel-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  padding: 35px;
+}
+.coming-soon-banner {
+  letter-spacing: 0.18em;
+  color: var(--pink);
+  font-size: 10px;
+  padding: 8px 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: 30px;
+}
+.wardrobe-coming h2 {
+  font-size: 28px;
+  margin: 0;
+}
+.wardrobe-coming p {
+  max-width: 420px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.skin-selector-layout {
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+}
+.skin-current {
+  grid-column: 2;
+  grid-row: 1;
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  border-radius: 14px;
+}
+.skin-collections {
+  grid-column: 1;
+  grid-row: 1;
+}
+.skin-current :deep(.skin-model-stage) {
+  height: 360px;
+}
+.skin-current :deep(.skin-model-person) {
+  scale: 1.7;
+}
+.skin-owned-capes {
+  margin-top: 0;
+}
+.cape-grid {
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  margin-top: 20px;
+}
+.cape-card {
+  min-height: 240px;
+  background:
+    radial-gradient(ellipse at center, #b686c211, transparent),
+    var(--panel-soft);
+  justify-content: center;
+}
+.cape-card :deep(.cape-stage) {
+  scale: 1.5;
+  margin: 25px 0;
+}
+.saved-skin-tools {
+  margin: 0 0 15px;
+  gap: 12px;
+}
+.saved-skin-tools input,
+.skin-owned-capes > input {
+  width: 100%;
+  padding: 12px;
+  background: var(--input);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+}
+.skin-current-actions {
+  padding: 0 12px;
+}
+.skin-current-actions .button {
+  width: 100%;
+  justify-content: center;
+}
+@media (max-width: 1000px) {
+  .wardrobe-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .skin-selector-layout {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+}
+</style>
+
+<style scoped>
+.wardrobe-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 24px;
+}
+.wardrobe-main {
+  min-width: 0;
+}
+.wardrobe-sponsors {
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+}
+.wardrobe-sponsors h2 {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin: 0 0 18px;
+}
+.wardrobe-sponsors :deep(.community-sidebar) {
+  height: 600px;
+}
+.wardrobe-sponsors :deep(.community-ads) {
+  margin: auto 0;
+}
+.wardrobe-tabs {
+  margin-top: 22px;
+}
+@media (max-width: 1300px) {
+  .wardrobe-workspace {
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: 18px;
+  }
+  .wardrobe-tabs button {
+    padding: 18px 10px;
+    gap: 8px;
+  }
+  .wardrobe-tabs small {
+    font-size: 9px;
+  }
+}
+@media (max-width: 1000px) {
+  .wardrobe-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wardrobe-sponsors {
+    display: none;
+  }
 }
 </style>

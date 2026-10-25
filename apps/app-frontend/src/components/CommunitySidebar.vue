@@ -2,7 +2,11 @@
 import { useFriends } from "../stores/friends";
 import { useAzuriaAccount } from "../stores/azuria-account";
 import { UsersRound, ArrowUpRight, MessageCircle } from "@lucide/vue";
-defineProps<{ adsOnly?: boolean }>();
+const props = defineProps<{
+  adsOnly?: boolean;
+  friendsOnly?: boolean;
+  placementPage?: "home" | "library" | "social" | "monitor";
+}>();
 import { useMessages } from "../stores/messages";
 import { useRouter, useRoute } from "vue-router";
 import { computed } from "vue";
@@ -12,14 +16,16 @@ const messages = useMessages();
 const friends = useFriends();
 const router = useRouter();
 const route = useRoute();
-const adPage = computed(() =>
-  route.path.startsWith("/monitor/")
-    ? "monitor"
-    : route.path === "/social"
-      ? "social"
-      : route.path === "/versions"
-        ? "library"
-        : "home",
+const adPage = computed(
+  () =>
+    props.placementPage ??
+    (route.path.startsWith("/monitor/")
+      ? "monitor"
+      : route.path === "/social"
+        ? "social"
+        : route.path === "/versions"
+          ? "library"
+          : "home"),
 );
 function chat(row: Relationship) {
   void router.push({ path: "/social", query: { friend: row.account_id } });
@@ -109,7 +115,7 @@ const account = useAzuriaAccount();
         </button>
       </template>
     </section>
-    <div class="community-ads">
+    <div v-if="!friendsOnly" class="community-ads">
       <SponsorSlot
         v-for="slot in 2"
         :key="slot"

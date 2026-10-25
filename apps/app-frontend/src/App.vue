@@ -19,6 +19,7 @@ import {
 import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
 import AccountMenu from "./components/AccountMenu.vue";
+import ChatDock from "./components/ChatDock.vue";
 import FriendsPanel from "./components/FriendsPanel.vue";
 import { useFriends } from "./stores/friends";
 import ActivityMenus from "./components/ActivityMenus.vue";
@@ -302,13 +303,12 @@ async function storagePrepared() {
             /><span class="rail-tooltip">Settings</span></RouterLink
           >
           <RouterLink
-            to="/settings#account"
-            class="rail-avatar"
-            :title="account.label"
-            aria-label="Minecraft account"
-          >
-            <SkinHead />
-          </RouterLink>
+            to="/"
+            class="rail-link rail-play-bottom"
+            aria-label="Return to play"
+            title="Return to play"
+            ><Play :size="22"
+          /></RouterLink>
         </div>
       </aside>
       <div class="main-shell" :inert="route.path === '/settings'">
@@ -385,6 +385,14 @@ async function storagePrepared() {
         </div>
       </div>
     </div>
+    <ChatDock
+      v-if="
+        storageReady &&
+        !booting &&
+        route.path !== '/social' &&
+        route.path !== '/settings'
+      "
+    />
   </template>
 </template>
 

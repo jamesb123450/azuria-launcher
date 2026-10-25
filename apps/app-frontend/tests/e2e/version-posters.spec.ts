@@ -114,9 +114,7 @@ test("poster selection stays on Versions with patch and loader controls, art and
     path: test.info().outputPath("versions-premium.png"),
   });
   await page.getByRole("link", { name: "Home", exact: true }).click();
-  await expect(page.locator(".launch-main")).toContainText(
-    "Minecraft 1.21 · Fabric",
-  );
+  await expect(page.locator(".launch-main")).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Development information" }),
   ).toHaveCount(0);

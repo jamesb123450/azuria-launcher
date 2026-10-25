@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 async function setup(page: Page) {
   await page.goto("/");
-  await page.locator(".community-sidebar").waitFor();
+  await page.locator(".friends-placeholder").waitFor();
   await page.evaluate(async () => {
     const apiPath = "/src/friends-api.ts",
       accountPath = "/src/stores/azuria-account.ts";
@@ -135,5 +135,5 @@ test("signing out clears an open friends dialog and cached names", async ({
   await expect(
     page.getByRole("dialog", { name: "Friends", exact: true }),
   ).not.toBeVisible();
-  await expect(page.locator(".community-sidebar")).not.toContainText("Bob");
+  await expect(page.locator("#main-content")).not.toContainText("Bob");
 });

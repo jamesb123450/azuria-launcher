@@ -259,6 +259,7 @@ test("Vanilla launch shows progress, survives navigation and tracks running and 
     page.getByRole("button", { name: "Play", exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Play", exact: true }).click();
+  await page.getByRole("link", { name: "Saved setups", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Stop", exact: true }),
   ).toBeEnabled();
@@ -368,10 +369,21 @@ test("wardrobe applies an owned cape and supports hiding it", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
-  await expect(
-    page.getByRole("heading", { name: "Skin selector" }),
-  ).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByRole("heading", { name: "Wardrobe" })).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Capes Your owned Minecraft capes",
+      exact: true,
+    })
+    .click();
   await page.getByRole("button", { name: "Test cape" }).click();
+  await page.getByRole("button", { name: "Equip cape", exact: true }).click();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -382,6 +394,7 @@ test("wardrobe applies an owned cape and supports hiding it", async ({
     )
     .toBe(true);
   await page.getByRole("button", { name: "No cape" }).click();
+  await page.getByRole("button", { name: "Hide cape", exact: true }).click();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -459,6 +472,12 @@ test("the account menu shows the player skin head", async ({ page }) => {
   await page
     .getByRole("link", { name: "Skins and capes", exact: true })
     .click();
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   await expect(
     page.getByRole("img", { name: "Current Minecraft skin preview" }),
   ).toBeVisible();
@@ -495,6 +514,18 @@ test("owned capes show cropped wearable faces instead of the atlas", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", {
+      name: "Capes Your owned Minecraft capes",
+      exact: true,
+    })
+    .click();
   const cape = page.getByRole("img", { name: "Test cape cape preview" });
   await expect(cape).toBeVisible();
   await expect(cape.locator(".cape-front")).toHaveCSS(
@@ -513,6 +544,12 @@ test("saved skin cards expose edit actions and changes save locally before accou
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   const card = page.locator(".saved-skin-card").first();
   await card.hover();
   await page.getByRole("button", { name: "Edit My skin", exact: true }).click();
@@ -555,6 +592,12 @@ test("adding, cancelling and removing a saved skin keep account changes explicit
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   await page.getByRole("button", { name: /Add skin/ }).click();
   let editor = page.getByRole("dialog", { name: "Add skin", exact: true });
   await editor.getByRole("button", { name: "Choose texture" }).click();
@@ -592,6 +635,12 @@ test("the skin preview rotates with pointer and keyboard controls", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   const model = page.locator(".skin-current .skin-model-person");
   await expect(model).toBeVisible();
   const before = await model.getAttribute("style");
@@ -624,6 +673,12 @@ test("a native PNG drop opens the editor without changing the account", async ({
 }) => {
   await setup(page);
   await page.goto("/#/wardrobe");
+  await page
+    .getByRole("button", {
+      name: "Skins Your Minecraft appearance",
+      exact: true,
+    })
+    .click();
   await expect(
     page.getByRole("button", { name: "Preview My skin" }),
   ).toBeVisible();
@@ -731,18 +786,17 @@ test("creating Fabric pins Stable and starts download-only preparation", async (
   );
   await page.goto("/#/versions?tab=setups");
   await page
-    .getByRole("button", { name: "Create instance", exact: true })
+    .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
-  await page.getByRole("button", { name: /Custom setup/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("New Fabric");
   await page.getByRole("button", { name: "Fabric", exact: true }).click();
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Create instance", exact: true })
+    .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Stop", exact: true }),
+    page.getByRole("button", { name: "Stop", exact: true }).first(),
   ).toBeEnabled();
   expect(
     await page.evaluate(
@@ -783,44 +837,27 @@ test("topbar Stop reaches the native cancellation command", async ({
     .toBe(true);
 });
 
-test("Home creates one automatic setup without background preparation and reuses it", async ({
+test("Home launches the existing profile without creating another setup", async ({
   page,
 }) => {
   await setup(page);
-  await page.route("https://piston-meta.mojang.com/**", (r) =>
-    r.fulfill({ json: { versions: [{ id: "1.21.1", type: "release" }] } }),
-  );
   await page.goto("/");
-  const launch = page.locator(".launch-main");
-  await expect(launch).toBeEnabled();
-  await launch.click();
+  await expect(page.locator(".launch-main")).toHaveCount(0);
+  await page
+    .locator(".home-profile-card")
+    .getByRole("button", { name: "Play", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: /Cancel launch/ }),
-  ).toBeVisible();
-  const result = await page.evaluate(() => ({
-    calls: (window as any).gameCalls,
-    input: (window as any).createdInput,
-    prepare: (window as any).createdPrepare,
-  }));
-  expect(result.prepare).toBe(false);
-  expect(result.input.loader).toBe("vanilla");
-  expect(
-    result.calls.filter((c: string) => c === "create_instance"),
-  ).toHaveLength(1);
-  expect(
-    result.calls.filter((c: string) => c === "launch_instance"),
-  ).toHaveLength(1);
-  expect(
-    result.calls.filter((c: string) => c === "prepare_instance"),
-  ).toHaveLength(0);
-  await page.evaluate(() => (window as any).finishQuickGame());
-  await expect(launch).toContainText("Launch game");
-  await launch.click();
+    page
+      .locator(".home-profile-card")
+      .getByRole("button", { name: "Stop", exact: true }),
+  ).toBeEnabled();
   const calls = await page.evaluate(
     () => (window as any).gameCalls as string[],
   );
-  expect(calls.filter((c) => c === "create_instance")).toHaveLength(1);
-  expect(calls.filter((c) => c === "launch_instance")).toHaveLength(2);
+  expect(calls.filter((c) => c === "create_instance")).toHaveLength(0);
+  expect(calls.filter((c) => c === "launch_instance")).toHaveLength(1);
+  expect(calls).toContain("open_game_monitor");
 });
 
 test("task panel retains completed work and notifications without inventing downloads", async ({
@@ -963,8 +1000,12 @@ test("launching an installed modpack returns Home with the exact profile and its
   );
   await page.getByRole("button", { name: "Launch game", exact: true }).click();
   await expect(page).toHaveURL(/#\/$/);
-  await expect(page.locator(".launch-main")).toContainText("Forest adventure");
-  await expect(page.locator(".launch-main")).toContainText("Minecraft 1.21.1");
+  await expect(page.locator(".home-profile-card")).toContainText(
+    "Forest adventure",
+  );
+  await expect(page.locator(".home-profile-card")).toContainText(
+    "Minecraft 1.21.1",
+  );
   await expect
     .poll(() =>
       page.evaluate(

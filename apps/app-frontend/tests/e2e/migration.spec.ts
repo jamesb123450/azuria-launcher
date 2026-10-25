@@ -129,11 +129,11 @@ test("migration requires confirmation while opening the folder is optional", asy
     ),
   ).not.toContain("open_instances_folder");
   await expect(
-    page.getByRole("heading", { name: "Saved setups", exact: true }),
+    page.getByRole("heading", { name: "Profiles", exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Saved setups", exact: true }),
+    page.getByRole("heading", { name: "Profiles", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
@@ -202,7 +202,7 @@ test("acknowledged launches never open the migration modal even during slow stor
   for (let start = 0; start < 3; start++) {
     await page.goto("/#/versions?tab=setups");
     await expect(
-      page.getByRole("heading", { name: "Saved setups", exact: true }),
+      page.getByRole("heading", { name: "Profiles", exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(

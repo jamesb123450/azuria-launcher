@@ -216,7 +216,7 @@ function tab(value: string) {
 </script>
 <template>
   <div :class="['versions-page', { 'has-version-context': !saved }]">
-    <div class="versions-browser-toolbar">
+    <div v-if="!saved" class="versions-browser-toolbar">
       <div class="catalogue-searchbar">
         <label class="catalogue-mode"
           ><select
@@ -254,7 +254,7 @@ function tab(value: string) {
         ><input v-model="snapshots" type="checkbox" />Snapshots &amp; older
         builds</label
       >
-      <button class="button primary" @click="create = true">
+      <button v-if="!saved" class="button primary" @click="create = true">
         <Plus :size="16" />New profile
       </button>
     </div>

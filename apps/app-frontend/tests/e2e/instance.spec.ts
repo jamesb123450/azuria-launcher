@@ -245,7 +245,7 @@ test("navigation highlights only the current page and screenshot tab matches its
 
   await library.click();
 });
-test("community sidebar shows signed-out friends guidance and two square ad slots", async ({
+test("Home shows signed-out friends guidance and two square ad slots", async ({
   page,
 }) => {
   await page.goto("/");
@@ -260,7 +260,7 @@ test("community sidebar shows signed-out friends guidance and two square ad slot
   for (const width of [900, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const slot of [1, 2]) {
-      const ad = sidebar.getByRole("region", {
+      const ad = page.locator(".home-sponsor-rail").getByRole("region", {
         name: `Advertisement slot ${slot}`,
       });
       const box = await ad.boundingBox();
@@ -319,7 +319,7 @@ test("profile popup keeps notes and exports only portable setup preferences", as
   await expect(popup.getByLabel("Memory allocation in MB")).toBeEnabled();
 });
 
-test("Home launch arrow and hero settings route to saved setups and memory", async ({
+test("Home versions link and hero settings route to versions and memory", async ({
   page,
 }) => {
   await page.route("https://piston-meta.mojang.com/**", (r) =>
@@ -327,7 +327,7 @@ test("Home launch arrow and hero settings route to saved setups and memory", asy
   );
   await page.goto("/");
   await page
-    .getByRole("link", { name: "Open Minecraft versions", exact: true })
+    .getByRole("link", { name: "Explore versions", exact: true })
     .click();
   await expect(page).toHaveURL(/#\/versions$/);
   await page.getByRole("link", { name: "Home", exact: true }).click();
