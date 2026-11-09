@@ -18,19 +18,7 @@ const output = `${root}dist`;
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 const home = await readFile(`${root}src/home.html`, "utf8");
-const configEscape = (value = "") =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;");
-const surveyUrl = (process.env.AZURIA_SUPABASE_URL || "").replace(/\/$/, "");
-if (surveyUrl && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(surveyUrl))
-  throw new Error(
-    "AZURIA_SUPABASE_URL must be your HTTPS Supabase project URL.",
-  );
-const banner =
-  analytics +
-  `<link rel="stylesheet" href="/survey.css"><div id="feedback-config" hidden data-url="${configEscape(surveyUrl)}" data-key="${configEscape(process.env.AZURIA_SUPABASE_PUBLISHABLE_KEY)}" data-sitekey="${configEscape(process.env.AZURIA_TURNSTILE_SITE_KEY)}"></div><script src="/survey.js" type="module"></script>`;
+const banner = analytics;
 const siteOrigin =
   process.env.AZURIA_SITE_URL?.trim() || "https://www.azuriasmp.org/";
 const verification = process.env.AZURIA_GOOGLE_SITE_VERIFICATION?.trim() || "";
@@ -70,26 +58,20 @@ for (const [slug, content, title] of [
   );
 }
 await mkdir(`${output}/survey`, { recursive: true });
+// Keep old shared/bookmarked links informative without exposing a form or collecting data.
 const surveyBody = home.replace(
   /<main id="as-top">[\s\S]*?<\/main>/,
-  `<main id="as-top" class="survey-page"><div class="survey-intro"><p class="survey-eyebrow">AZURIA LAUNCHER · COMMUNITY SURVEY</p><h1>Your launcher.<br>Your priorities.</h1><p>Help us understand what matters to you. Choose as many answers as you like for each question. No account needed.</p><p class="survey-hint">All answers are anonymous. We don’t ask for names, emails or account details. Read our <a href="/privacy/">privacy policy</a>.</p></div><form id="feedback-form"><div id="feedback-questions"></div><section class="survey-written"><label for="feedback-extra">Anything else you’d like to share? <span class="survey-hint">(optional)</span></label><p id="feedback-extra-hint" class="survey-hint">Up to 2,000 characters. Please don’t include your name, email, account details or other personal information.</p><textarea id="feedback-extra" name="extraFeedback" maxlength="2000" rows="6" aria-describedby="feedback-extra-hint"></textarea></section><div class="survey-submit"><div id="feedback-challenge"></div><p id="feedback-status" role="status" aria-live="polite"></p><button class="survey-primary" id="feedback-send" type="submit">Send feedback</button><p class="survey-hint">Please choose at least one answer per question.</p></div></form><section id="feedback-thanks" hidden tabindex="-1"><h2>Thanks for helping shape Azuria.</h2><p>Your feedback has been recorded. We’ll use it to decide what to improve next.</p><a href="/">Back to Azuria Studios →</a></section></main>`,
+  '<main id="as-top" class="legal-page"><h1>The launcher survey has closed</h1><p>Thank you to everyone who shared their feedback. We’re keeping the responses to help improve Azuria Launcher.</p><p><a href="/">Return to Azuria Studios</a></p></main>',
 );
 await writeFile(
   `${output}/survey/index.html`,
   render(
-    "Launcher survey — Azuria Studios",
+    "Survey closed — Azuria Studios",
     surveyBody,
-    "Tell us what matters to you in a Minecraft launcher. An anonymous survey from Azuria Studios.",
+    "The Azuria Launcher feedback survey is now closed.",
     "survey/",
   ),
 );
-for (const name of [
-  "survey.js",
-  "survey.css",
-  "survey-definition.mjs",
-  "survey-errors.mjs",
-])
-  await cp(`${root}src/${name}`, `${output}/${name}`);
 await cp(`${root}assets`, `${output}/assets`, { recursive: true });
 await cp(`${root}src/site.css`, `${output}/site.css`);
 await cp(`${root}src/site.js`, `${output}/site.js`);
@@ -119,7 +101,6 @@ const indexablePaths = [
   "contact/",
   "cookie-policy/",
   "data-request/",
-  "survey/",
 ];
 const xmlEscape = (value) =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
