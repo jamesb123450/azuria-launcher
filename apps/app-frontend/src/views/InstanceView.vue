@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { LOADERS } from "../types";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import {
   onBeforeRouteLeave,
@@ -879,22 +880,19 @@ const prettySize = (size: number) =>
                         v-model="loaderDraft"
                         :disabled="actionBusy"
                       >
-                        <option value="vanilla">Vanilla</option>
-                        <option value="fabric">Fabric</option>
                         <option
-                          v-if="
-                            !['vanilla', 'fabric'].includes(instance.loader)
-                          "
-                          :value="instance.loader"
+                          v-for="option in LOADERS"
+                          :key="option.id"
+                          :value="option.id"
                         >
-                          {{ loaderName(instance.loader) }}
+                          {{ option.name }}
                         </option>
                       </select></label
                     >
                     <p class="muted">
-                      Fabric uses its latest stable compatible loader. Changing
-                      versions keeps your files; existing mods or worlds may
-                      need updates.
+                      Modded profiles use the latest stable compatible loader.
+                      Changing versions keeps your files; existing mods or
+                      worlds may need updates.
                     </p>
                     <div class="instance-save-bar">
                       <button
@@ -931,11 +929,7 @@ const prettySize = (size: number) =>
                     <div>
                       <dt>Status</dt>
                       <dd>
-                        {{
-                          ["vanilla", "fabric"].includes(instance.loader)
-                            ? "Downloads after creation; checked again on Play"
-                            : "Loader launching coming soon"
-                        }}
+                        {{ "Downloads after creation; checked again on Play" }}
                       </dd>
                     </div>
                   </dl>

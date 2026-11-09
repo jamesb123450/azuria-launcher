@@ -188,3 +188,22 @@ it("does not create a replacement when a selected modpack is removed", async () 
   await expect(q.ensureSetup()).rejects.toThrow("no longer available");
   expect(mocks.create).not.toHaveBeenCalled();
 });
+
+for (const loader of ["forge", "neoforge", "quilt"] as const) {
+  it(`pins and restores a ${loader} setup without falling back to Vanilla`, async () => {
+    await useLauncher().init();
+    const q = useQuickPlay();
+    q.choose("1.21.1", loader);
+    const profile = await q.ensureSetup();
+    expect(profile.loader).toBe(loader);
+    expect(mocks.resolve).toHaveBeenCalledWith(loader, "1.21.1", "stable");
+    q.adoptSetup(profile);
+    setActivePinia(createPinia());
+    mocks.list.mockResolvedValue([profile]);
+    await useLauncher().init();
+    const restored = useQuickPlay();
+    expect(restored.loader).toBe(loader);
+    expect((await restored.ensureSetup()).id).toBe(profile.id);
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+}

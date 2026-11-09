@@ -792,8 +792,11 @@ impl Client {
             serde_json::from_slice(&zip_bytes(&mut zip, index_name, 8 * 1024 * 1024)?)
                 .map_err(|_| "Invalid modpack manifest.")?;
         let target = pack_target(provider, &index)?;
-        if !matches!(target.loader.as_str(), "vanilla" | "fabric") {
-            return Err("This pack requires a loader Azuria cannot launch yet. Choose a Vanilla or Fabric pack.".into());
+        if !matches!(
+            target.loader.as_str(),
+            "vanilla" | "fabric" | "forge" | "neoforge" | "quilt"
+        ) {
+            return Err("This pack requires an unrecognized mod loader.".into());
         }
         let mut plan = Plan {
             provider,

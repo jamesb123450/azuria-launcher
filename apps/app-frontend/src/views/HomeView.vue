@@ -187,10 +187,7 @@ function played(id: string) {
             <button
               class="home-profile-select"
               :aria-label="`Select ${profile.name} for Home`"
-              :disabled="
-                quick.preparing ||
-                !['vanilla', 'fabric'].includes(profile.loader)
-              "
+              :disabled="quick.preparing"
               @click="select(profile)"
             >
               <ContentIcon

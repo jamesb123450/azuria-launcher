@@ -26,9 +26,7 @@ const launch = computed(() => game.launches[props.instance.id]);
 const active = computed(
   () => launch.value && !terminalStages.includes(launch.value.stage),
 );
-const supported = computed(
-  () => desktop && ["vanilla", "fabric"].includes(props.instance.loader),
-);
+const supported = computed(() => desktop);
 const retryPreparation = computed(
   () =>
     !!launch.value?.prepareOnly &&
@@ -117,11 +115,7 @@ async function toggle() {
     </button>
     <p v-if="error" role="alert" class="inline-error">{{ error }}</p>
     <p v-if="!supported" class="launch-hint">
-      {{
-        desktop
-          ? "Vanilla and Fabric launching are supported. Other loaders are coming soon."
-          : "Minecraft launching requires the Windows desktop app."
-      }}
+      {{ "Minecraft launching requires the Windows desktop app." }}
     </p>
     <template v-else
       ><p v-if="active" class="launch-hint">

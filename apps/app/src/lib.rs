@@ -175,12 +175,7 @@ fn create_instance(
     prepare: Option<bool>,
 ) -> Result<Instance, String> {
     let instance = with_store(&state, |store| store.create(input))?;
-    if prepare.unwrap_or(true)
-        && matches!(
-            instance.loader,
-            azuria_core::Loader::Vanilla | azuria_core::Loader::Fabric
-        )
-    {
+    if prepare.unwrap_or(true) {
         if let Err(error) = game::prepare_instance(app.clone(), instance.id.clone()) {
             game::preparation_failed(&app, &instance.id, &error);
         }

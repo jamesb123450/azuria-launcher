@@ -4,8 +4,9 @@ import { gameVersions, type GameVersion } from "../lib/game-versions";
 import { resolveLoaderVersion } from "../lib/loader-versions";
 import { useLauncher } from "./launcher";
 import { instanceApi } from "../instance-api";
-import type { Instance } from "../types";
-export type QuickLoader = "vanilla" | "fabric";
+import { LOADERS, loaderName, type Instance, type Loader } from "../types";
+export type QuickLoader = Loader;
+const supportedLoaders = LOADERS.map((loader) => loader.id);
 const key = "azuria-quick-play-v1",
   validVersion = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,39}$/;
 interface Saved {
@@ -22,12 +23,12 @@ function read(): Saved {
         typeof data.version === "string" && validVersion.test(data.version)
           ? data.version
           : "",
-      loader: data.loader === "fabric" ? "fabric" : "vanilla",
+      loader: supportedLoaders.includes(data.loader) ? data.loader : "vanilla",
       profileId: typeof data.profileId === "string" ? data.profileId : "",
       setups: Object.fromEntries(
         Object.entries(data.setups ?? {}).filter(
           ([k, v]) =>
-            /^(vanilla|fabric):[a-zA-Z0-9._-]+$/.test(k) &&
+            /^(vanilla|fabric|forge|neoforge|quilt):[a-zA-Z0-9._-]+$/.test(k) &&
             typeof v === "string",
         ),
       ) as Record<string, string>,
@@ -77,7 +78,7 @@ export const useQuickPlay = defineStore("quick-play", () => {
   function choose(game: string, modLoader: QuickLoader = loader.value) {
     if (
       !validVersion.test(game) ||
-      !["vanilla", "fabric"].includes(modLoader) ||
+      !supportedLoaders.includes(modLoader) ||
       preparing.value
     )
       return;
@@ -89,7 +90,7 @@ export const useQuickPlay = defineStore("quick-play", () => {
   }
   function adoptSetup(item: Instance) {
     if (
-      !["vanilla", "fabric"].includes(item.loader) ||
+      !supportedLoaders.includes(item.loader) ||
       !validVersion.test(item.minecraftVersion) ||
       preparing.value
     )
@@ -143,13 +144,13 @@ export const useQuickPlay = defineStore("quick-play", () => {
     error.value = "";
     creation = (async () => {
       const loaderVersion =
-        modLoader === "fabric"
-          ? await resolveLoaderVersion("fabric", game, "stable")
-          : null;
+        modLoader === "vanilla"
+          ? null
+          : await resolveLoaderVersion(modLoader, game, "stable");
       const defaults = await instanceApi.defaults();
       const item = await launcher.save(
         {
-          name: `Minecraft ${game} · ${modLoader === "fabric" ? "Fabric" : "Vanilla"}`,
+          name: `Minecraft ${game} · ${loaderName(modLoader)}`,
           minecraftVersion: game,
           loader: modLoader,
           memoryMb: defaults.memoryMb,

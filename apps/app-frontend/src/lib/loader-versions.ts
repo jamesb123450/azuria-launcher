@@ -53,7 +53,9 @@ export function parseLoaderVersions(
       throw new Error("Invalid loader catalogue.");
     const legacyNeo = loader === "neoforge" && game === "1.20.1";
     const parts = (game.startsWith("1.") ? game.slice(2) : game).split(".");
-    const neoPrefix = `${parts[0]}.${parts[1] ?? "0"}.`;
+    const neoPrefix = game.startsWith("1.")
+      ? `${parts[0]}.${parts[1] ?? "0"}.`
+      : `${game}.`;
     versions = Array.from(
       text.matchAll(/<version>([^<]+)<\/version>/g),
     ).flatMap((match) => {

@@ -264,8 +264,14 @@ impl Store {
     }
     /// Pin only the loader preference; do not rewrite memory, icons or instance folders.
     pub fn pin_fabric_version(&mut self, id: &str, version: &str) -> Result<Instance, String> {
+        if self.get(id)?.loader != Loader::Fabric {
+            return Err("Not a Fabric profile.".into());
+        }
+        self.pin_loader_version(id, version)
+    }
+    pub fn pin_loader_version(&mut self, id: &str, version: &str) -> Result<Instance, String> {
         let current = self.get(id)?;
-        if current.loader != Loader::Fabric
+        if current.loader == Loader::Vanilla
             || version.is_empty()
             || version.len() > 80
             || matches!(version, "stable" | "latest")
@@ -273,7 +279,7 @@ impl Store {
                 .bytes()
                 .all(|c| c.is_ascii_alphanumeric() || b"._+-".contains(&c))
         {
-            return Err("Invalid pinned Fabric version.".into());
+            return Err("Invalid pinned loader version.".into());
         }
         self.conn
             .execute(
@@ -832,5 +838,28 @@ mod tests {
         assert_eq!(updated.name, original.name);
         assert_eq!(updated.memory_mb, original.memory_mb);
         assert!(store.pin_fabric_version(&original.id, "latest").is_err());
+    }
+    #[test]
+    fn every_modded_loader_can_pin_without_changing_profile_details() {
+        let d = tempfile::tempdir().unwrap();
+        let mut store = Store::open(d.path().to_path_buf()).unwrap();
+        for loader in [Loader::Forge, Loader::NeoForge, Loader::Quilt] {
+            let original = store
+                .create(InstanceInput {
+                    name: format!("{loader:?}"),
+                    minecraft_version: "1.21.1".into(),
+                    loader: loader.clone(),
+                    memory_mb: 4096,
+                    icon: None,
+                    loader_version: Some("stable".into()),
+                })
+                .unwrap();
+            let pinned = store.pin_loader_version(&original.id, "1.2.3").unwrap();
+            assert_eq!(pinned.loader, loader);
+            assert_eq!(pinned.name, original.name);
+            assert_eq!(pinned.memory_mb, original.memory_mb);
+            assert_eq!(pinned.loader_version.as_deref(), Some("1.2.3"));
+            assert!(store.pin_loader_version(&original.id, "latest").is_err());
+        }
     }
 }

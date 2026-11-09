@@ -86,7 +86,7 @@ test("downloads resolve the latest release rather than a stale versioned install
     html.includes(`href="${host}/releases/latest"`),
     "Download must resolve latest on the active public release host",
   );
-  assert.match(html, /Vanilla and Fabric launching/);
+  assert.match(html, /Vanilla, Fabric, Quilt, Forge and NeoForge launching/);
   assert.match(html, /not Authenticode signed/);
 });
 

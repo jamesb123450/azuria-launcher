@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { LOADERS } from "../types";
 import { computed, onMounted, ref } from "vue";
 import {
   ChevronDown,
@@ -247,20 +248,17 @@ async function launch() {
       <span class="quick-picker-label">Loader</span>
       <div class="quick-loaders" role="group" aria-label="Home mod loader">
         <button
-          :aria-pressed="quick.loader === 'vanilla'"
-          @click="quick.choose(quick.version, 'vanilla')"
+          v-for="option in LOADERS"
+          :key="option.id"
+          :aria-pressed="quick.loader === option.id"
+          @click="quick.choose(quick.version, option.id)"
         >
-          Vanilla</button
-        ><button
-          :aria-pressed="quick.loader === 'fabric'"
-          @click="quick.choose(quick.version, 'fabric')"
-        >
-          Fabric
+          {{ option.name }}
         </button>
       </div>
       <p class="quick-picker-note">
-        Each version and loader keeps its own worlds, mods and settings. Forge,
-        NeoForge and Quilt launching are still in development.
+        Each version and loader keeps its own worlds, mods and settings.
+        Available loader builds depend on your Minecraft version.
       </p>
       <p v-if="quick.storageError" role="status">{{ quick.storageError }}</p>
       <footer>
