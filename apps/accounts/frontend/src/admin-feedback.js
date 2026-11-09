@@ -10,7 +10,7 @@ export async function feedbackWorkspace({ client, ui }) {
   const root = node("div", undefined, "admin-feedback");
   root.append(
     paragraph(
-      "Anonymous feedback about Minecraft launchers. Each question allows more than one answer, so percentages can add up to more than 100%.",
+      "The launcher survey has closed. Previously collected results remain available here. Each question allows more than one answer, so percentages can add up to more than 100%.",
     ),
   );
   const message = paragraph("", "fine");
@@ -41,11 +41,7 @@ export async function feedbackWorkspace({ client, ui }) {
     message.textContent = `${data.total} anonymous ${data.total === 1 ? "response" : "responses"}`;
     results.replaceChildren();
     if (!data.total) {
-      results.append(
-        paragraph(
-          "No responses yet. Share the survey link to start collecting feedback.",
-        ),
-      );
+      results.append(paragraph("No responses were collected for this survey."));
       return;
     }
     const grid = node("div", undefined, "feedback-summary-grid");

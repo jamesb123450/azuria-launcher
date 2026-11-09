@@ -9,164 +9,87 @@ const source = await readFile(
   ),
   "utf8",
 );
-const moduleSource = stripTypeScriptTypes(
-  source.replace(
-    /^import .*\n/,
-    "const createClient = (...args) => globalThis.feedbackClient(...args);\n",
-  ),
-);
 const { handleRequest } = await import(
-  `data:text/javascript;base64,${Buffer.from(moduleSource).toString("base64")}`
+  `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString("base64")}`
 );
-test("anonymous feedback verifies bot proof before writing and never forwards identifying headers", async () => {
-  const originalFetch = globalThis.fetch,
-    originalDeno = globalThis.Deno;
-  const env = {
-    SUPABASE_URL: "https://test.supabase.co",
-    SUPABASE_SERVICE_ROLE_KEY: "test-service",
-    AZURIA_TURNSTILE_SECRET_KEY: "test-secret",
+
+test("retired survey rejects cached submissions without consuming answers or contacting external services", async () => {
+  const originalDeno = globalThis.Deno,
+    originalFetch = globalThis.fetch;
+  globalThis.Deno = { env: { get: () => undefined } };
+  let requests = 0;
+  globalThis.fetch = async () => {
+    requests++;
+    throw Error("Survey must not contact a service");
   };
-  globalThis.Deno = { env: { get: (name) => env[name] } };
-  const writes = [],
-    checks = [];
-  let databaseError = null;
-  globalThis.feedbackClient = () => ({
-    rpc: async (name, args) => {
-      writes.push({ name, args });
-      return { error: databaseError };
-    },
-  });
-  let proof = {
-    success: true,
-    action: "launcher_feedback",
-    hostname: "azuriasmp.org",
-  };
-  globalThis.fetch = async (_, options) => {
-    checks.push(JSON.parse(options.body));
-    return Response.json(proof);
-  };
-  const payload = {
-    version: 1,
-    submissionId: "55555555-5555-4555-8555-555555555555",
-    answers: { launchers: ["azuria"] },
-    token: "test-proof",
-  };
-  const request = (body = payload, origin = "https://azuriasmp.org") =>
-    new Request("https://test.supabase.co/functions/v1/feedback-submit", {
-      method: "POST",
-      headers: {
-        Origin: origin,
-        "Content-Type": "application/json",
-        Authorization: "Bearer do-not-use",
-        "X-Forwarded-For": "192.0.2.1",
-      },
-      body: JSON.stringify(body),
-    });
   try {
+    for (const origin of [
+      "https://azuriasmp.org",
+      "https://www.azuriasmp.org",
+      "",
+    ]) {
+      const headers = { "Content-Type": "application/json" };
+      if (origin) headers.Origin = origin;
+      const request = new Request(
+        "https://test.supabase.co/functions/v1/feedback-submit",
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            version: 1,
+            answers: { launchers: ["azuria"] },
+            extraFeedback: "Existing form",
+            token: "old-proof",
+          }),
+        },
+      );
+      const result = await handleRequest(request);
+      assert.equal(result.status, 410);
+      assert.equal((await result.json()).code, "survey_closed");
+      assert.equal(request.bodyUsed, false);
+      assert.equal(result.headers.get("Cache-Control"), "no-store");
+      assert.equal(
+        result.headers.get("Access-Control-Allow-Origin"),
+        origin || null,
+      );
+    }
+    assert.equal(requests, 0);
+    assert.doesNotMatch(source, /createClient|\.rpc\(|fetch\(/);
+  } finally {
+    globalThis.Deno = originalDeno;
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("closed survey keeps restrictive CORS and supports preflight", async () => {
+  const originalDeno = globalThis.Deno;
+  globalThis.Deno = { env: { get: () => undefined } };
+  try {
+    const url = "https://test.supabase.co/functions/v1/feedback-submit";
     assert.equal(
-      (await handleRequest(request(payload, "https://evil.example"))).status,
+      (
+        await handleRequest(
+          new Request(url, {
+            method: "POST",
+            headers: { Origin: "https://evil.example" },
+          }),
+        )
+      ).status,
       403,
     );
-    assert.equal(checks.length, 0);
-    for (const rejected of [
-      { ...payload, token: "" },
-      { ...payload, version: 2 },
-      { ...payload, email: "no@example.com" },
-      { ...payload, submissionId: "not-a-uuid" },
-    ])
-      assert.equal((await handleRequest(request(rejected))).status, 400);
-    assert.equal(writes.length, 0);
-    for (const invalid of [
-      { ...proof, success: false },
-      { ...proof, action: "other" },
-      { ...proof, hostname: "evil.example" },
-    ]) {
-      proof = invalid;
-      assert.equal((await handleRequest(request())).status, 400);
-    }
-    assert.equal(writes.length, 0);
-    proof = {
-      success: true,
-      action: "launcher_feedback",
-      hostname: "azuriasmp.org",
-    };
-    assert.equal((await handleRequest(request())).status, 200);
-    assert.deepEqual(writes, [
-      {
-        name: "feedback_submit_with_comment",
-        args: {
-          p_id: payload.submissionId,
-          p_version: 1,
-          p_answers: payload.answers,
-          p_comment: "",
-        },
-      },
-    ]);
-    assert.deepEqual(checks.at(-1), {
-      secret: "test-secret",
-      response: "test-proof",
-    });
-    assert.equal(
-      (
-        await handleRequest(
-          request({ ...payload, extraFeedback: "x".repeat(2001) }),
-        )
-      ).status,
-      400,
+    const preflight = await handleRequest(
+      new Request(url, {
+        method: "OPTIONS",
+        headers: { Origin: "https://azuriasmp.org" },
+      }),
     );
+    assert.equal(preflight.status, 204);
     assert.equal(
-      (await handleRequest(request({ ...payload, extraFeedback: 42 }))).status,
-      400,
+      preflight.headers.get("Access-Control-Allow-Origin"),
+      "https://azuriasmp.org",
     );
-    assert.equal(
-      (
-        await handleRequest(
-          request({ ...payload, extraFeedback: "  A written suggestion  " }),
-        )
-      ).status,
-      200,
-    );
-    assert.equal(writes.at(-1).args.p_comment, "A written suggestion");
-    for (const [providerCode, expected, httpStatus] of [
-      ["invalid-input-secret", "bot_configuration", 503],
-      ["timeout-or-duplicate", "bot_expired", 400],
-      ["invalid-input-response", "bot_failed", 400],
-    ]) {
-      proof = { success: false, "error-codes": [providerCode] };
-      const response = await handleRequest(request());
-      assert.equal(response.status, httpStatus);
-      assert.equal((await response.json()).code, expected);
-    }
-    proof = {
-      success: true,
-      action: "launcher_feedback",
-      hostname: "azuriasmp.org",
-    };
-    for (const [dbCode, expected, httpStatus] of [
-      ["PGRST202", "survey_setup_required", 503],
-      ["42703", "survey_setup_required", 503],
-      ["22023", "invalid_answers", 400],
-      ["P0001", "daily_limit", 429],
-      ["OTHER", "save_failed", 503],
-    ]) {
-      databaseError = { code: dbCode, message: "sensitive provider details" };
-      const response = await handleRequest(request());
-      assert.equal(response.status, httpStatus);
-      const body = await response.json();
-      assert.equal(body.code, expected);
-      assert.ok(!JSON.stringify(body).includes("sensitive provider details"));
-    }
-    databaseError = null;
-    const oversized = new Request("https://test.supabase.co", {
-      method: "POST",
-      body: "x".repeat(16385),
-    });
-    assert.equal((await handleRequest(oversized)).status, 413);
-    delete env.AZURIA_TURNSTILE_SECRET_KEY;
-    assert.equal((await handleRequest(request())).status, 503);
+    assert.equal((await handleRequest(new Request(url))).status, 405);
   } finally {
-    globalThis.fetch = originalFetch;
     globalThis.Deno = originalDeno;
-    delete globalThis.feedbackClient;
   }
 });

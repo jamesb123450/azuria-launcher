@@ -81,7 +81,6 @@ test("studio sitemap, robots and canonical tags agree for every public page", as
     "contact/",
     "data-request/",
     "cookie-policy/",
-    "survey/",
   ]) {
     const html = await readFile(new URL(`${path}index.html`, root), "utf8");
     const url = `https://www.azuriasmp.org/${path}`;
@@ -97,4 +96,48 @@ test("studio sitemap, robots and canonical tags agree for every public page", as
   const missing = await readFile(new URL("404.html", root), "utf8");
   assert.match(missing, /name="robots" content="noindex/);
   assert.doesNotMatch(sitemap, /404/);
+});
+
+test("the public survey is retired while archived admin results stay available", async () => {
+  const closed = await readFile(new URL("survey/index.html", root), "utf8");
+  assert.match(closed, /The launcher survey has closed/);
+  assert.match(closed, /name="robots" content="noindex/);
+  const sitemap = await readFile(new URL("sitemap.xml", root), "utf8");
+  assert.doesNotMatch(sitemap, /survey/);
+  for (const path of [
+    "index.html",
+    "privacy/index.html",
+    "terms/index.html",
+    "contact/index.html",
+    "cookie-policy/index.html",
+    "data-request/index.html",
+    "survey/index.html",
+    "404.html",
+  ]) {
+    const html = await readFile(new URL(path, root), "utf8");
+    assert.doesNotMatch(
+      html,
+      /href="\/survey\/"|feedback-form|feedback-config|survey\.(?:js|css)|challenges\.cloudflare\.com/,
+    );
+  }
+  const { access } = await import("node:fs/promises");
+  for (const asset of [
+    "survey.js",
+    "survey.css",
+    "survey-definition.mjs",
+    "survey-errors.mjs",
+  ]) {
+    await assert.rejects(access(new URL(asset, root)), { code: "ENOENT" });
+  }
+  const admin = await readFile(
+    new URL(
+      "../../../accounts/frontend/src/admin-feedback.js",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(admin, /feedback_admin_summary/);
+  assert.match(admin, /feedback_admin_responses/);
+  assert.match(admin, /Previously collected results remain available/);
+  assert.doesNotMatch(admin, /Share the survey link/);
 });
