@@ -21,7 +21,7 @@ The privacy contact links to the existing launcher contact page. Update it when 
 
 ## Assets
 
-Azuria brand assets and the current launcher Home screenshot are included locally. `assets/launcher-home.jpg` is the same 1280×900 capture used by the launcher website, refreshed after the Play navigation and hero blur changes. Inter is distributed under the included `assets/INTER-LICENSE.txt`. The launcher screenshot contains Minecraft scenery from Karbin_Drem's Distant Shaded Panoramas, licensed CC BY-SA 4.0: https://modrinth.com/resourcepack/karbin-panoramas and https://creativecommons.org/licenses/by-sa/4.0/. The screenshot shows the Azuria interface over that scenery. Minecraft is a trademark of Mojang/Microsoft; this site is not affiliated with them.
+Azuria brand assets and the current launcher Home screenshot are included locally. `assets/launcher-home.jpg` is the identical 1363×936 dark Home capture used by the launcher website, refreshed on 9 November 2026 from source commit `3a487678164aaa07d37b2159afa8c6181256361c`. It shows the current character scene, profile cards, news, friends and sponsor slots using illustrative local profiles in the browser preview. Inter is distributed under the included `assets/INTER-LICENSE.txt`. The launcher screenshot contains Minecraft scenery from Karbin_Drem's Distant Shaded Panoramas, licensed CC BY-SA 4.0: https://modrinth.com/resourcepack/karbin-panoramas and https://creativecommons.org/licenses/by-sa/4.0/. The screenshot shows the Azuria interface over that scenery. Minecraft is a trademark of Mojang/Microsoft; this site is not affiliated with them.
 
 ## Google Analytics (GA4)
 

@@ -40,7 +40,9 @@ Changing the ID requests fresh consent. Cookie settings allows withdrawal. Prefe
 
 ## Current interface captures
 
-The JPEG captures in `assets/` were refreshed from the launcher frontend after the portrait Versions catalogue and live appearance previews were added. Home is used for the hero, social preview and dark/light comparison; Versions shows the portrait cards and right launch panel. Captures are 1280×900 and use sample local setups. The skin screen uses the official Steve texture as sample data. No screenshot is generated or composited. Source credits are in `assets/MINECRAFT-CREDIT.txt`.
+The seven JPEG captures in `assets/` were refreshed on 9 November 2026 from the current launcher frontend at source commit `3a487678164aaa07d37b2159afa8c6181256361c`. They show Home in dark and light themes, the consolidated Profiles collection, profile content details, the one-page Create instance dialog, Wardrobe’s Skins tab and Appearance settings. Each capture is 1363×936. The Studios product card reuses the identical dark Home capture; launcher social previews reuse `home.jpg`.
+
+These are direct browser-preview captures with two illustrative local profiles, Survival (Vanilla 26.3) and Fabric Adventure (Fabric 26.1). No account is signed in and no gameplay is simulated. Desktop-only actions remain visibly unavailable, saved skins are empty, Steve is the default appearance, and news/friend/sponsor empty states are intentional. The source preview displays its development version in Settings; release versions are assigned during packaging. No application screenshot is generated or composited. Source credits are in `assets/MINECRAFT-CREDIT.txt`.
 
 ## News publishing
 

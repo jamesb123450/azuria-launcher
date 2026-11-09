@@ -15,8 +15,8 @@ export function renderHomepage({
     html`<figure class="product-shot" ${extra}>
       <img
         src="${asset(name)}"
-        width="1280"
-        height="900"
+        width="1363"
+        height="936"
         loading="lazy"
         alt="${alt}"
       />
@@ -69,10 +69,10 @@ export function renderHomepage({
         <figure class="hero-shot">
           <img
             src="${asset("home.jpg")}"
-            width="1280"
-            height="900"
+            width="1363"
+            height="936"
             fetchpriority="high"
-            alt="Azuria’s updated Home screen with Play navigation, blurred Minecraft scenery and launch controls."
+            alt="Azuria Home with a Minecraft character preview, saved profile launch cards, news, friends and sponsor slots."
           />
           <figcaption>
             Current launcher interface preview · Sample saved setups
@@ -106,7 +106,7 @@ export function renderHomepage({
             version and loader.
           </p>
         </div>
-        ${shot("versions.jpg", "Azuria’s portrait Minecraft version cards with patch selection, loader options and a launch panel on the right.")}
+        ${shot("versions.jpg", "Azuria’s Profiles collection with Java, Pinned and Custom categories, search, filters and saved profile cards.")}
       </div>
     </section>
     <section class="premium-section" aria-labelledby="library-heading">
@@ -124,7 +124,7 @@ export function renderHomepage({
             <li>Open content, worlds and live logs in one place</li>
           </ul>
         </div>
-        ${shot("instance.jpg", "Azuria instance details with game, content, screenshot and log controls.")}
+        ${shot("instance.jpg", "Azuria profile details with a left launch summary and Content, Worlds, Logs, Gallery and Settings tabs.")}
       </div>
     </section>
     <section
@@ -189,7 +189,7 @@ export function renderHomepage({
               >See supported features ${icon("arrow", 17)}</a
             >
           </div>
-          ${shot("create.jpg", "Azuria’s instance creation screen with its Custom setup option.")}
+          ${shot("create.jpg", "Azuria’s Create instance dialog with profile artwork, name, loader and game version controls.")}
         </div>
       </div>
     </section>
@@ -271,8 +271,8 @@ export function renderHomepage({
             <img
               data-theme-preview
               src="${asset("home.jpg")}"
-              width="1280"
-              height="900"
+              width="1363"
+              height="936"
               loading="lazy"
               alt="Azuria’s updated Home screen in dark appearance."
             />
@@ -302,7 +302,7 @@ export function renderHomepage({
             depend on your account.
           </p>
         </div>
-        ${shot("skins.jpg", "Azuria skin selector with a Steve character preview and saved skin collection.")}
+        ${shot("skins.jpg", "Azuria Wardrobe with its Skins tab, saved skin collection and default Steve appearance preview.")}
       </div>
     </section>
     <section class="premium-section" aria-labelledby="settings-heading">
