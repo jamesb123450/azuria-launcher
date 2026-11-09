@@ -111,7 +111,7 @@ export function render(
     404: "Page not found — Azuria Launcher",
   };
   const descriptions = {
-    home: "A Minecraft Java launcher for Windows with Vanilla and Fabric, mods and modpacks, friends, encrypted messaging, skins and automatic updates.",
+    home: "A Minecraft Java launcher for Windows with Vanilla, Fabric, Quilt, Forge and NeoForge, mods and modpacks, friends, encrypted messaging, skins and automatic updates.",
     downloads:
       "Download the Azuria development preview for Windows x64. Installation instructions, requirements and in-app update guidance.",
     news: "News and updates from Azuria Studios and Azuria Launcher.",
@@ -147,9 +147,9 @@ export function render(
     <div>
       <strong>Development preview</strong>
       <p>
-        Vanilla and Fabric launching, Microsoft sign-in and automatic updates
-        are available in current Windows builds. See the release notes for your
-        version.
+        Vanilla, Fabric, Quilt, Forge and NeoForge launching, Microsoft sign-in
+        and automatic updates are available in current Windows builds. See the
+        release notes for your version.
       </p>
     </div>
   </div>`;
@@ -428,8 +428,9 @@ export function render(
             <h2>Current capabilities</h2>
             <p>
               Azuria is a Windows-first Minecraft Java launcher in development.
-              Current builds support Vanilla and Fabric launching, with
-              Minecraft Java ownership verified through Microsoft sign-in.
+              Current builds support Vanilla and Fabric launching, plus
+              compatible Quilt, Forge and NeoForge profiles, with Minecraft Java
+              ownership verified through Microsoft sign-in.
             </p>
             <table>
               <thead>
@@ -490,7 +491,9 @@ export function render(
                   <th scope="row">
                     Game installation, Java setup and launching
                   </th>
-                  <td>Available for Vanilla and Fabric</td>
+                  <td>
+                    Available for Vanilla, Fabric, Quilt, Forge and NeoForge
+                  </td>
                 </tr>
               </tbody>
             </table>

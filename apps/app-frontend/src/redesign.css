@@ -579,6 +579,8 @@ html[data-theme="oled"] {
 }
 .quick-loaders {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: 5px;
   background: var(--panel-soft);
   border-radius: 8px;

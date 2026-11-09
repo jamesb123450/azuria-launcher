@@ -1,6 +1,10 @@
-//! Windows x64 Vanilla and Fabric preparation. Credentials are native-only and never serializable.
+//! Windows x64 Minecraft preparation for Vanilla, Fabric, Quilt, Forge and NeoForge. Credentials are native-only and never serializable.
 mod fabric;
+mod forge;
+mod loaders;
+use azuria_core::Loader;
 pub use fabric::resolve_version as resolve_fabric_version;
+pub use loaders::resolve_loader_version;
 mod files;
 mod metadata;
 mod runtime;
@@ -86,7 +90,10 @@ impl Prepared {
                 format!("token:{}:{}", account.access_token, account.uuid),
             ),
             ("user_type", "msa".into()),
-            ("version_name", self.version.clone()),
+            (
+                "version_name",
+                self.metadata["id"].as_str().unwrap_or(&self.version).into(),
+            ),
             (
                 "version_type",
                 self.metadata["type"].as_str().unwrap_or("release").into(),
@@ -127,6 +134,16 @@ impl Prepared {
                 classpath,
             ]
         };
+        // Forge's bootstrap must ignore the unpatched Mojang client on the classpath.
+        // Its profile ID differs from our cached <minecraft-version>.jar filename.
+        if matches!(
+            self.metadata["mainClass"].as_str(),
+            Some("cpw.mods.bootstraplauncher.BootstrapLauncher" | "cpw.mods.modlauncher.Launcher")
+        ) {
+            if let Some(ignore) = args.iter_mut().find(|a| a.starts_with("-DignoreList=")) {
+                ignore.push_str(&format!(",{}.jar", self.version));
+            }
+        }
         if let Some(logging) = &self.logging_argument {
             args.push(logging.clone());
         }
@@ -352,6 +369,37 @@ pub fn prepare_with_download_limit(
     cancel: Arc<AtomicBool>,
     concurrent_downloads: u32,
 ) -> Result<Prepared, String> {
+    prepare_modded(
+        root,
+        game,
+        version,
+        if fabric_version.is_some() {
+            Loader::Fabric
+        } else {
+            Loader::Vanilla
+        },
+        fabric_version,
+        options,
+        progress,
+        cancel,
+        concurrent_downloads,
+    )
+}
+
+/// Prepare a concrete profile using the selected official loader and its pinned version.
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_modded(
+    root: &Path,
+    game: &Path,
+    version: &str,
+    loader: Loader,
+    loader_version: Option<&str>,
+    options: LaunchOptions,
+    progress: Reporter,
+    cancel: Arc<AtomicBool>,
+    concurrent_downloads: u32,
+) -> Result<Prepared, String> {
+    loaders::identifier(version)?;
     if !(1..=16).contains(&concurrent_downloads) {
         return Err("Use 1–16 concurrent downloads.".into());
     }
@@ -385,25 +433,69 @@ pub fn prepare_with_download_limit(
     if metadata["complianceLevel"].as_u64().unwrap_or(0) > 1 {
         return Err("This version requires a newer launcher protocol. Update Azuria first.".into());
     }
-    if let Some(loader) = fabric_version {
+    let client = safe_join(&versions, &format!("{version}.jar"))?;
+    downloader.artifact(&metadata["downloads"]["client"], &client, 256 * 1024 * 1024)?;
+    let major = metadata["javaVersion"]["majorVersion"]
+        .as_u64()
+        .unwrap_or(8);
+    report(&progress, "java", "Checking the Java runtime", 0, 0);
+    let java = runtime::java(
+        root,
+        major,
+        metadata["javaVersion"]["component"]
+            .as_str()
+            .unwrap_or("jre-legacy"),
+        options.java_path.as_deref(),
+        &downloader,
+        &cancel,
+    )?;
+    if loader != Loader::Vanilla {
+        let selected = resolve_loader_version(
+            loader.clone(),
+            version,
+            loader_version.unwrap_or("stable"),
+            progress.clone(),
+            cancel.clone(),
+        )?;
         report(
             &progress,
             "loader",
-            "Preparing the selected Fabric loader",
+            &format!("Preparing {loader:?} {selected}"),
             0,
             0,
         );
-        let loader = resolve_fabric_version(version, loader, progress.clone(), cancel.clone())?;
-        let profile = fabric::profile(root, version, &loader, &downloader, &cancel)?;
-        metadata = fabric::merge(&metadata, &profile, version, &loader)?;
+        metadata = match loader {
+            Loader::Fabric => {
+                let profile = fabric::profile(root, version, &selected, &downloader, &cancel)?;
+                fabric::merge(&metadata, &profile, version, &selected)?
+            }
+            Loader::Quilt => {
+                let profile = loaders::quilt(root, version, &selected, &downloader)?;
+                loaders::merge(&metadata, &profile, version)?
+            }
+            Loader::Forge | Loader::NeoForge => {
+                let profile = forge::install(
+                    root,
+                    version,
+                    loader,
+                    &selected,
+                    &metadata,
+                    &client,
+                    &java,
+                    &downloader,
+                    &progress,
+                    &cancel,
+                )?;
+                loaders::merge(&metadata, &profile, version)?
+            }
+            Loader::Vanilla => unreachable!(),
+        };
     }
     let libraries = safe_join(root, "libraries")?;
     let assets = safe_join(root, "assets")?;
     let natives = safe_join(game, &format!(".azuria/natives/{version}"))?;
     fs::create_dir_all(&natives).map_err(files::io)?;
-    let client = safe_join(&versions, &format!("{version}.jar"))?;
     report(&progress, "libraries", "Preparing game libraries", 0, 0);
-    downloader.artifact(&metadata["downloads"]["client"], &client, 256 * 1024 * 1024)?;
     let mut classpath = vec![];
     for library in metadata["libraries"]
         .as_array()
@@ -559,20 +651,6 @@ pub fn prepare_with_download_limit(
     } else {
         None
     };
-    let major = metadata["javaVersion"]["majorVersion"]
-        .as_u64()
-        .unwrap_or(8);
-    report(&progress, "java", "Checking the Java runtime", 0, 0);
-    let java = runtime::java(
-        root,
-        major,
-        metadata["javaVersion"]["component"]
-            .as_str()
-            .unwrap_or("jre-legacy"),
-        options.java_path.as_deref(),
-        &downloader,
-        &cancel,
-    )?;
     cancelled(&cancel)?;
     Ok(Prepared {
         java,

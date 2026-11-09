@@ -65,6 +65,10 @@ fn trusted_url(url: &reqwest::Url) -> bool {
                     | "launchercontent.mojang.com"
                     | "meta.fabricmc.net"
                     | "maven.fabricmc.net"
+                    | "meta.quiltmc.org"
+                    | "maven.quiltmc.org"
+                    | "maven.minecraftforge.net"
+                    | "maven.neoforged.net"
             )
         )
 }
@@ -132,17 +136,28 @@ impl Downloader {
         serde_json::from_slice(&bytes)
             .map_err(|_| "The game service returned invalid metadata.".into())
     }
+    pub(crate) fn text(&self, url: &str, max: u64) -> Result<String, String> {
+        let mut bytes = Vec::new();
+        self.response(url)?
+            .take(max + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| "Loader metadata download was interrupted.")?;
+        if bytes.len() as u64 > max {
+            return Err("Loader metadata exceeded its size limit.".into());
+        }
+        String::from_utf8(bytes).map_err(|_| "Invalid loader metadata encoding.".into())
+    }
     pub(crate) fn checksum(&self, url: &str) -> Result<String, String> {
         let mut bytes = Vec::new();
         self.response(url)?
             .take(257)
             .read_to_end(&mut bytes)
-            .map_err(|_| "Could not read the Fabric library checksum.")?;
+            .map_err(|_| "Could not read the loader library checksum.")?;
         let hash = std::str::from_utf8(&bytes)
-            .map_err(|_| "Invalid Fabric library checksum.")?
+            .map_err(|_| "Invalid loader library checksum.")?
             .trim();
         if hash.len() != 40 || !hash.bytes().all(|c| c.is_ascii_hexdigit()) {
-            return Err("Invalid Fabric library checksum.".into());
+            return Err("Invalid loader library checksum.".into());
         }
         Ok(hash.into())
     }

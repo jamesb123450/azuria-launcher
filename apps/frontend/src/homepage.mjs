@@ -62,8 +62,8 @@ export function renderHomepage({
           >
         </div>
         <p class="premium-status">
-          Development preview · Windows x64 · Minecraft Java Edition<br />Vanilla
-          &amp; Fabric launching ·
+          Development preview · Windows x64 · Minecraft Java Edition<br />Vanilla,
+          Fabric, Quilt, Forge &amp; NeoForge launching ·
           <a href="${link("help/")}#status">Current status</a>
         </p>
         <figure class="hero-shot">
@@ -99,7 +99,7 @@ export function renderHomepage({
           <h2 id="versions-heading">Choose a version.<br />Start playing.</h2>
           <p>
             Browse Minecraft releases with artwork, then choose a patch version
-            and Vanilla or Fabric in the panel beside them.
+            and a compatible mod loader for each profile.
           </p>
           <p>
             Launch from Home or Versions. Azuria keeps a separate setup for each
@@ -182,8 +182,8 @@ export function renderHomepage({
             <h3>Choose a version and get started.</h3>
             <p>
               Create your next setup and keep compatible content alongside the
-              instance it belongs to. Vanilla and Fabric launching are
-              supported; other loaders remain in development.
+              instance it belongs to. Vanilla, Fabric, Quilt, Forge and NeoForge
+              launching are supported for compatible versions.
             </p>
             <a class="text-link" href="${link("help/")}"
               >See supported features ${icon("arrow", 17)}</a
@@ -338,7 +338,7 @@ export function renderHomepage({
           <li data-reveal>
             <span>Step 2</span>
             <h3>Pick your version.</h3>
-            <p>Choose a release and Vanilla or Fabric on Home or Versions.</p>
+            <p>Choose a release and compatible loader in Profiles.</p>
           </li>
           <li data-reveal>
             <span>Step 3</span>

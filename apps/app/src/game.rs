@@ -223,12 +223,6 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     .into_iter()
                     .find(|i| i.id == id)
                     .ok_or("Instance no longer exists.")?;
-                if !matches!(
-                    instance.loader,
-                    azuria_core::Loader::Vanilla | azuria_core::Loader::Fabric
-                ) {
-                    return Err("Vanilla and Fabric launching are supported. Quilt, Forge and NeoForge are coming soon.".into());
-                }
                 let game = s.instance_dir(&id)?;
                 let root = game
                     .parent()
@@ -289,9 +283,10 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                 };
                 azuria_launch::cancelled(&cancel)?;
                 azuria_content::recover(&game)?;
-                if instance.loader == azuria_core::Loader::Fabric {
+                if instance.loader != azuria_core::Loader::Vanilla {
                     let selected = instance.loader_version.as_deref().unwrap_or("stable");
-                    let resolved = azuria_launch::resolve_fabric_version(
+                    let resolved = azuria_launch::resolve_loader_version(
+                        instance.loader.clone(),
                         &instance.minecraft_version,
                         selected,
                         reporter.clone(),
@@ -299,21 +294,18 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     )?;
                     if instance.loader_version.as_deref() != Some(&resolved) {
                         let storage = app.state::<AppState>();
-                        instance = with_store(&storage, |s| s.pin_fabric_version(&id, &resolved))?;
+                        instance = with_store(&storage, |s| s.pin_loader_version(&id, &resolved))?;
                         let _ = app.emit("instance-updated", &instance);
                     }
                 }
                 // File preparation is public and does not need Minecraft credentials.
                 // A verified session is obtained only when a game process will be started.
-                let prepared = azuria_launch::prepare_with_download_limit(
+                let prepared = azuria_launch::prepare_modded(
                     &root,
                     &game,
                     &instance.minecraft_version,
-                    if instance.loader == azuria_core::Loader::Fabric {
-                        instance.loader_version.as_deref()
-                    } else {
-                        None
-                    },
+                    instance.loader.clone(),
+                    instance.loader_version.as_deref(),
                     options,
                     reporter.clone(),
                     cancel.clone(),
