@@ -1,43 +1,23 @@
 import test, { before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { PGlite } from "@electric-sql/pglite";
+import { createTestDatabase } from "./helpers/database.mjs";
 const alice = "11111111-1111-4111-8111-111111111111";
 const bob = "22222222-2222-4222-8222-222222222222";
 const charlie = "33333333-3333-4333-8333-333333333333";
 const unverified = "44444444-4444-4444-8444-444444444444";
 let db;
 before(async () => {
-  db = new PGlite();
-  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
-    create schema auth; create table auth.users(id uuid primary key, email_confirmed_at timestamptz);
-    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-    grant usage on schema auth to authenticated;
-    grant usage on schema public to anon, authenticated, service_role;`);
-  for (const migration of [
-    "202610200001_accounts.sql",
-    "202610200002_friends.sql",
-  ]) {
-    await db.exec(
-      await readFile(
-        new URL(
-          `../../../../services/accounts/supabase/migrations/${migration}`,
-          import.meta.url,
-        ),
-        "utf8",
-      ),
-    );
-  }
+  db = await createTestDatabase();
   for (const [id, name] of [
     [alice, "alice"],
     [bob, "bob"],
     [charlie, "charlie"],
     [unverified, "unverified"],
   ]) {
-    await db.query("insert into auth.users values ($1, $2)", [
-      id,
-      id === unverified ? null : new Date().toISOString(),
-    ]);
+    await db.query(
+      "insert into auth.users(id,email_confirmed_at) values ($1, $2)",
+      [id, id === unverified ? null : new Date().toISOString()],
+    );
     await db.query(
       "insert into public.profiles(id,username,display_name) values ($1,$2,$3)",
       [id, name, name.toUpperCase()],

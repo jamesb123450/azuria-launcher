@@ -8,15 +8,13 @@ There is no background polling.
 
 ## One-time database setup
 
-1. Use the existing Azuria Supabase project. Apply the accounts, friends and admin
-   migrations first if they are not already installed. Your admin role and
-   authenticator must already be configured; see [ADMIN_SETUP.md](ADMIN_SETUP.md).
-2. Open **SQL Editor → New query**. Paste the contents of
-   `services/accounts/supabase/migrations/202610210001_news.sql` and run it **once**.
-   This creates the news tables, publishing functions and `news-images` storage
-   bucket together. It does not change existing accounts or friends.
-3. In **Storage**, confirm `news-images` exists. It accepts JPG, PNG and WebP files
+1. For a fresh project, complete [account setup](ACCOUNTS_SETUP.md). The current
+   schema includes news tables, publishing functions and the `news-images` bucket.
+2. Configure your admin role and authenticator; see [ADMIN_SETUP.md](ADMIN_SETUP.md).
+3. In Storage, confirm `news-images` exists. It accepts JPG, PNG and WebP files
    up to 5 MB. Upload through the dashboard after signing in as an admin.
+
+Existing configured projects need no SQL changes for this cleanup.
 
 This feature needs no additional Edge Function, SMTP setting or service-role key.
 Never place a database password, Resend key or service-role key in a website

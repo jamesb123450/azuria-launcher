@@ -14,7 +14,7 @@ To build only this interface, run `npm run build --workspace=azuria-launcher-fro
 
 UI unit tests and browser tests belong in `tests/`. Browser previews use their own local data; accounts, native storage and updates still require the installed Windows app. The interface continues to communicate with native commands through Tauri IPC. See the [product guide](../app/README.md) and [monorepo guide](../../docs/MONOREPO.md).
 
-The launcher opens on Home, with version browsing and custom setups under Versions. See the [redesign guide](docs/REDESIGN.md) for the visual system, asset sources and automatic setup behaviour.
+The launcher opens on Home, with version browsing and custom setups under Versions.
 
 ## Instance launch and settings
 

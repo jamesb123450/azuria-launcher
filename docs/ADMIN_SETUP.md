@@ -12,15 +12,11 @@ only the data used by that section, without background polling.
 Passwords, private messages, role promotion and account deletion are not
 available in this admin area. Reports will be added when reporting exists.
 
-## 1. Apply the new SQL migration
+## 1. Check database setup
 
-In Supabase → SQL Editor → New query, run the entire file:
-
-`services/accounts/supabase/migrations/202610200003_admin.sql`
-
-Apply this once, after migrations `202610200001_accounts.sql` and
-`202610200002_friends.sql`. Do not rerun previous successful migrations. The new
-migration is transactional. It does not grant anyone admin access automatically.
+For a fresh Supabase project, follow [account setup](ACCOUNTS_SETUP.md) and apply
+the current schema once. Existing configured projects need no SQL changes for
+this cleanup. The schema does not grant anyone admin access automatically.
 
 ## 2. Grant your existing account access
 

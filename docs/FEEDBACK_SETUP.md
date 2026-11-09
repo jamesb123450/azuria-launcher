@@ -4,7 +4,7 @@ The public survey is retired. The Studios homepage no longer shows its invitatio
 
 ## Existing results
 
-Previously submitted answers and written feedback remain in `public.launcher_feedback`. The existing `feedback_admin_summary` and `feedback_admin_responses` RPCs, live admin-role checks, MFA requirements and dashboard are retained. Review results at https://accounts.azuriasmp.org/admin#feedback using the usual admin sign-in. The archived question definitions remain in source to interpret the original answer IDs. No migration, deletion, schema change or result reset is required.
+Previously submitted answers and written feedback remain in `public.launcher_feedback`. The existing `feedback_admin_summary` and `feedback_admin_responses` RPCs, live admin-role checks, MFA requirements and dashboard are retained. Review results at https://accounts.azuriasmp.org/admin#feedback using the usual admin sign-in. The archived question definitions remain in the database schema to interpret the original answer IDs. No migration, deletion, schema change or result reset is required.
 
 ## Deployment
 

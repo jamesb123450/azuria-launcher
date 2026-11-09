@@ -1,7 +1,6 @@
 import test, { before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { PGlite } from "@electric-sql/pglite";
+import { createTestDatabase } from "./helpers/database.mjs";
 import { authenticatorQrSource } from "../src/admin.js";
 const admin = "11111111-1111-4111-8111-111111111111";
 const target = "22222222-2222-4222-8222-222222222222";
@@ -10,31 +9,7 @@ const normal = "44444444-4444-4444-8444-444444444444";
 const session = (id) => `aaaaaaaa-aaaa-4aaa-8aaa-${id.slice(-12)}`;
 let db;
 before(async () => {
-  db = new PGlite();
-  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
-    create schema auth;
-    create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz, banned_until timestamptz, created_at timestamptz default now());
-    create table auth.sessions(id uuid primary key, user_id uuid references auth.users(id) on delete cascade);
-    create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
-    create function auth.uid() returns uuid language sql stable as $$ select (auth.jwt()->>'sub')::uuid $$;
-    grant usage on schema auth to authenticated;
-    grant usage on schema public to anon, authenticated, service_role;`);
-  for (const file of [
-    "202610200001_accounts.sql",
-    "202610200002_friends.sql",
-    "202610200003_admin.sql",
-    "202610240001_feedback.sql",
-    "202610240002_feedback_comments.sql",
-  ])
-    await db.exec(
-      await readFile(
-        new URL(
-          `../../../../services/accounts/supabase/migrations/${file}`,
-          import.meta.url,
-        ),
-        "utf8",
-      ),
-    );
+  db = await createTestDatabase();
   for (const [id, name] of [
     [admin, "admin"],
     [target, "target"],
@@ -348,10 +323,22 @@ test("feedback retries are idempotent and admin summaries count each selected op
   assert.equal(result.counts.launchers.azuria, 1);
   assert.equal(result.counts.launchers.prism, 1);
   assert.equal(result.counts.launchers.modrinth, undefined);
+  assert.equal(result.schema.version, 1);
   assert.deepEqual(
-    result.schema,
-    (await import("../../../azuria-studios/frontend/src/survey-definition.mjs"))
-      .survey,
+    result.schema.questions.map(({ id }) => id),
+    [
+      "launchers",
+      "appeal",
+      "priorities",
+      "frustrations",
+      "azuria",
+      "playstyle",
+    ],
+  );
+  assert.ok(
+    result.schema.questions[0].options.some(
+      ([id, label]) => id === "azuria" && label === "Azuria Launcher",
+    ),
   );
   const responses = await rpc(admin, "feedback_admin_responses", [0]);
   assert.equal(responses.length, 1);

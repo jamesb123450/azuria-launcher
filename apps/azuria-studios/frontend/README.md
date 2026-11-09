@@ -15,7 +15,7 @@ Import the repository as a separate Vercel project. Set **Root Directory** to `a
 
 ## Privacy and cookies
 
-All fonts and images are local. Optional Google Analytics loads only after explicit analytics consent. No advertising is included. The survey page loads Cloudflare Turnstile for bot protection. The first-visit banner offers equally prominent accept/reject actions; Cookie settings reopens it on every page. Consent is scoped to this site's measurement ID, expires after 180 days and is separate from requested theme preferences. Blocked storage does not break the controls. Withdrawing analytics consent disables collection, clears accessible GA cookies and reloads to stop the loaded tag. Other open tabs also apply changed choices. Old pre-analytics consent records are not accepted.
+All fonts and images are local. Optional Google Analytics loads only after explicit analytics consent. No advertising is included. The first-visit banner offers equally prominent accept/reject actions; Cookie settings reopens it on every page. Consent is scoped to this site's measurement ID, expires after 180 days and is separate from requested theme preferences. Blocked storage does not break the controls. Withdrawing analytics consent disables collection, clears accessible GA cookies and reloads to stop the loaded tag. Other open tabs also apply changed choices. Old pre-analytics consent records are not accepted.
 
 The privacy contact links to the existing launcher contact page. Update it when a dedicated studio contact channel is available. Review policy details whenever data collection or hosting changes.
 
@@ -49,14 +49,14 @@ node tests/website-analytics.browser.mjs
 
 Uses Playwright from the existing launcher frontend development dependencies. Install its Chromium browser first, or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. Google requests are intercepted locally; the test sends no analytics to Google. Studio preview includes the Vercel security headers.
 
-## Launcher survey
+## Archived launcher feedback
 
-See [survey setup](../../../../docs/FEEDBACK_SETUP.md) for the database migration,
-Supabase function and Vercel/Turnstile variables. Anonymous responses appear in
-the account admin dashboard under **Launcher feedback**.
+The public survey is closed. Its former URL shows a closure page. Previously
+collected responses remain available to authorised admins; see
+[archived feedback](../../../docs/FEEDBACK_SETUP.md).
 
 ## Google Search
 
 The built site includes per-page search metadata, canonical links, social preview
-tags, robots.txt and sitemap.xml. See [search setup](../../../../docs/WEBSITE_SEARCH_SETUP.md)
+tags, robots.txt and sitemap.xml. See [search setup](../../../docs/WEBSITE_SEARCH_SETUP.md)
 for optional Search Console verification and sitemap submission.

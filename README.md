@@ -43,6 +43,6 @@ See [monorepo layout, deployment and adding products](docs/MONOREPO.md).
 ## Azuria accounts
 
 Account pages are available at **accounts.azuriasmp.org**, backed by Supabase.
-Follow [the account setup guide](docs/ACCOUNTS_SETUP.md) for database migrations,
+Follow [the account setup guide](docs/ACCOUNTS_SETUP.md) for fresh database setup,
 email delivery, Vercel deployment and credential storage. The launcher’s Azuria
 account is separate from its Microsoft/Minecraft account.
