@@ -83,7 +83,12 @@ test("review updated Home, profiles, creation and wardrobe", async ({
   });
   await page.keyboard.press("Escape");
   await page.goto("/#/wardrobe");
-  await expect(page.locator(".coming-soon-banner")).toHaveText("COMING SOON");
+  await expect(
+    page.getByRole("heading", { name: "Your Azuria capes", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Open the installed launcher to manage your Azuria capes."),
+  ).toBeVisible();
   await page.screenshot({
     animations: "disabled",
     path: test.info().outputPath("wardrobe.png"),
