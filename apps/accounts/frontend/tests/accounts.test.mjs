@@ -1,8 +1,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { PGlite } from "@electric-sql/pglite";
+import { createTestDatabase } from "./helpers/database.mjs";
 import {
   profileError,
   passwordError,
@@ -14,22 +13,8 @@ const alice = "11111111-1111-4111-8111-111111111111";
 const bob = "22222222-2222-4222-8222-222222222222";
 let db;
 before(async () => {
-  db = new PGlite();
-  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
-    create schema auth; create table auth.users(id uuid primary key);
-    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-    grant usage on schema auth to authenticated;
-    grant usage on schema public to anon, authenticated, service_role;
-    insert into auth.users values ('${alice}'), ('${bob}');`);
-  await db.exec(
-    await readFile(
-      new URL(
-        "../../../../services/accounts/supabase/migrations/202610200001_accounts.sql",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  );
+  db = await createTestDatabase();
+  await db.exec(`insert into auth.users(id) values ('${alice}'), ('${bob}');`);
 });
 after(async () => {
   await db?.close();
@@ -119,7 +104,7 @@ test("database enforces username uniqueness, formatting and immutable identity",
   );
   await assert.rejects(
     as("authenticated", alice, "update public.profiles set id = $1", [bob]),
-    /permission denied/,
+    /row-level security/,
   );
   await assert.rejects(
     as("authenticated", alice, "update public.profiles set created_at = now()"),

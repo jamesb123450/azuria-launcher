@@ -5,10 +5,9 @@ PostgreSQL and the `account-action` server function. The production account addr
 is **https://accounts.azuriasmp.org**. Neither PostgreSQL nor Docker is needed on
 users’ computers. The database is not hosted by Vercel.
 
-The existing deployment is already migrated. This guide is a reference for fresh
-environments and ongoing service configuration; do not rerun applied migrations.
-The ordered SQL history remains in `services/accounts/supabase/migrations/` for
-reproducible setup and automated tests.
+The existing deployment is already configured. For a fresh project, use the current
+`services/accounts/supabase/schema.sql` snapshot. Do not run it against an existing
+database. Historical migration files are no longer distributed.
 
 ## 1. Create a fresh database
 
@@ -16,9 +15,9 @@ reproducible setup and automated tests.
    (for example London), and generate a strong database password. Save that password
    in your password manager; the launcher and website do not need it.
 2. In the project’s SQL Editor, open a new query, paste the contents of
-   `services/accounts/supabase/migrations/202610200001_accounts.sql`, and run it once.
-   The migration is transactional and is intended for a new project. Do not rerun
-   it against an existing migrated database.
+   `services/accounts/supabase/schema.sql`, and run it once.
+   The schema snapshot is transactional and is intended for a new project. Do not rerun
+   it against an existing database.
 3. Under Authentication, enable email/password registration and **Confirm email**.
    Set the minimum password length to **12**. Keep secure email changes and secure
    password changes enabled. No Google or Microsoft provider is needed for this release.
@@ -34,17 +33,8 @@ reproducible setup and automated tests.
 `profiles` stores the account ID, username, display name and creation time.
 Authentication data and password hashes stay in Supabase Auth. Profile creation
 happens after verification: a taken username never breaks email registration.
-A fresh environment also needs the remaining migrations in filename order:
-`202610200002_friends.sql`, `202610200003_admin.sql`, `202610210001_news.sql`
-and `202610210002_signup_consent.sql`. These add friends, administration, news
-and signup consent respectively. See the feature sections below and the
-[service reference](../services/accounts/README.md#friends) for operational details.
-For launcher messaging, follow [Messaging setup](MESSAGING_SETUP.md). Presence is not included.
-
-Alternatively, with the Supabase CLI, run `supabase db push` from `services/accounts`
-after linking the project. **Use either the SQL Editor or CLI for the initial
-migration, not both.** If you already used the editor and later adopt CLI migrations,
-mark the migration as applied before pushing.
+The snapshot includes friends, administration, news, signup consent, archived feedback,
+encrypted messaging and advertisements. Follow the feature guides for configuration.
 
 ## 2. Configure account emails
 
@@ -222,7 +212,7 @@ the file from the current branch does not remove it from history.
   rate limits before opening registration. These legal pages describe this account
   implementation and should reflect any later analytics or social features.
 
-The account tests run the migration against embedded PostgreSQL and check its RLS,
+The account tests run the current schema against embedded PostgreSQL and check its RLS,
 privileged functions, expiry, replay protection, rate limits and deletion cascades.
 The function tests exercise request authorization and session issuance with mocked
 Supabase responses, without production credentials. Run them with:
@@ -248,12 +238,10 @@ claim that those external services are already configured.
 
 ## Signup consent and Resend marketing contacts
 
-Deploy the account frontend together with migration
-`202610210002_signup_consent.sql`. New registrations require the terms/privacy
-checkbox; marketing is optional and unticked. Existing users are not opted in.
-The database records the server timestamp, legal copy version and marketing choice
-at signup, and rejects direct API registrations without explicit legal acceptance.
-Deploy the frontend before applying the migration to avoid rejecting old forms.
+New registrations require the terms/privacy checkbox; marketing is optional and
+unticked. Existing users are not opted in. The current schema records the server
+timestamp, legal copy version and marketing choice at signup, and rejects direct
+API registrations without explicit legal acceptance.
 
 Set `RESEND_API_KEY` (with contact read/write permissions) and a new random
 `MARKETING_SYNC_SECRET` in **Supabase Edge Function secrets**, then deploy:
@@ -292,7 +280,7 @@ continues through Supabase SMTP independently.
 Check pg_net response logs for non-2xx results. Test unticked marketing (no contact),
 ticked marketing before verification (no contact), and ticked after verification
 (contact appears within a minute). Test provider failure followed by recovery.
-Keep legal_version in the migration in step with future changes to the signup copy.
+Keep legal_version in the schema in step with future changes to the signup copy.
 Reference: https://resend.com/docs/api-reference/contacts/create-contact
 
 Saved launcher credentials remain in Windows Credential Manager across app and Windows restarts. Temporary account-service errors keep those credentials; only confirmed revoked/expired refresh sessions are cleared. Azuria access tokens are reused in native memory until shortly before expiry, reducing refresh-token rotations. Reconnecting or refocusing the app retries a failed saved-session verification, at most once per 30 seconds, without opening a browser or background polling. Server-side session expiry, revocation and explicit sign-out still apply.

@@ -23,6 +23,6 @@ verify_jwt = false
 [functions.marketing-sync]
 verify_jwt = false
 
-# Anonymous survey: the handler verifies Turnstile; database writes are service-only.
+# Retired survey: keep HTTP 410 responses available to cached forms.
 [functions.feedback-submit]
 verify_jwt = false
