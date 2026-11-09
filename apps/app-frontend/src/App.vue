@@ -156,7 +156,7 @@ async function storagePrepared() {
       role="status"
       aria-label="Starting Azuria"
     >
-      <img src="/branding/app-icon.png" alt="" />
+      <img src="/branding/logo.png" alt="" />
       <h1>Azuria Launcher</h1>
       <div class="startup-line" aria-hidden="true" />
       <p>Opening your library…</p>
@@ -177,7 +177,7 @@ async function storagePrepared() {
           <RouterLink to="/" class="header-home" aria-label="Azuria home"
             ><img
               class="header-mark"
-              src="/branding/app-icon.png"
+              src="/branding/logo.png"
               alt=""
               aria-hidden="true"
             />azuria<span class="brand-caption">Launcher</span></RouterLink
