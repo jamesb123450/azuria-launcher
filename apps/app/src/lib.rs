@@ -407,6 +407,7 @@ pub fn run() {
             skin_library::skin_pick_texture,
             cosmetics::wardrobe_apply,
             cosmetics::wardrobe_profile,
+            azuria_account::cosmetics::azuria_cosmetics,
             cosmetics::wardrobe_change,
             media::screenshot_image,
             media::screenshot_export,

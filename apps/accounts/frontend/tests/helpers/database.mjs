@@ -28,6 +28,15 @@ create table storage.objects(id uuid primary key default gen_random_uuid(),bucke
 alter table storage.objects enable row level security;
 grant usage on schema storage to authenticated; grant insert on storage.objects to authenticated;`);
     await db.exec(schema);
+    await db.exec(
+      await readFile(
+        new URL(
+          "../../../../../services/accounts/supabase/cosmetics.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     return db;
   } catch (error) {
     await db.close();
