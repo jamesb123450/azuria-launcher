@@ -62,7 +62,7 @@ onMounted(async () => {
 <template>
   <div class="game-monitor-shell">
     <header class="monitor-titlebar" data-tauri-drag-region>
-      <img src="/branding/app-icon.png" alt="" /><span data-tauri-drag-region
+      <img src="/branding/logo.png" alt="" /><span data-tauri-drag-region
         >Game monitor <span class="muted">/</span>
         {{ instance?.name ?? "Minecraft" }}</span
       ><WindowControls />
