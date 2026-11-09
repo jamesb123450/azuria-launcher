@@ -26,3 +26,7 @@ verify_jwt = false
 # Retired survey: keep HTTP 410 responses available to cached forms.
 [functions.feedback-submit]
 verify_jwt = false
+
+# The handler validates both Azuria authentication and the Minecraft bearer token.
+[functions.cosmetics-link]
+verify_jwt = false

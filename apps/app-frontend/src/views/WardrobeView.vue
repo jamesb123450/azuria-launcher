@@ -34,6 +34,7 @@ import CommunitySidebar from "../components/CommunitySidebar.vue";
 import SkinHead from "../components/SkinHead.vue";
 import SkinModel from "../components/SkinModel.vue";
 import CapePreview from "../components/CapePreview.vue";
+import AzuriaCosmetics from "../components/AzuriaCosmetics.vue";
 import { desktop } from "../api";
 const account = useAccount();
 const wardrobe = useWardrobe();
@@ -374,32 +375,13 @@ onBeforeUnmount(() => {
           <component :is="tab.icon" :size="22" /><span
             ><strong>{{ tab.title }}</strong
             ><small>{{ tab.detail }}</small></span
-          ><em v-if="tab.id === 'inventory' || tab.id === 'registry'"
-            >Coming soon</em
           >
         </button>
       </nav>
-      <section
+      <AzuriaCosmetics
         v-if="section === 'inventory' || section === 'registry'"
-        class="wardrobe-coming"
-      >
-        <span class="coming-soon-banner">COMING SOON</span
-        ><Package :size="42" />
-        <h2>
-          {{
-            section === "inventory"
-              ? "A little more you."
-              : "Made for your next adventure."
-          }}
-        </h2>
-        <p>
-          Azuria cosmetics are on the way. Your Minecraft skins and owned capes
-          are ready to use now.
-        </p>
-        <button class="button primary" @click="section = 'skins'">
-          Explore your skins
-        </button>
-      </section>
+        :inventory="section === 'inventory'"
+      />
       <div
         v-if="section === 'skins' || section === 'capes'"
         class="skin-selector-layout"

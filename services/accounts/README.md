@@ -10,6 +10,8 @@ No database or function is provisioned by a source-code build.
 It includes account handoff, profiles, friends, encrypted messaging, administration,
 news, signup consent, archived feedback and advertisements, with their permissions,
 RLS policies, triggers and storage buckets. It contains no user data or admin grants.
+For the cape wardrobe foundation, apply `supabase/cosmetics.sql` after the base
+schema; see [cosmetics setup](../../docs/COSMETICS_SETUP.md).
 Historical migrations have been removed for beta. Account tests load this same
 snapshot into isolated PostgreSQL with Supabase platform stubs.
 
