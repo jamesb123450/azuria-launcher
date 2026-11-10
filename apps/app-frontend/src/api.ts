@@ -72,11 +72,12 @@ export const api = {
   },
   update: async (id: string, input: InstanceInput): Promise<Instance> => {
     if (desktop) return invoke("update_instance", { id, input });
-    const error = validateInput(input);
-    if (error) throw new Error(error);
     const value = read();
     const index = value.instances.findIndex((i) => i.id === id);
     if (index < 0) throw new Error("Instance no longer exists.");
+    input = { ...input, azuriaEnabled: value.instances[index]!.azuriaEnabled };
+    const error = validateInput(input);
+    if (error) throw new Error(error);
     value.instances[index] = {
       ...value.instances[index]!,
       ...input,

@@ -80,6 +80,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let mut store = Store::open(root.path().into()).unwrap();
         let input = InstanceInput {
+            azuria_enabled: false,
             name: "Notes test".into(),
             minecraft_version: "1.21.1".into(),
             loader: Loader::Vanilla,

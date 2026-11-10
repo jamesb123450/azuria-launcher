@@ -73,6 +73,7 @@ test("review updated Home, profiles, creation and wardrobe", async ({
     path: test.info().outputPath("profiles.png"),
   });
   await page.getByRole("button", { name: "New profile", exact: true }).click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   await expect(page.getByLabel("Instance name", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Fabric", exact: true }),

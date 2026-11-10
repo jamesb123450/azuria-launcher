@@ -211,6 +211,7 @@ mod tests {
     use super::*;
     fn input(name: &str) -> InstanceInput {
         InstanceInput {
+            azuria_enabled: false,
             name: name.into(),
             minecraft_version: "1.21.1".into(),
             loader: Loader::Vanilla,

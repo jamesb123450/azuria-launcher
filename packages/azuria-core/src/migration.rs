@@ -228,6 +228,7 @@ mod tests {
         let mut store = Store::open(root.into()).unwrap();
         let item = store
             .create(InstanceInput {
+                azuria_enabled: false,
                 name: "Survival World".into(),
                 minecraft_version: "1.21.1".into(),
                 loader: Loader::Fabric,
@@ -248,7 +249,7 @@ mod tests {
         store
             .conn
             .execute_batch(
-                "DROP TABLE folder_moves; DROP TABLE instance_folders; PRAGMA user_version=3;",
+                "DROP TABLE folder_moves; DROP TABLE instance_folders; ALTER TABLE instances DROP COLUMN azuria_enabled; PRAGMA user_version=3;",
             )
             .unwrap();
         item.id
@@ -301,6 +302,7 @@ mod tests {
         let mut source = Store::open(old.clone()).unwrap();
         let item = source
             .create(InstanceInput {
+                azuria_enabled: false,
                 name: "Pending".into(),
                 minecraft_version: "1.21.1".into(),
                 loader: Loader::Vanilla,

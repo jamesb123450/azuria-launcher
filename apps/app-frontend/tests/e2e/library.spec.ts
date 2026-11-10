@@ -64,6 +64,7 @@ test("persistent library lifecycle and honest launch state", async ({
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("Aurora");
   await chooseVersion(page, "1.21.1");
   await page
@@ -149,6 +150,7 @@ test("themes persist and modal cancellation restores focus", async ({
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   await expect(page.getByLabel("Instance name", { exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -184,6 +186,7 @@ test("instance selection and grid/list views work at minimum desktop size", asyn
     await page
       .getByRole("button", { name: /New profile|Create instance/, exact: true })
       .click();
+    await page.getByRole("button", { name: /^Custom profile/ }).click();
     await page.getByLabel("Instance name", { exact: true }).fill(name);
     await chooseVersion(page, "1.21.1");
     await page
@@ -259,6 +262,7 @@ test("library grouping and collapsed sections remain usable", async ({
     await page
       .getByRole("button", { name: /New profile|Create instance/, exact: true })
       .click();
+    await page.getByRole("button", { name: /^Custom profile/ }).click();
     await page.getByLabel("Instance name", { exact: true }).fill(name);
     await chooseVersion(page, "1.21.1");
     await page
@@ -300,6 +304,7 @@ test("failed saves retain input and unrelated errors do not block creation", asy
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("Retry world");
   await chooseVersion(page, "1.21.1");
   await page.evaluate(() => {
@@ -352,6 +357,7 @@ test("custom setup preserves selections, icons and all loader types", async ({
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   const dialog = page.getByRole("dialog");
   await expect(
     dialog.getByLabel("Instance name", { exact: true }),
@@ -410,6 +416,7 @@ test("custom setup preserves selections, icons and all loader types", async ({
     await page
       .getByRole("button", { name: /New profile|Create instance/, exact: true })
       .click();
+    await page.getByRole("button", { name: /^Custom profile/ }).click();
     await dialog.getByRole("button", { name: loader, exact: true }).click();
     await dialog
       .getByRole("button", { name: /New profile|Create instance/, exact: true })
@@ -434,6 +441,7 @@ test("icon uploads, manual versions and minimum-height light layout work", async
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   await page.screenshot({ path: "test-results/create-choice-light.png" });
   const dialog = page.getByRole("dialog");
   await page.getByLabel("Upload instance icon").setInputFiles({
@@ -509,6 +517,7 @@ test("catalogue failures leave manual creation available", async ({ page }) => {
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   await expect(page.getByText(/Couldn’t load the version list/)).toBeVisible();
   await chooseVersion(page, "__manual");
   await page.getByLabel("Minecraft version", { exact: true }).fill("1.19.2");
@@ -528,6 +537,7 @@ test("version menus support keyboard navigation, pre-releases and game-specific 
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   const game = page.getByRole("combobox", {
     name: "Game version",
     exact: true,

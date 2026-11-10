@@ -318,6 +318,7 @@ pub fn content_install(app: tauri::AppHandle, plan_id: String) -> Result<(), Str
                 data
             } else {
                 let input = azuria_core::InstanceInput {
+                    azuria_enabled: false,
                     name: if saved.name.trim().is_empty() {
                         "Modpack".into()
                     } else {
@@ -364,6 +365,7 @@ pub fn content_install(app: tauri::AppHandle, plan_id: String) -> Result<(), Str
                     s.update(
                         &item.id,
                         azuria_core::InstanceInput {
+                            azuria_enabled: false,
                             name: item.name.clone(),
                             minecraft_version: item.minecraft_version.clone(),
                             loader: item.loader.clone(),

@@ -7,6 +7,7 @@ import LaunchControl from "../components/LaunchControl.vue";
 import CommunitySidebar from "../components/CommunitySidebar.vue";
 import SkinModel from "../components/SkinModel.vue";
 import AccountMenu from "../components/AccountMenu.vue";
+import InstanceDialog from "../components/InstanceDialog.vue";
 import InstanceIcon from "../components/InstanceIcon.vue";
 import ContentIcon from "../components/ContentIcon.vue";
 import { useLauncher } from "../stores/launcher";
@@ -23,6 +24,7 @@ const store = useLauncher(),
   privacy = usePrivacy(),
   quick = useQuickPlay(),
   history = useRecentPlay();
+const creatingProfile = ref(false);
 const hasHistory = computed(() =>
   store.instances.some((i) => history.played[i.id]),
 );
@@ -174,9 +176,13 @@ function played(id: string) {
               Choose a Minecraft version or discover a modpack to create your
               first profile.
             </p>
-            <RouterLink class="button secondary" to="/versions"
-              ><Plus :size="15" />Create profile</RouterLink
+            <button
+              type="button"
+              class="button secondary"
+              @click="creatingProfile = true"
             >
+              <Plus :size="15" />Create profile
+            </button>
           </div>
           <article
             v-for="profile in profiles"
@@ -263,5 +269,6 @@ function played(id: string) {
       </aside>
     </div>
   </div>
+  <InstanceDialog v-if="creatingProfile" @close="creatingProfile = false" />
 </template>
 <style scoped src="./home.css"></style>
