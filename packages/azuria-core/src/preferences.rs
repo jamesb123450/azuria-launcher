@@ -176,6 +176,7 @@ mod tests {
         let mut s = Store::open(d.path().into()).unwrap();
         let item = s
             .create(InstanceInput {
+                azuria_enabled: false,
                 name: "Test".into(),
                 minecraft_version: "1.21.1".into(),
                 loader: Loader::Vanilla,
@@ -230,6 +231,7 @@ mod tests {
         let mut s = Store::open(d.path().into()).unwrap();
         let item = s
             .create(InstanceInput {
+                azuria_enabled: false,
                 name: "Existing".into(),
                 minecraft_version: "1.21.1".into(),
                 loader: Loader::Vanilla,
@@ -239,7 +241,7 @@ mod tests {
             })
             .unwrap();
         s.conn
-            .execute_batch("DROP TABLE instance_preferences; PRAGMA user_version=4;")
+            .execute_batch("DROP TABLE instance_preferences; ALTER TABLE instances DROP COLUMN azuria_enabled; PRAGMA user_version=4;")
             .unwrap();
         drop(s);
         let s = Store::open(d.path().into()).unwrap();
@@ -248,7 +250,7 @@ mod tests {
             s.conn
                 .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
                 .unwrap(),
-            5
+            6
         );
     }
     #[test]

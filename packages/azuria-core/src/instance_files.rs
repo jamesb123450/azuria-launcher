@@ -269,6 +269,7 @@ impl Store {
         let original = self.get(id)?;
         let overrides = self.launch_overrides(id)?;
         let copy = self.create(InstanceInput {
+            azuria_enabled: original.azuria_enabled,
             name: format!(
                 "{} copy",
                 original.name.chars().take(74).collect::<String>()
@@ -312,6 +313,7 @@ mod tests {
         let mut s = Store::open(root.into()).unwrap();
         let i = s
             .create(InstanceInput {
+                azuria_enabled: false,
                 name: "Aurora".into(),
                 minecraft_version: "1.21.1".into(),
                 loader: Loader::Fabric,
@@ -442,6 +444,7 @@ mod screenshot_tests {
         let mut store = Store::open(d.path().into()).unwrap();
         let item = store
             .create(InstanceInput {
+                azuria_enabled: false,
                 name: "Photos".into(),
                 minecraft_version: "1.21.1".into(),
                 loader: Loader::Vanilla,

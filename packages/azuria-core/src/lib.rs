@@ -39,6 +39,8 @@ impl Loader {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceInput {
+    #[serde(default)]
+    pub azuria_enabled: bool,
     pub name: String,
     pub minecraft_version: String,
     pub loader: Loader,
@@ -50,6 +52,13 @@ pub struct InstanceInput {
 }
 impl InstanceInput {
     pub fn validate(&self) -> Result<(), String> {
+        if self.azuria_enabled
+            && (self.loader != Loader::Fabric
+                || self.minecraft_version != "1.21.1"
+                || self.loader_version.as_deref() != Some("0.16.14"))
+        {
+            return Err("Azuria features require Minecraft 1.21.1 with Fabric 0.16.14.".into());
+        }
         let name = self.name.trim();
         if name.is_empty() || name.chars().count() > 80 || name.chars().any(char::is_control) {
             return Err(
@@ -99,6 +108,8 @@ impl InstanceInput {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Instance {
+    #[serde(default)]
+    pub azuria_enabled: bool,
     pub id: String,
     pub name: String,
     pub minecraft_version: String,
@@ -160,6 +171,7 @@ fn row_instance(row: &rusqlite::Row<'_>) -> rusqlite::Result<Instance> {
         created_at: row.get(6)?,
         icon: row.get(7)?,
         loader_version: row.get(8)?,
+        azuria_enabled: row.get(9)?,
     })
 }
 impl Store {
@@ -188,7 +200,7 @@ impl Store {
         let version: i64 = conn
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .map_err(error)?;
-        if version > 5 {
+        if version > 6 {
             return Err(
                 "This database was created by a newer Azuria version. Upgrade the launcher.".into(),
             );
@@ -238,6 +250,9 @@ impl Store {
             conn.execute_batch("BEGIN IMMEDIATE; CREATE TABLE IF NOT EXISTS instance_preferences (id TEXT PRIMARY KEY REFERENCES instances(id) ON DELETE CASCADE, options TEXT NOT NULL);
           PRAGMA user_version=5; COMMIT;").map_err(error)?;
         }
+        if version < 6 {
+            conn.execute_batch("BEGIN IMMEDIATE; ALTER TABLE instances ADD COLUMN azuria_enabled INTEGER NOT NULL DEFAULT 0 CHECK(azuria_enabled IN (0,1)); PRAGMA user_version=6; COMMIT;").map_err(error)?;
+        }
         let mut store = Self {
             conn,
             root,
@@ -254,13 +269,13 @@ impl Store {
     }
     pub fn list(&mut self) -> Result<Vec<Instance>, String> {
         self.recover_deletions()?;
-        let mut stmt = self.conn.prepare("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version FROM instances ORDER BY created_at DESC,id").map_err(error)?;
+        let mut stmt = self.conn.prepare("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version,azuria_enabled FROM instances ORDER BY created_at DESC,id").map_err(error)?;
         let rows = stmt.query_map([], row_instance).map_err(error)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(error)
     }
     fn get(&self, id: &str) -> Result<Instance, String> {
         valid_id(id)?;
-        self.conn.query_row("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version FROM instances WHERE id=?1", [id], row_instance).map_err(|_| "Instance no longer exists.".into())
+        self.conn.query_row("SELECT id,name,minecraft_version,loader,memory_mb,favorite,created_at,icon,loader_version,azuria_enabled FROM instances WHERE id=?1", [id], row_instance).map_err(|_| "Instance no longer exists.".into())
     }
     /// Pin only the loader preference; do not rewrite memory, icons or instance folders.
     pub fn pin_fabric_version(&mut self, id: &str, version: &str) -> Result<Instance, String> {
@@ -272,6 +287,7 @@ impl Store {
     pub fn pin_loader_version(&mut self, id: &str, version: &str) -> Result<Instance, String> {
         let current = self.get(id)?;
         if current.loader == Loader::Vanilla
+            || (current.azuria_enabled && version != "0.16.14")
             || version.is_empty()
             || version.len() > 80
             || matches!(version, "stable" | "latest")
@@ -302,7 +318,7 @@ impl Store {
         fs::create_dir(&path).map_err(error)?;
         let result = (|| -> Result<(), rusqlite::Error> {
             let tx = self.conn.transaction()?;
-            tx.execute("INSERT INTO instances (id,name,minecraft_version,loader,memory_mb,created_at,icon,loader_version) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)", params![id,input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,created_at,input.icon,input.loader_version])?;
+            tx.execute("INSERT INTO instances (id,name,minecraft_version,loader,memory_mb,created_at,icon,loader_version,azuria_enabled) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)", params![id,input.name.trim(),input.minecraft_version,input.loader.value(),input.memory_mb,created_at,input.icon,input.loader_version,input.azuria_enabled])?;
             tx.execute(
                 "INSERT INTO instance_folders (id,folder) VALUES (?1,?2)",
                 params![id, folder],
@@ -319,10 +335,10 @@ impl Store {
         }
         self.get(&id)
     }
-    pub fn update(&mut self, id: &str, input: InstanceInput) -> Result<Instance, String> {
+    pub fn update(&mut self, id: &str, mut input: InstanceInput) -> Result<Instance, String> {
         self.recover_deletions()?;
+        input.azuria_enabled = self.get(id)?.azuria_enabled;
         input.validate()?;
-        self.get(id)?;
         self.recover_folder_moves()?;
         let old = self.folder(id)?;
         let next = if self.get(id)?.name == input.name.trim() {
@@ -489,6 +505,7 @@ mod tests {
     use super::*;
     fn input() -> InstanceInput {
         InstanceInput {
+            azuria_enabled: false,
             name: "My world".into(),
             minecraft_version: "1.21.1".into(),
             loader: Loader::Fabric,
@@ -713,7 +730,7 @@ mod tests {
                 .conn
                 .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
                 .unwrap(),
-            5
+            6
         );
     }
 
@@ -819,11 +836,37 @@ mod tests {
         assert!(Store::open(root).is_err());
     }
     #[test]
+    fn azuria_profiles_retain_managed_setup_when_edited_and_copied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = Store::open(dir.path().into()).unwrap();
+        let mut managed = input();
+        managed.azuria_enabled = true;
+        managed.loader_version = Some("0.16.14".into());
+        let profile = store.create(managed.clone()).unwrap();
+
+        let mut incompatible = managed.clone();
+        incompatible.minecraft_version = "1.20.1".into();
+        assert!(store.update(&profile.id, incompatible).is_err());
+        assert!(store.pin_loader_version(&profile.id, "0.17.0").is_err());
+
+        managed.name = "Renamed cape world".into();
+        managed.azuria_enabled = false;
+        assert!(store.update(&profile.id, managed).unwrap().azuria_enabled);
+        let copy = store.duplicate(&profile.id, false).unwrap();
+        assert!(copy.azuria_enabled);
+        drop(store);
+
+        let store = Store::open(dir.path().into()).unwrap();
+        assert!(store.get(&profile.id).unwrap().azuria_enabled);
+        assert!(store.get(&copy.id).unwrap().azuria_enabled);
+    }
+    #[test]
     fn fabric_pinning_changes_only_loader_version() {
         let root = tempfile::tempdir().unwrap();
         let mut store = Store::open(root.path().to_path_buf()).unwrap();
         let original = store
             .create(InstanceInput {
+                azuria_enabled: false,
                 name: "Pinned world".into(),
                 minecraft_version: "26.1".into(),
                 loader: Loader::Fabric,
@@ -846,6 +889,7 @@ mod tests {
         for loader in [Loader::Forge, Loader::NeoForge, Loader::Quilt] {
             let original = store
                 .create(InstanceInput {
+                    azuria_enabled: false,
                     name: format!("{loader:?}"),
                     minecraft_version: "1.21.1".into(),
                     loader: loader.clone(),

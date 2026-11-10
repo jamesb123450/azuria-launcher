@@ -9,6 +9,37 @@ use std::{
     },
 };
 use tauri::{Emitter, Manager, State};
+#[cfg(all(windows, target_arch = "x86_64"))]
+fn install_azuria_capes(game: &std::path::Path) -> Result<(), String> {
+    use std::{fs, io::Write};
+
+    const JAR: &[u8] = include_bytes!("../bundled/azuria-capes-0.1.0.jar");
+    let mods = azuria_launch::safe_join(game, "mods")?;
+    fs::create_dir_all(&mods).map_err(|error| error.to_string())?;
+    let destination = azuria_launch::safe_join(game, "mods/azuria-capes-0.1.0.jar")?;
+    match fs::symlink_metadata(&destination) {
+        Ok(metadata) => {
+            if metadata.is_file()
+                && metadata.len() == JAR.len() as u64
+                && fs::read(&destination).map_err(|error| error.to_string())? == JAR
+            {
+                return Ok(());
+            }
+            return Err("A different Azuria Capes JAR is already in this profile. Move it out of the mods folder and retry.".into());
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.to_string()),
+    }
+
+    let mut file = tempfile::NamedTempFile::new_in(mods).map_err(|error| error.to_string())?;
+    file.write_all(JAR).map_err(|error| error.to_string())?;
+    file.as_file()
+        .sync_all()
+        .map_err(|error| error.to_string())?;
+    file.persist_noclobber(destination)
+        .map_err(|error| error.to_string())?;
+    Ok(())
+}
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Launch {
@@ -312,6 +343,10 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                     resources.concurrent_downloads,
                 )?;
                 azuria_launch::cancelled(&cancel)?;
+                if instance.azuria_enabled {
+                    azuria_launch::report(&reporter, "preparing", "Installing Azuria Capes", 0, 0);
+                    install_azuria_capes(&game)?;
+                }
                 if prepare_only {
                     return Ok(None);
                 }
@@ -351,5 +386,28 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
             }
         });
         Ok(())
+    }
+}
+
+#[cfg(all(test, windows, target_arch = "x86_64"))]
+mod tests {
+    use super::install_azuria_capes;
+    use std::fs;
+
+    #[test]
+    fn bundled_capes_install_retries_without_overwriting_user_files() {
+        let game = tempfile::tempdir().unwrap();
+        let path = game.path().join("mods/azuria-capes-0.1.0.jar");
+        install_azuria_capes(game.path()).unwrap();
+        let installed = fs::read(&path).unwrap();
+        assert_eq!(
+            installed,
+            include_bytes!("../bundled/azuria-capes-0.1.0.jar")
+        );
+        install_azuria_capes(game.path()).unwrap();
+
+        fs::write(&path, b"another mod").unwrap();
+        assert!(install_azuria_capes(game.path()).is_err());
+        assert_eq!(fs::read(path).unwrap(), b"another mod");
     }
 }

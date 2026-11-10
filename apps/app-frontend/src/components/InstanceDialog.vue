@@ -17,12 +17,20 @@ import {
   PackageOpen,
   Shuffle,
   Palette,
+  Sparkles,
   Check,
   ArrowLeft,
   Plus,
 } from "@lucide/vue";
 import type { Instance, Loader } from "../types";
-import { DEFAULT_INPUT, LOADERS, loaderName, validateInput } from "../types";
+import {
+  AZURIA_VERSION,
+  AZURIA_LOADER_VERSION,
+  DEFAULT_INPUT,
+  LOADERS,
+  loaderName,
+  validateInput,
+} from "../types";
 import { useLauncher } from "../stores/launcher";
 import InstanceIcon from "./InstanceIcon.vue";
 import VersionPicker from "./VersionPicker.vue";
@@ -48,6 +56,32 @@ const nameInput = ref<HTMLInputElement>();
 const setupButton = ref<HTMLButtonElement>();
 const fileInput = ref<HTMLInputElement>();
 const edit = Boolean(props.instance && !props.duplicate);
+const profileType = ref<"azuria" | "custom" | null>(
+  props.instance ? (props.instance.azuriaEnabled ? "azuria" : "custom") : null,
+);
+const azuria = computed(() => profileType.value === "azuria");
+const firstChoice = ref<HTMLButtonElement>();
+async function chooseProfile(type: "azuria" | "custom") {
+  profileType.value = type;
+  form.loader = type === "azuria" ? "fabric" : DEFAULT_INPUT.loader;
+  selectVersion(
+    type === "azuria"
+      ? AZURIA_VERSION
+      : (versions.value.find((version) => version.type === "release")?.id ??
+          AZURIA_VERSION),
+  );
+  // A pending manifest may still pick the latest release for a new custom profile.
+  versionTouched = type === "azuria";
+  error.value = "";
+  await nextTick();
+  nameInput.value?.focus();
+}
+async function changeProfileType() {
+  profileType.value = null;
+  error.value = "";
+  await nextTick();
+  firstChoice.value?.focus();
+}
 
 const error = ref("");
 const iconBusy = ref(false);
@@ -158,7 +192,7 @@ async function loadLoaderVersions() {
 }
 const suggestedName = computed(
   () =>
-    `${loaderName(form.loader)} ${form.minecraftVersion || versionChoice.value}`,
+    `${azuria.value ? "Azuria" : loaderName(form.loader)} ${form.minecraftVersion || versionChoice.value}`,
 );
 const availableVersions = computed(() => {
   const list = versions.value.filter(
@@ -181,9 +215,10 @@ onMounted(async () => {
   previousFocus = document.activeElement as HTMLElement;
   dialog.value?.showModal();
   await nextTick();
-  nameInput.value?.focus();
+  (profileType.value ? nameInput.value : firstChoice.value)?.focus();
   void loadVersions();
-  if (loaderPolicy.value === "other") void loadLoaderVersions();
+  if (!azuria.value && loaderPolicy.value === "other")
+    void loadLoaderVersions();
 });
 onBeforeUnmount(() => {
   disposed = true;
@@ -198,7 +233,7 @@ async function loadVersions() {
     if (!disposed) {
       versions.value = entries;
       const latest = entries.find((entry) => entry.type === "release");
-      if (!props.instance && !versionTouched && latest) {
+      if (!props.instance && !azuria.value && !versionTouched && latest) {
         versionChoice.value = latest.id;
         form.minecraftVersion = latest.id;
       }
@@ -261,13 +296,15 @@ async function chooseUpload(event: Event) {
 }
 async function save() {
   if (
+    !profileType.value ||
     iconBusy.value ||
     resolvingLoader.value ||
     store.busy ||
-    (loaderPolicy.value === "other" && loaderLoading.value)
+    (!azuria.value && loaderPolicy.value === "other" && loaderLoading.value)
   )
     return;
   if (
+    !azuria.value &&
     form.loader !== "vanilla" &&
     loaderPolicy.value === "other" &&
     !customLoaderVersion.value
@@ -277,13 +314,15 @@ async function save() {
     return;
   }
   const input = {
+    ...(azuria.value ? { azuriaEnabled: true } : {}),
     name: form.name.trim() || suggestedName.value,
     minecraftVersion: form.minecraftVersion,
     loader: form.loader,
     memoryMb: Number(form.memoryMb),
     icon: form.icon ?? null,
-    loaderVersion:
-      form.loader === "vanilla"
+    loaderVersion: azuria.value
+      ? AZURIA_LOADER_VERSION
+      : form.loader === "vanilla"
         ? null
         : loaderPolicy.value === "other"
           ? customLoaderVersion.value.trim()
@@ -291,7 +330,7 @@ async function save() {
   };
   resolvingLoader.value = true;
   try {
-    if (input.loader === "fabric") {
+    if (!azuria.value && input.loader === "fabric") {
       input.loaderVersion = await resolveLoaderVersion(
         input.loader,
         input.minecraftVersion,
@@ -339,9 +378,60 @@ async function save() {
       </button>
     </header>
 
-    <form class="create-setup-body" @submit.prevent="save">
+    <div
+      v-if="!profileType"
+      class="profile-type-picker"
+      aria-label="Profile type"
+    >
+      <button
+        ref="firstChoice"
+        type="button"
+        class="profile-type-option"
+        @click="chooseProfile('azuria')"
+      >
+        <Sparkles :size="22" />
+        <span
+          ><strong>Azuria-enabled features</strong
+          ><small
+            >Set up a profile with Azuria Capes. The launcher configures Fabric
+            for you.</small
+          ></span
+        >
+      </button>
+      <button
+        type="button"
+        class="profile-type-option"
+        @click="chooseProfile('custom')"
+      >
+        <Boxes :size="22" />
+        <span
+          ><strong>Custom profile</strong
+          ><small
+            >Choose your own Minecraft version and loader. Azuria features are
+            off.</small
+          ></span
+        >
+      </button>
+    </div>
+    <form v-else class="create-setup-body" @submit.prevent="save">
       <div class="setup-scroll">
-        <div class="profile-setup-banner">
+        <button
+          v-if="!instance"
+          type="button"
+          class="button secondary profile-type-back"
+          :disabled="store.busy || iconBusy || resolvingLoader"
+          @click="changeProfileType"
+        >
+          <ArrowLeft :size="16" />Profile type
+        </button>
+        <div class="profile-setup-banner" v-if="azuria">
+          <h3>Azuria-enabled profile</h3>
+          <p>
+            Fabric and Azuria Capes are set up automatically. Minecraft 1.21.1
+            is currently supported.
+          </p>
+        </div>
+        <div v-else class="profile-setup-banner">
           <span>MAKE IT YOURS</span>
           <h3>One profile. Your way to play.</h3>
           <p>Choose your Minecraft version and loader together.</p>
@@ -350,7 +440,7 @@ async function save() {
           :disabled="store.busy || iconBusy || resolvingLoader"
           class="setup-fields"
         >
-          <div class="create-icon-row">
+          <div v-if="!azuria" class="create-icon-row">
             <div class="create-icon-preview">
               <InstanceIcon
                 :loader="form.loader"
@@ -396,7 +486,7 @@ async function save() {
             >
           </div>
           <section
-            v-if="customizing"
+            v-if="!azuria && customizing"
             id="icon-customization"
             class="icon-customizer"
             aria-label="Customize instance icon"
@@ -452,7 +542,7 @@ async function save() {
               maxlength="80"
               :placeholder="suggestedName"
           /></label>
-          <fieldset class="setup-loader-field">
+          <fieldset v-if="!azuria" class="setup-loader-field">
             <legend>Loader</legend>
             <div class="setup-pills" role="group" aria-label="Mod loader">
               <button
@@ -473,7 +563,15 @@ async function save() {
             <div class="setup-label-row">
               <span>Game version</span>
             </div>
+            <select
+              v-if="azuria"
+              aria-label="Game version"
+              v-model="form.minecraftVersion"
+            >
+              <option :value="AZURIA_VERSION">{{ AZURIA_VERSION }}</option>
+            </select>
             <VersionPicker
+              v-else
               :model-value="versionChoice"
               label="Game version"
               :options="[
@@ -494,20 +592,25 @@ async function save() {
               @toggle-all="snapshots = !snapshots"
             />
             <input
-              v-if="manualVersion"
+              v-if="!azuria && manualVersion"
               v-model="form.minecraftVersion"
               aria-label="Minecraft version"
               required
               maxlength="40"
               placeholder="e.g. 1.21.1 or 24w14a"
             />
-            <small v-if="versionsLoading">Loading Minecraft versions…</small>
-            <small v-else-if="versionsError" class="version-warning"
+            <small v-if="!azuria && versionsLoading"
+              >Loading Minecraft versions…</small
+            >
+            <small v-else-if="!azuria && versionsError" class="version-warning"
               >{{ versionsError }}
               <button type="button" @click="loadVersions">Retry</button></small
             >
           </div>
-          <fieldset v-if="form.loader !== 'vanilla'" class="setup-loader-field">
+          <fieldset
+            v-if="!azuria && form.loader !== 'vanilla'"
+            class="setup-loader-field"
+          >
             <legend>Loader version</legend>
             <div class="setup-pills" role="group" aria-label="Loader version">
               <button
@@ -599,6 +702,41 @@ async function save() {
 <style src="./instance-dialog.css"></style>
 
 <style scoped>
+.profile-type-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  padding: 24px;
+}
+.profile-type-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.profile-type-option:hover,
+.profile-type-option:focus-visible {
+  border-color: var(--pink);
+}
+.profile-type-option svg {
+  flex-shrink: 0;
+  color: var(--pink);
+}
+.profile-type-option small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.profile-type-back {
+  margin-bottom: 14px;
+}
 .profile-setup-banner {
   padding: 24px;
   border-radius: 12px;

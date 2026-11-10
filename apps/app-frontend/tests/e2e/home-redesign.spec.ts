@@ -56,18 +56,52 @@ test("Home matches the launch-first design, with honest preview and no generated
   ).toEqual([]);
   expect(errors).toEqual([]);
 });
-test("Home without profiles offers version browsing without a standalone launch", async ({
+test("Home without profiles opens the profile type picker", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(
     page.getByRole("button", { name: "Choose version and loader" }),
   ).toHaveCount(0);
-  await page.getByRole("link", { name: "Create profile", exact: true }).click();
-  await expect(page).toHaveURL(/#\/versions$/);
+  await page
+    .getByRole("button", { name: "Create profile", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
   await expect(
-    page.getByRole("button", { name: "New profile", exact: true }),
+    dialog.getByRole("button", { name: /^Azuria-enabled features/ }),
   ).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: /^Custom profile/ }),
+  ).toBeVisible();
+  await dialog
+    .getByRole("button", { name: /^Azuria-enabled features/ })
+    .click();
+  await dialog
+    .getByRole("textbox", { name: "Instance name" })
+    .fill("Cape world");
+  await expect(
+    dialog.getByRole("combobox", { name: "Game version" }),
+  ).toHaveValue("1.21.1");
+  await expect(dialog.getByRole("group", { name: "Mod loader" })).toHaveCount(
+    0,
+  );
+  await expect(
+    dialog.getByRole("group", { name: "Loader version" }),
+  ).toHaveCount(0);
+  await dialog
+    .getByRole("button", { name: "Create instance", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  const profile = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("azuria-preview-v1")!).instances[0],
+  );
+  expect(profile).toMatchObject({
+    name: "Cape world",
+    minecraftVersion: "1.21.1",
+    azuriaEnabled: true,
+    loader: "fabric",
+    loaderVersion: "0.16.14",
+  });
 });
 test("Home profile settings opens the chosen profile directly", async ({
   page,

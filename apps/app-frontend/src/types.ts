@@ -10,7 +10,10 @@ export type Loader = (typeof LOADERS)[number]["id"];
 export function loaderName(loader: Loader) {
   return LOADERS.find((entry) => entry.id === loader)?.name ?? loader;
 }
+export const AZURIA_VERSION = "1.21.1";
+export const AZURIA_LOADER_VERSION = "0.16.14";
 export interface Instance {
+  azuriaEnabled?: boolean;
   id: string;
   name: string;
   minecraftVersion: string;
@@ -22,6 +25,7 @@ export interface Instance {
   createdAt: number;
 }
 export interface InstanceInput {
+  azuriaEnabled?: boolean;
   name: string;
   minecraftVersion: string;
   loader: Loader;
@@ -41,6 +45,13 @@ export const DEFAULT_INPUT: InstanceInput = {
   loaderVersion: "stable",
 };
 export function validateInput(input: InstanceInput): string | null {
+  if (
+    input.azuriaEnabled &&
+    (input.minecraftVersion !== AZURIA_VERSION ||
+      input.loader !== "fabric" ||
+      input.loaderVersion !== AZURIA_LOADER_VERSION)
+  )
+    return "Azuria features require Minecraft 1.21.1 with Fabric 0.16.14.";
   if (
     !input.name.trim() ||
     Array.from(input.name.trim()).length > 80 ||

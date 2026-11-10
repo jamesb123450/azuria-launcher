@@ -166,7 +166,7 @@ async function exportProfile() {
   });
 }
 async function saveInstallation() {
-  if (!instance.value) return;
+  if (!instance.value || instance.value.azuriaEnabled) return;
   if (
     !window.confirm(
       "Change this instance's Minecraft version or loader? Existing mods and worlds may be incompatible. Back up important worlds first.",
@@ -859,7 +859,11 @@ const prettySize = (size: number) =>
                 </section>
                 <section v-else-if="settingsSection === 'versions'">
                   <h2>Install</h2>
+                  <p v-if="instance.azuriaEnabled" class="muted">
+                    Azuria manages Fabric and the cape mod for this profile.
+                  </p>
                   <form
+                    v-else
                     class="profile-version-form"
                     @submit.prevent="saveInstallation"
                   >

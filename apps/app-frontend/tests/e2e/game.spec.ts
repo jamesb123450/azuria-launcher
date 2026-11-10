@@ -783,6 +783,7 @@ test("creating Fabric pins Stable and starts download-only preparation", async (
   await page
     .getByRole("button", { name: /New profile|Create instance/, exact: true })
     .click();
+  await page.getByRole("button", { name: /^Custom profile/ }).click();
   await page.getByLabel("Instance name", { exact: true }).fill("New Fabric");
   await page.getByRole("button", { name: "Fabric", exact: true }).click();
   await page
