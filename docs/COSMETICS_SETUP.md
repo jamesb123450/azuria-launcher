@@ -1,9 +1,10 @@
 # Azuria cape wardrobe foundation
 
 This first release implements the cape collection, free claims, account ownership,
-selection, verified Minecraft linking and a minimal renderer lookup API. It does
-not install a mod or display custom capes in Minecraft yet. The launcher labels
-this clearly. Official Minecraft capes and skin controls remain independent.
+selection, verified Minecraft linking and a minimal renderer lookup API.
+The [Azuria Capes preview](../mods/azuria-capes/README.md) adds in-game rendering
+on Minecraft Java 1.21.1 with Fabric. Install the preview JAR manually in each
+client that should display Azuria capes.
 
 There are no payments, Gem balances, prices, gifting, transfers or paid unlocks.
 The original Azuria Starter atlas is free to claim. Additional capes can be granted
@@ -64,7 +65,7 @@ A new cape needs a reviewed 64×32 PNG atlas, a matching allowlist entry in
 `capeTexture`, and a catalogue row. Capes cannot be deleted while owned; disable
 one instead. Grant history is private and retained independently for auditing.
 
-## Companion-mod contract and next phase
+## Companion mod and lookup contract
 
 `POST /rest/v1/rpc/cosmetics_cape` with `{"p_uuid":"<32 lowercase hex digits>"}`
 returns `{"id":"azuria-starter","texture":"azuria-starter.png"}` or `null`.
@@ -73,19 +74,10 @@ exposes no Azuria account ID, email, inventory, token or grant history. A null
 response means render no Azuria cape. Suspended and disabled selections return null.
 Public lookup reveals that UUID's selected cape, as intended for other players.
 
-Before shipping the companion mod:
-
-- Choose and test explicit Minecraft/loader versions for Fabric, Quilt, Forge and
-  NeoForge. Do not advertise cross-version compatibility without testing it.
-- Bundle the reviewed textures and fetch only the fixed public lookup endpoint.
-  Cache UUID results, bound requests/timeouts and avoid network work on the render
-  thread. Offline/failure must leave Minecraft playable without a custom cape.
-- Preserve official capes by default and add an explicit precedence setting.
-- Make installation opt-in per compatible instance; never silently replace a mod.
-- Test two real clients, suspension/unlink handling, resource reload and uninstall.
-
-The renderer, its JAR builds and automatic launcher installation are not included
-in this foundation. Cape selection here records a future preference only.
+The Fabric preview bundles the starter texture, caches the public lookup and
+preserves official capes by default. See the [mod guide](../mods/azuria-capes/README.md)
+for installation, cape precedence and multiplayer verification. Quilt, Forge,
+NeoForge and launcher-managed installation are future work.
 
 Before reconsidering commercial cosmetics, review Minecraft's current Usage
 Guidelines and provider acceptance. The previous Gem/cape pricing proposal is

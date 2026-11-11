@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "azuria_capes",
+  "version": "${version}",
+  "name": "Azuria Capes",
+  "description": "Displays equipped Azuria capes on Minecraft Java clients.",
+  "environment": "client",
+  "entrypoints": { "client": ["org.azuriasmp.capes.AzuriaCapes"] },
+  "mixins": ["azuria-capes.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "1.21.1",
+    "java": ">=21"
+  }
+}
