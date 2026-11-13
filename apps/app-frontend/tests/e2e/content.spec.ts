@@ -463,19 +463,16 @@ test("modpacks create a new instance and datapacks select a world", async ({
     ),
   ).toBe(false);
 });
-test("provider settings never accept or save a client-side API key", async ({
+test("legacy provider settings link no longer exposes provider controls", async ({
   page,
 }) => {
   await setup(page);
   await page.goto("/#/settings#content-providers");
   const dialog = page.getByRole("dialog");
   await expect(
-    dialog.getByRole("heading", { name: "CurseForge", exact: true }),
-  ).toBeVisible();
-  await expect(dialog.getByLabel("API key", { exact: true })).toHaveCount(0);
-  await expect(
-    dialog.getByRole("button", { name: "Save", exact: true }),
+    dialog.getByRole("button", { name: "Content providers", exact: true }),
   ).toHaveCount(0);
+  await expect(dialog.getByLabel("API key", { exact: true })).toHaveCount(0);
   expect(
     await page.evaluate(() =>
       (window as any).contentCalls.some(

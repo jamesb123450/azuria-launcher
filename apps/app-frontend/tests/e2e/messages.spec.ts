@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 test("sidebar opens a conversation, renders plain text and sends with Enter", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 520 });
   await page.goto("/");
   await page.locator(".friends-placeholder").waitFor();
   await page.evaluate(async () => {
@@ -76,11 +77,12 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
   });
   await page.getByRole("button", { name: "Chat", exact: true }).click();
   const popup = page.getByRole("dialog", { name: "Chat", exact: true });
-  await popup.getByRole("button", { name: "B Bob", exact: true }).click();
+  await popup.getByRole("button", { name: /Bob/ }).click();
   await expect(popup.getByLabel("Messages", { exact: true })).toContainText(
     "<b>Hello</b>",
   );
   await expect(popup.locator(".message-bubble b")).toHaveCount(0);
+  await expect(popup.getByLabel("Message", { exact: true })).toBeInViewport();
   await popup
     .getByLabel("Message", { exact: true })
     .fill("Sent from the popup");
@@ -90,6 +92,7 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
   );
   await page.keyboard.press("Escape");
   await expect(popup).not.toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.locator(".sidebar-friend").click();
   const dialog = page.getByRole("region", { name: "Social", exact: true });
   await expect(dialog.getByLabel("Messages", { exact: true })).toContainText(
@@ -112,9 +115,9 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
   await dialog
     .getByRole("button", { name: "Save recovery file", exact: true })
     .click();
-  await expect(dialog.getByRole("status")).toContainText(
-    "Encrypted recovery file saved",
-  );
+  await expect(
+    dialog.getByText("Encrypted recovery file saved", { exact: true }),
+  ).toBeVisible();
   await expect(
     dialog.getByLabel("Recovery passphrase", { exact: true }),
   ).toHaveValue("");

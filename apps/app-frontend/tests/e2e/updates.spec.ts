@@ -15,6 +15,7 @@ async function setup(page: import("@playwright/test").Page, fail = false) {
             commands.push(cmd);
             if (cmd === "game_launches") return [];
             if (cmd === "update_can_install") return true;
+            if (cmd === "update_install_failed") return;
             if (cmd === "plugin:event|listen") return 1;
             if (cmd === "plugin:event|unlisten") return;
             if (cmd === "storage_migration_needed") return false;

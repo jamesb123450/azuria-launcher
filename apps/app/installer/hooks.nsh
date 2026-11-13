@@ -75,6 +75,15 @@ FunctionEnd
 !macroend
 
 !macro NSIS_HOOK_POSTINSTALL
+  ; Register once per Windows user. Keep their Startup Apps choice on updates.
+  ReadRegStr $R0 HKCU "${AZURIA_PRIVACY_KEY}" "StartupRegistered"
+  ${If} $R0 == ""
+    ClearErrors
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${PRODUCTNAME}" '$"$INSTDIR\${MAINBINARYNAME}.exe$"'
+    ${IfNot} ${Errors}
+      WriteRegStr HKCU "${AZURIA_PRIVACY_KEY}" "StartupRegistered" "1"
+    ${EndIf}
+  ${EndIf}
   ; Only actual first-install acceptance creates a record. Updates never
   ; create or overwrite it, even when the bundled policy changes.
   ${If} $AzuriaPrivacyAccepted == 2

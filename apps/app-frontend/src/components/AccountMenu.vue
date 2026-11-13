@@ -22,6 +22,8 @@ import {
   LoaderCircle,
 } from "@lucide/vue";
 import SkinHead from "./SkinHead.vue";
+import { useAzuriaAccount } from "../stores/azuria-account";
+import { statuses, usePresence } from "../stores/presence";
 import { useAccount } from "../stores/account";
 const props = defineProps<{ hero?: boolean }>();
 const menuId = computed(() =>
@@ -30,6 +32,12 @@ const menuId = computed(() =>
 const account = useAccount(),
   route = useRoute(),
   router = useRouter();
+const azuria = useAzuriaAccount();
+const presence = usePresence();
+const statusOptions = Object.entries(statuses) as [
+  keyof typeof statuses,
+  string,
+][];
 const open = ref(false),
   switching = ref(false),
   host = ref<HTMLElement>(),
@@ -229,6 +237,35 @@ watch(
             ><small>This replaces the account saved on this device.</small>
           </div></Transition
         >
+        <template v-if="azuria.view.account">
+          <div class="account-menu-divider" />
+          <p class="presence-label">
+            Azuria status · {{ statuses[presence.status] }}
+          </p>
+          <button
+            v-for="[value, label] in statusOptions"
+            :key="value"
+            role="menuitem"
+            tabindex="-1"
+            @click="presence.setStatus(value)"
+          >
+            <span
+              class="presence-dot"
+              :data-status="value"
+              aria-hidden="true"
+            />
+            {{ label }}
+            <Check
+              v-if="value === presence.status"
+              class="account-menu-end"
+              :size="14"
+            />
+          </button>
+          <p v-if="presence.error" class="presence-label" role="status">
+            {{ presence.error }}
+          </p>
+          <div class="account-menu-divider" />
+        </template>
         <button role="menuitem" tabindex="-1" @click="navigate('/wardrobe')">
           <Shirt :size="16" />Change skin / cape
         </button>
@@ -442,5 +479,33 @@ watch(
 }
 :global(html[data-theme="light"] .account-menu-error) {
   color: #a1324a;
+}
+</style>
+
+<style scoped>
+.presence-label {
+  margin: 8px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.presence-dot[data-status="online"] {
+  background: #4ade80;
+}
+.presence-dot[data-status="away"] {
+  background: #fbbf24;
+}
+.presence-dot[data-status="busy"] {
+  background: #fb7185;
+}
+.account-dropdown {
+  max-height: calc(100dvh - 92px);
+  overflow-y: auto;
 }
 </style>

@@ -7,9 +7,11 @@ import {
   MessageCircle,
   LockKeyhole,
 } from "@lucide/vue";
+import { statuses, usePresence } from "../stores/presence";
 import { useMessages } from "../stores/messages";
 defineEmits<{ back: [] }>();
 const messages = useMessages();
+const presence = usePresence();
 const feed = ref<HTMLElement>();
 watch(
   () => messages.rows.at(-1)?.id,
@@ -23,6 +25,11 @@ watch(
     });
   },
 );
+function sendOnEnter(event: KeyboardEvent) {
+  if (event.isComposing) return;
+  event.preventDefault();
+  void messages.send();
+}
 function time(value: string) {
   return new Date(value).toLocaleString(undefined, {
     dateStyle: "medium",
@@ -42,7 +49,14 @@ function time(value: string) {
       </button>
       <div>
         <strong>{{ messages.peer?.display_name }}</strong
-        ><small>@{{ messages.peer?.username }}</small>
+        ><small
+          >@{{ messages.peer?.username }} ·
+          {{
+            presence.friends[messages.peer?.account_id ?? ""]
+              ? statuses[presence.friends[messages.peer?.account_id ?? ""]]
+              : "Offline"
+          }}</small
+        >
       </div>
       <button
         class="icon-button"
@@ -110,6 +124,9 @@ function time(value: string) {
         <time :datetime="row.created_at">{{ time(row.created_at) }}</time>
       </article>
     </div>
+    <p v-if="presence.typing" class="typing-status" role="status">
+      {{ presence.typing ? messages.peer?.display_name + " is typing…" : "" }}
+    </p>
     <form class="message-composer" @submit.prevent="messages.send">
       <label class="message-label" for="message-draft">Message</label>
       <textarea
@@ -118,7 +135,7 @@ function time(value: string) {
         rows="2"
         maxlength="2000"
         placeholder="Write a message…"
-        @keydown.enter.exact.prevent="!$event.isComposing && messages.send()"
+        @keydown.enter.exact="sendOnEnter"
       />
       <div>
         <small>Enter to send · Shift + Enter for a new line</small
@@ -133,6 +150,12 @@ function time(value: string) {
   </section>
 </template>
 <style scoped>
+.typing-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
 .conversation-security {
   font-size: 11px;
   color: var(--muted);
@@ -171,6 +194,8 @@ function time(value: string) {
 }
 .conversation-header > div {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .conversation-header small {
   display: block;

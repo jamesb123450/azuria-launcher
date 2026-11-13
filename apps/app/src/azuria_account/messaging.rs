@@ -225,7 +225,6 @@ pub(super) async fn request(
     if tokens.user.email_confirmed_at.is_none() {
         return Err("Verify your email first.".into());
     }
-    save(&tokens.refresh_token)?;
     let actor = &tokens.user.id;
     let access = &tokens.access_token;
     if action == "notification_inbox" {

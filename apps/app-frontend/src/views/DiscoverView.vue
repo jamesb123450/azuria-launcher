@@ -309,13 +309,7 @@ onBeforeUnmount(() => {
         <div v-if="error" class="discover-empty" role="alert">
           <h2>Couldn’t load projects</h2>
           <p>{{ error }}</p>
-          <button class="button secondary" @click="search">Retry search</button
-          ><RouterLink
-            v-if="source === 'curseforge'"
-            class="text-link"
-            to="/settings#content-providers"
-            >CurseForge availability</RouterLink
-          >
+          <button class="button secondary" @click="search">Retry search</button>
         </div>
         <div
           v-else-if="loading"

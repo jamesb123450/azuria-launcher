@@ -15,9 +15,12 @@ schema; see [cosmetics setup](../../docs/COSMETICS_SETUP.md).
 Historical migrations have been removed for beta. Account tests load this same
 snapshot into isolated PostgreSQL with Supabase platform stubs.
 
-The existing production database needs no changes. Do not rerun this snapshot
-against an existing database or use it as an incremental upgrade. Future database
-changes must have a separately reviewed deployment procedure.
+For an existing database, apply only [the launcher presence upgrade](supabase/launcher-presence.sql)
+in the Supabase SQL editor before publishing the launcher version that uses it.
+The upgrade adds private status and typing tables and a friends-only RPC. It
+does not change account, friendship or message records. Redeploy the
+`account-action` Edge Function so newly connected launchers can use the token
+expiry returned at sign-in. Do not rerun the full schema on an existing project.
 
 ## Operations
 

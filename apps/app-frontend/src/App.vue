@@ -20,6 +20,7 @@ import { useLauncher } from "./stores/launcher";
 import { desktop } from "./api";
 import AccountMenu from "./components/AccountMenu.vue";
 import ChatDock from "./components/ChatDock.vue";
+import { usePresence } from "./stores/presence";
 import FriendsPanel from "./components/FriendsPanel.vue";
 import { useFriends } from "./stores/friends";
 import ActivityMenus from "./components/ActivityMenus.vue";
@@ -144,6 +145,7 @@ async function storagePrepared() {
   void content.init();
   void account.init();
   void useFriends().init();
+  usePresence().init();
 }
 </script>
 <template>

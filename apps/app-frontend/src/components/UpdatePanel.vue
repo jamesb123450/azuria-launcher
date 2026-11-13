@@ -74,7 +74,7 @@ const bytes = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
                 : updates.status === "verifying"
                   ? "Azuria verifies the update signature before the installer can run."
                   : updates.status === "ready"
-                    ? "Azuria will install the update automatically when Minecraft and any active installations have finished."
+                    ? "Azuria will install the update automatically when Minecraft, installations and account requests have finished."
                     : updates.status === "installing"
                       ? "Azuria is closing so the Windows installer can finish. It will reopen afterwards."
                       : updates.status === "error"

@@ -100,6 +100,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       return respond({
         refresh_token: session.session.refresh_token,
         access_token: session.session.access_token,
+        expires_in: session.session.expires_in,
         user: {
           id,
           email: session.user.email,

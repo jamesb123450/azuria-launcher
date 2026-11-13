@@ -94,7 +94,11 @@ export const useUpdates = defineStore("updates", () => {
         return;
       }
       status.value = "installing";
-      await update.value.install({ restartAfterInstall: true });
+      try {
+        await update.value.install({ restartAfterInstall: true });
+      } finally {
+        await invoke("update_install_failed");
+      }
     } catch {
       status.value = "error";
       error.value =

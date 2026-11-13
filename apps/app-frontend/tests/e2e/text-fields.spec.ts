@@ -44,10 +44,19 @@ for (const theme of ["dark", "light"] as const) {
     await page.screenshot({
       path: test.info().outputPath(`storage-fields-${theme}.png`),
     });
+    await expect(
+      popup.getByRole("button", { name: "Content providers", exact: true }),
+    ).toHaveCount(0);
     await popup
-      .getByRole("button", { name: "Content providers", exact: true })
+      .getByRole("button", { name: "Notifications", exact: true })
       .click();
-    await expect(popup.getByLabel("API key", { exact: true })).toHaveCount(0);
+    const notifications = popup.getByRole("switch", {
+      name: "Windows notifications",
+    });
+    await notifications.uncheck();
+    await expect(
+      popup.getByRole("switch", { name: "Direct messages" }),
+    ).toBeDisabled();
     await popup
       .getByRole("button", { name: "Java & memory", exact: true })
       .click();

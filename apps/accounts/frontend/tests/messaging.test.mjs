@@ -113,6 +113,34 @@ test("blocking immediately revokes legacy history in both directions", async () 
     );
   assert.deepEqual(await call(bob, "message_unread"), []);
 });
+test("presence and typing are visible only to current friends and expire", async () => {
+  await connect();
+  const presence = async (id, status = null, target = null, typing = null) =>
+    (await call(id, "launcher_presence", [status, target, typing]))[0]
+      .launcher_presence;
+  await presence(alice, "away", bob, true);
+  assert.deepEqual(await presence(bob, "online", alice), {
+    status: "online",
+    friends: { [alice]: "away" },
+    typing: true,
+  });
+  assert.deepEqual(await presence(charlie, "online", alice), {
+    status: "online",
+    friends: {},
+    typing: false,
+  });
+  await db.exec(
+    "update azuria_private.launcher_typing set expires_at = now() - interval '1 second'",
+  );
+  assert.equal((await presence(bob, null, alice)).typing, false);
+  await presence(alice, "offline", bob, true);
+  assert.deepEqual(await presence(bob, "online", alice), {
+    status: "online",
+    friends: {},
+    typing: false,
+  });
+});
+
 test("history is capped at 50, removal revokes access, and deleting a profile removes its messages", async () => {
   await connect();
   await db.query(

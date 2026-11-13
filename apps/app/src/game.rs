@@ -170,8 +170,16 @@ impl Games {
     }
 }
 #[tauri::command]
-pub fn update_can_install(games: State<'_, Games>) -> bool {
-    !games.has_active()
+pub fn update_can_install(
+    games: State<'_, Games>,
+    accounts: State<'_, crate::azuria_account::AzuriaAccounts>,
+) -> bool {
+    !games.has_active() && accounts.reserve_update()
+}
+
+#[tauri::command]
+pub fn update_install_failed(accounts: State<'_, crate::azuria_account::AzuriaAccounts>) {
+    accounts.release_update();
 }
 
 #[tauri::command]
