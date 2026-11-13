@@ -5,6 +5,12 @@
 !ifndef AZURIA_PRIVACY_KEY
 !define AZURIA_PRIVACY_KEY "Software\AzuriaLauncher\Privacy"
 !endif
+!ifndef AZURIA_STARTUP_KEY
+!define AZURIA_STARTUP_KEY "Software\AzuriaLauncher\Startup"
+!endif
+!ifndef AZURIA_STARTUP_RUN_KEY
+!define AZURIA_STARTUP_RUN_KEY "Software\Microsoft\Windows\CurrentVersion\Run"
+!endif
 Var AzuriaPrivacyAccepted
 
 ; Brand artwork is decorative. Native labels and controls remain available to
@@ -76,12 +82,12 @@ FunctionEnd
 
 !macro NSIS_HOOK_POSTINSTALL
   ; Register once per Windows user. Keep their Startup Apps choice on updates.
-  ReadRegStr $R0 HKCU "${AZURIA_PRIVACY_KEY}" "StartupRegistered"
+  ReadRegStr $R0 HKCU "${AZURIA_STARTUP_KEY}" "Registered"
   ${If} $R0 == ""
     ClearErrors
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${PRODUCTNAME}" '$"$INSTDIR\${MAINBINARYNAME}.exe$"'
+    WriteRegStr HKCU "${AZURIA_STARTUP_RUN_KEY}" "${PRODUCTNAME}" '$"$INSTDIR\${MAINBINARYNAME}.exe$"'
     ${IfNot} ${Errors}
-      WriteRegStr HKCU "${AZURIA_PRIVACY_KEY}" "StartupRegistered" "1"
+      WriteRegStr HKCU "${AZURIA_STARTUP_KEY}" "Registered" "1"
     ${EndIf}
   ${EndIf}
   ; Only actual first-install acceptance creates a record. Updates never
@@ -93,6 +99,7 @@ FunctionEnd
 !macro NSIS_HOOK_POSTUNINSTALL
   ${If} $UpdateMode != 1
     DeleteRegKey HKCU "${AZURIA_PRIVACY_KEY}"
+    DeleteRegKey HKCU "${AZURIA_STARTUP_KEY}"
   ${EndIf}
 !macroend
 !endif

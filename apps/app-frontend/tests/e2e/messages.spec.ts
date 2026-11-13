@@ -116,7 +116,10 @@ test("sidebar opens a conversation, renders plain text and sends with Enter", as
     .getByRole("button", { name: "Save recovery file", exact: true })
     .click();
   await expect(
-    dialog.getByText("Encrypted recovery file saved", { exact: true }),
+    dialog.getByText(
+      "Encrypted recovery file saved. Keep it and your passphrase safe.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await expect(
     dialog.getByLabel("Recovery passphrase", { exact: true }),

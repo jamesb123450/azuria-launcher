@@ -19,6 +19,8 @@ Var UpdateMode
 !define MANUPRODUCTKEY "Software\\AzuriaLauncher\\InstallerTests\\Install"
 !define MAINBINARYNAME "azuria-test"
 !define AZURIA_PRIVACY_KEY "Software\\AzuriaLauncher\\InstallerTests"
+!define AZURIA_STARTUP_KEY "Software\\AzuriaLauncher\\InstallerStartupTests"
+!define AZURIA_STARTUP_RUN_KEY "Software\\AzuriaLauncher\\InstallerStartupTests\\Run"
 !include "${quote(resolve(root, "hooks.nsh"))}"
 !insertmacro AZURIA_PRIVACY_FUNCTIONS
 !define LICENSE "${quote(resolve(root, "privacy-policy.rtf"))}"

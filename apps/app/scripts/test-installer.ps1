@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $work = Join-Path ([IO.Path]::GetTempPath()) ('azuria-installer-' + [guid]::NewGuid())
 $key = 'HKCU:\Software\AzuriaLauncher\InstallerTests'
+$startupKey = 'HKCU:\Software\AzuriaLauncher\InstallerStartupTests'
 $children = @()
 function Assert($condition, $message) { if (-not $condition) { throw $message } }
 function Start-Fixture([string]$mode) {
@@ -49,6 +50,7 @@ public static class AzuriaInstallerWindow {
 try {
   # A fixture-only registry namespace never changes the real acceptance record.
   Assert (-not (Test-Path $key)) 'A stale installer-test registry key exists; remove it before running.'
+  Assert (-not (Test-Path $startupKey)) 'A stale startup fixture key exists; remove it before running.'
   node (Join-Path $PSScriptRoot 'installer-policy.mjs') --check
   Assert ($LASTEXITCODE -eq 0) 'Policy generation check failed.'
   node (Join-Path $PSScriptRoot 'installer-fixture.mjs') $work
@@ -86,6 +88,7 @@ try {
     Assert ($run.Process.ExitCode -eq 0) 'Legacy automatic update was blocked.'
     Assert (Test-Path $run.Marker) 'Legacy update did not install.'
     Assert (-not (Test-Path $key)) 'Update invented privacy acceptance.'
+    Assert ((Get-ItemProperty $startupKey).Registered -eq '1') 'Update did not register startup.'
   }
 
   # First installation must still request real, unchecked acceptance.
@@ -132,5 +135,6 @@ try {
 } finally {
   foreach ($p in $children) { if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue } }
   Remove-Item $key -Recurse -Force -ErrorAction SilentlyContinue
+  Remove-Item $startupKey -Recurse -Force -ErrorAction SilentlyContinue
   Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
 }
