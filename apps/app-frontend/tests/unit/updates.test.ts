@@ -14,7 +14,7 @@ beforeEach(() => {
   setActivePinia(createPinia());
   vi.resetAllMocks();
   mocks.version.mockResolvedValue("0.2.3");
-  mocks.invoke.mockResolvedValue([]);
+  mocks.invoke.mockResolvedValue(true);
 });
 describe("automatic desktop updates", () => {
   it("checks once per startup, downloads automatically and verifies before restart", async () => {
@@ -31,10 +31,8 @@ describe("automatic desktop updates", () => {
     await s.init();
     expect(mocks.check).toHaveBeenCalledOnce();
     expect(download).toHaveBeenCalledOnce();
-    expect(s.status).toBe("ready");
+    expect(s.status).toBe("installing");
     expect(s.progress).toBe(100);
-    expect(install).not.toHaveBeenCalled();
-    await s.install();
     expect(install).toHaveBeenCalledWith({ restartAfterInstall: true });
   });
   it("never installs a failed signature and retries with a fresh resource", async () => {
@@ -52,27 +50,11 @@ describe("automatic desktop updates", () => {
     });
     const s = useUpdates();
     await s.init();
-    await s.install();
     expect(install).not.toHaveBeenCalled();
     expect(s.status).toBe("error");
     await s.checkNow();
     expect(close).toHaveBeenCalledOnce();
-    expect(s.status).toBe("ready");
-    await s.install();
-    expect(install).toHaveBeenCalledOnce();
-  });
-  it("allows postponing a verified restart without repeating the download", async () => {
-    const download = vi.fn().mockResolvedValue(undefined);
-    const install = vi.fn();
-    mocks.check.mockResolvedValue({ version: "0.2.4", download, install });
-    const s = useUpdates();
-    await s.init();
-    s.defer();
-    expect(s.deferred).toBe(true);
-    expect(s.status).toBe("ready");
-    expect(install).not.toHaveBeenCalled();
-    await s.install();
-    expect(download).toHaveBeenCalledOnce();
+    expect(s.status).toBe("installing");
     expect(install).toHaveBeenCalledOnce();
   });
   it("reports feed errors and prevents overlapping checks", async () => {
@@ -92,19 +74,25 @@ describe("automatic desktop updates", () => {
   });
 });
 
-it("postpones installer execution while Minecraft is active", async () => {
-  const install = vi.fn();
-  mocks.check.mockResolvedValue({
-    version: "0.2.4",
-    download: vi.fn().mockResolvedValue(undefined),
-    install,
-  });
-  mocks.invoke.mockResolvedValue([{ stage: "running" }]);
-  const store = useUpdates();
-  await store.init();
-  await store.install();
-  expect(install).not.toHaveBeenCalled();
-  expect(store.status).toBe("ready");
-  expect(store.deferred).toBe(true);
-  expect(store.error).toContain("Close Minecraft");
+it("automatically installs once Minecraft and content installations are idle", async () => {
+  vi.useFakeTimers();
+  try {
+    const install = vi.fn();
+    const download = vi.fn().mockResolvedValue(undefined);
+    mocks.check.mockResolvedValue({ version: "0.2.4", download, install });
+    mocks.invoke.mockResolvedValue(false);
+    const store = useUpdates();
+    await store.init();
+    expect(install).not.toHaveBeenCalled();
+    expect(store.status).toBe("ready");
+    expect(store.busy).toBe(true);
+    mocks.invoke.mockResolvedValue(true);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(install).toHaveBeenCalledExactlyOnceWith({
+      restartAfterInstall: true,
+    });
+    expect(download).toHaveBeenCalledOnce();
+  } finally {
+    vi.useRealTimers();
+  }
 });

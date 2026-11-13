@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, useId } from "vue";
 import {
-  ArrowUpRight,
   Check,
   Download,
   ShieldCheck,
@@ -11,6 +10,7 @@ import {
 } from "@lucide/vue";
 import { desktop } from "../api";
 import { useUpdates } from "../stores/updates";
+import ProjectDescription from "./ProjectDescription.vue";
 defineProps<{ compact?: boolean }>();
 const updates = useUpdates();
 const titleId = useId();
@@ -18,11 +18,11 @@ const title = computed(
   () =>
     ({
       idle: "Automatic updates",
-      checking: "Finding the latest Azuria",
+      checking: "Checking for updates",
       current: "You’re up to date",
-      downloading: "A little upgrade is on its way",
+      downloading: "Downloading update",
       verifying: "Checking your download",
-      ready: "Ready for a fresh start",
+      ready: "Waiting to install",
       installing: "Installing your update",
       error: "We couldn’t finish this update",
     })[updates.status],
@@ -74,12 +74,12 @@ const bytes = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
                 : updates.status === "verifying"
                   ? "Azuria verifies the update signature before the installer can run."
                   : updates.status === "ready"
-                    ? "Your download is verified. The Windows installer needs to close Azuria and restart it."
+                    ? "Azuria will install the update automatically when Minecraft and any active installations have finished."
                     : updates.status === "installing"
                       ? "Azuria is closing so the Windows installer can finish. It will reopen afterwards."
                       : updates.status === "error"
                         ? "Your current version is still available."
-                        : "New releases are checked and downloaded automatically at startup."
+                        : "Azuria checks for and installs updates automatically at startup."
         }}
       </p>
       <div
@@ -128,23 +128,16 @@ const bytes = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
       </p>
       <details v-if="updates.update?.body" class="update-changelog">
         <summary>What’s new in {{ updates.update.version }}</summary>
-        <pre>{{ updates.update.body }}</pre>
+        <div class="update-notes">
+          <ProjectDescription :body="updates.update.body" />
+        </div>
       </details>
-      <div class="update-actions">
-        <button
-          v-if="updates.status === 'error'"
-          class="button secondary"
-          @click="updates.checkNow"
-        >
-          <RefreshCw :size="15" />Retry update</button
-        ><button
-          v-if="updates.status === 'ready'"
-          class="button primary"
-          @click="updates.install"
-        >
-          Restart & install<ArrowUpRight :size="15" />
-        </button></div
-    ></template>
+      <div v-if="updates.status === 'error'" class="update-actions">
+        <button class="button secondary" @click="updates.checkNow">
+          <RefreshCw :size="15" />Retry update
+        </button>
+      </div>
+    </template>
   </section>
 </template>
 <style scoped>
@@ -273,8 +266,7 @@ const bytes = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
   cursor: pointer;
   color: var(--text);
 }
-.update-changelog pre {
-  white-space: pre-wrap;
+.update-notes {
   overflow-wrap: anywhere;
   max-height: 200px;
   overflow: auto;

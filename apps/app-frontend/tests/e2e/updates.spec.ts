@@ -14,6 +14,7 @@ async function setup(page: import("@playwright/test").Page, fail = false) {
           ) => {
             commands.push(cmd);
             if (cmd === "game_launches") return [];
+            if (cmd === "update_can_install") return true;
             if (cmd === "plugin:event|listen") return 1;
             if (cmd === "plugin:event|unlisten") return;
             if (cmd === "storage_migration_needed") return false;
@@ -84,7 +85,7 @@ async function setup(page: import("@playwright/test").Page, fail = false) {
     { fail },
   );
 }
-test("automatically downloads, shows progress and can postpone or restart", async ({
+test("shows progress and installs immediately once the download is verified", async ({
   page,
 }) => {
   await setup(page);
@@ -105,18 +106,13 @@ test("automatically downloads, shows progress and can postpone or restart", asyn
   await page.evaluate(() =>
     (window as unknown as { finishDownload: () => void }).finishDownload(),
   );
+  await expect(dialog.getByText("Installing your update")).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Later", exact: true }),
+  ).toHaveCount(0);
   await expect(
     dialog.getByRole("button", { name: "Restart & install" }),
-  ).toBeVisible();
-  await page.screenshot({ path: test.info().outputPath("update-ready.png") });
-  await dialog.getByRole("button", { name: "Later", exact: true }).click();
-  await expect(dialog).not.toBeVisible();
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Updates", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Check for updates" }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Restart & install" }).click();
   expect(
     await page.evaluate(
       () =>
@@ -125,30 +121,6 @@ test("automatically downloads, shows progress and can postpone or restart", asyn
         ).updateCommands.filter((c) => c === "plugin:updater|install").length,
     ),
   ).toBe(1);
-});
-test("installs automatically when the restart countdown expires", async ({
-  page,
-}) => {
-  await page.clock.install();
-  await setup(page);
-  await page.goto("/");
-  await expect(
-    page.getByRole("dialog", { name: "Automatic launcher update" }),
-  ).toBeVisible();
-  await page.evaluate(() =>
-    (window as unknown as { finishDownload: () => void }).finishDownload(),
-  );
-  await expect(
-    page.getByText("Restarting to install in 15 seconds"),
-  ).toBeVisible();
-  await page.clock.runFor(15000);
-  expect(
-    await page.evaluate(() =>
-      (
-        window as unknown as { updateCommands: string[] }
-      ).updateCommands.includes("plugin:updater|install"),
-    ),
-  ).toBe(true);
 });
 test("signature failures leave the launcher usable and never run the installer", async ({
   page,

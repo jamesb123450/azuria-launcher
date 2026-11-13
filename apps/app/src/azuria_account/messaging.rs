@@ -201,7 +201,14 @@ pub(super) async fn request(
     body: Option<String>,
 ) -> Result<serde_json::Value, String> {
     if ![
-        "unread", "inbox", "history", "read", "send", "backup", "restore",
+        "unread",
+        "inbox",
+        "notification_inbox",
+        "history",
+        "read",
+        "send",
+        "backup",
+        "restore",
     ]
     .contains(&action.as_str())
     {
@@ -221,6 +228,16 @@ pub(super) async fn request(
     save(&tokens.refresh_token)?;
     let actor = &tokens.user.id;
     let access = &tokens.access_token;
+    if action == "notification_inbox" {
+        let data = friends_rpc(
+            &config,
+            access,
+            "message_conversations",
+            &serde_json::json!({}),
+        )
+        .await?;
+        return Ok(serde_json::json!({"accountId":actor,"data":data}));
+    }
     if action == "restore" {
         let password = Zeroizing::new(body.unwrap_or_default());
         let key = recovery("restore", actor, &password, None)?.ok_or("Recovery was cancelled.")?;

@@ -170,6 +170,11 @@ impl Games {
     }
 }
 #[tauri::command]
+pub fn update_can_install(games: State<'_, Games>) -> bool {
+    !games.has_active()
+}
+
+#[tauri::command]
 pub fn game_launches(games: State<'_, Games>) -> Result<Vec<Launch>, String> {
     Ok(games
         .entries

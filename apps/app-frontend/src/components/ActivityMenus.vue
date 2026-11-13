@@ -14,11 +14,9 @@ import { useFriends } from "../stores/friends";
 import { useActivity, type Task } from "../stores/activity";
 import { useGame } from "../stores/game";
 import { useContent } from "../stores/content";
-import { useUpdates } from "../stores/updates";
 const activity = useActivity(),
   game = useGame(),
-  content = useContent(),
-  updates = useUpdates();
+  content = useContent();
 activity.init();
 const friends = useFriends();
 const router = useRouter();
@@ -173,12 +171,6 @@ async function cancel(task: Task) {
             <div>
               <strong>{{ task.name }}</strong>
               <p>{{ task.message }}</p>
-              <RouterLink
-                v-if="task.kind === 'update' && updates.status === 'ready'"
-                to="/settings#updates"
-                @click="open = null"
-                >Open update settings</RouterLink
-              >
             </div>
             <button
               class="icon-button"
@@ -209,7 +201,7 @@ async function cancel(task: Task) {
         >
           <Bell :size="26" />
           <h3>You’re all caught up</h3>
-          <p>Launcher updates will appear here.</p>
+          <p>Friend requests, messages and task results will appear here.</p>
         </div>
         <div v-if="activity.notifications.length" class="notification-list">
           <button
