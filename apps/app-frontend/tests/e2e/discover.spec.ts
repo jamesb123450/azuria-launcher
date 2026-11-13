@@ -51,7 +51,7 @@ test("real search UI applies filters and pagination without fictional fallback",
   await expect(page.getByRole("alert")).toContainText("publisher-configured");
   await expect(
     page.getByRole("link", { name: "CurseForge availability" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
 });
 test("provider errors can retry without showing sample projects", async ({
   page,

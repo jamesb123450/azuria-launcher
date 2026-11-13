@@ -20,6 +20,7 @@ import {
   UserRoundPlus,
 } from "@lucide/vue";
 import { useFriends } from "../stores/friends";
+import { statuses, usePresence } from "../stores/presence";
 import { useMessages } from "../stores/messages";
 import { useAzuriaAccount } from "../stores/azuria-account";
 import MessageConversation from "../components/MessageConversation.vue";
@@ -28,6 +29,7 @@ import CommunitySidebar from "../components/CommunitySidebar.vue";
 import type { Relationship } from "../friends-api";
 import "./social.css";
 let disposed = false;
+const presence = usePresence();
 const friends = useFriends();
 const messages = useMessages();
 const account = useAzuriaAccount();
@@ -317,7 +319,9 @@ onBeforeUnmount(() => {
             <span class="social-contact-name"
               ><strong>{{ row.display_name }}</strong
               ><small>{{
-                tab === "chats" ? "Messages" : "@" + row.username
+                presence.friends[row.account_id]
+                  ? statuses[presence.friends[row.account_id]]
+                  : "Offline"
               }}</small></span
             >
             <span class="social-contact-meta"

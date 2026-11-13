@@ -1,6 +1,11 @@
 import { computed, onScopeDispose, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { desktop } from "../api";
+import {
+  useNotificationSettings,
+  type NotificationCategory,
+} from "./notification-settings";
+import { usePresence } from "./presence";
 import { useFriends } from "./friends";
 import { useMessages } from "./messages";
 import { defineStore } from "pinia";
@@ -52,9 +57,18 @@ export const useActivity = defineStore("activity", () => {
       ...notifications.value,
     ].slice(0, 50);
   }
-  function notifyDesktop(message: string, error = false) {
+  function notifyDesktop(
+    category: NotificationCategory,
+    message: string,
+    error = false,
+  ) {
     notify(message, error);
-    if (desktop)
+    if (
+      desktop &&
+      useNotificationSettings().options.enabled &&
+      useNotificationSettings().options[category] &&
+      usePresence().status !== "busy"
+    )
       void invoke("desktop_notification", { message }).catch(() => {});
   }
   function startSocialNotifications() {
@@ -76,7 +90,7 @@ export const useActivity = defineStore("activity", () => {
       (incoming) => {
         if (!friends.owner || !friends.loaded) return;
         if (requests && incoming.some((row) => !requests?.has(row.account_id)))
-          notifyDesktop("You have a new Azuria friend request.");
+          notifyDesktop("requests", "You have a new Azuria friend request.");
         requests = new Set(incoming.map((row) => row.account_id));
       },
       { immediate: true },
@@ -95,7 +109,7 @@ export const useActivity = defineStore("activity", () => {
             );
           })
         )
-          notifyDesktop("You have a new Azuria message.");
+          notifyDesktop("messages", "You have a new Azuria message.");
         latestMessages = new Map(
           inbox.map((row) => [row.account_id, row.latest_at]),
         );
@@ -142,11 +156,10 @@ export const useActivity = defineStore("activity", () => {
       ...tasks.value.filter((t) => t.key !== task.key),
     ].slice(0, 50);
     if (task.state !== "active" && previous?.state !== task.state) {
-      const send =
-        previous?.state === "active" && task.state !== "cancelled"
-          ? notifyDesktop
-          : notify;
-      send(`${task.name}: ${task.message}`, task.state === "error");
+      const message = `${task.name}: ${task.message}`;
+      if (previous?.state === "active" && task.state !== "cancelled")
+        notifyDesktop("tasks", message, task.state === "error");
+      else notify(message, task.state === "error");
     }
   }
   function init() {
@@ -239,7 +252,7 @@ export const useActivity = defineStore("activity", () => {
           message:
             error ||
             (status === "ready"
-              ? "Waiting for Minecraft and installations to finish"
+              ? "Waiting for active launcher tasks to finish"
               : status === "installing"
                 ? "Restarting to install update…"
                 : status === "verifying"

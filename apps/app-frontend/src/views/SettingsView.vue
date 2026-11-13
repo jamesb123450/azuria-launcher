@@ -17,6 +17,7 @@ import {
   Monitor,
   FolderOpen,
   Download,
+  Bell,
   Wrench,
   Globe,
   Code,
@@ -43,7 +44,10 @@ import {
 } from "../resource-api";
 import UpdatePanel from "../components/UpdatePanel.vue";
 import LaunchOptionsEditor from "../components/LaunchOptionsEditor.vue";
-import { contentApi } from "../content-api";
+import {
+  notificationLabels,
+  useNotificationSettings,
+} from "../stores/notification-settings";
 import type { Theme } from "../types";
 import "./instance.css";
 import "./settings.css";
@@ -70,6 +74,7 @@ async function loadPrivacy() {
   }
 }
 const updates = useUpdates();
+const notifications = useNotificationSettings();
 const route = useRoute();
 const router = useRouter();
 const dialog = ref<HTMLDialogElement>();
@@ -78,8 +83,8 @@ const section = ref(
     ? "account"
     : route.hash === "#launch-defaults"
       ? "java"
-      : route.hash === "#content-providers"
-        ? "providers"
+      : route.hash === "#notifications"
+        ? "notifications"
         : route.hash === "#storage"
           ? "storage"
           : "appearance",
@@ -114,7 +119,7 @@ const groups = [
   {
     label: "System",
     items: [
-      { id: "providers", label: "Content providers", icon: Download },
+      { id: "notifications", label: "Notifications", icon: Bell },
       { id: "storage", label: "Storage", icon: FolderOpen },
       { id: "updates", label: "Updates", icon: Download },
       { id: "troubleshooting", label: "Troubleshooting", icon: Wrench },
@@ -208,23 +213,6 @@ const busy = ref(false);
 const error = ref("");
 const notice = ref("");
 const confirmClose = ref(false);
-const curseforgeConfigured = ref(false);
-const providerError = ref("");
-watch(
-  section,
-  async (value) => {
-    if (value !== "providers") return;
-    providerError.value = "";
-    try {
-      curseforgeConfigured.value = (
-        await contentApi.status()
-      ).curseforgeConfigured;
-    } catch (e) {
-      providerError.value = String(e);
-    }
-  },
-  { immediate: true },
-);
 const resources = ref(defaultResources());
 const resourceSnapshot = ref(JSON.stringify(resources.value));
 const resourceReady = ref(false);
@@ -437,7 +425,7 @@ watch(
   (hash) => {
     if (hash === "#storage") section.value = "storage";
     if (hash === "#account") section.value = "account";
-    if (hash === "#content-providers") section.value = "providers";
+    if (hash === "#notifications") section.value = "notifications";
   },
 );
 const previousFocus = document.activeElement as HTMLElement | null;
@@ -589,28 +577,37 @@ onBeforeUnmount(() => {
             Retry behaviour settings
           </button>
         </template>
-        <template v-else-if="section === 'providers'">
+        <template v-else-if="section === 'notifications'">
           <p class="settings-inheritance">
-            Modrinth search and downloads use its public API. CurseForge
-            requires approved API access for Azuria.
+            Choose which alerts Windows displays. Changes save immediately. Do
+            not disturb pauses Windows alerts while keeping them in the
+            launcher.
           </p>
-          <div class="settings-planned-row">
-            <div>
-              <h3>Modrinth</h3>
-              <p>Ready to use. No API key required.</p>
-            </div>
-          </div>
-          <div class="settings-storage-path">
-            <h3>CurseForge</h3>
-            <p>
-              {{
-                curseforgeConfigured
-                  ? "Available through Azuria’s content service. No API key is stored on this computer."
-                  : "The publisher has not configured CurseForge access for this build."
-              }}
-            </p>
-            <p v-if="providerError" class="inline-error">{{ providerError }}</p>
-          </div>
+          <label
+            v-for="(label, key) in notificationLabels"
+            :key="key"
+            class="settings-behaviour-row"
+          >
+            <span
+              ><strong>{{ label }}</strong></span
+            >
+            <input
+              type="checkbox"
+              role="switch"
+              :aria-label="label"
+              :checked="notifications.options[key]"
+              :disabled="key !== 'enabled' && !notifications.options.enabled"
+              @change="
+                notifications.set(
+                  key,
+                  ($event.target as HTMLInputElement).checked,
+                )
+              "
+            />
+          </label>
+          <p v-if="notifications.error" role="alert">
+            {{ notifications.error }}
+          </p>
         </template>
         <template v-else-if="section === 'privacy'">
           <p class="settings-inheritance">

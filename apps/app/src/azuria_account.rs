@@ -15,6 +15,7 @@ use tauri::{Emitter, Manager, State};
 #[derive(Default)]
 pub struct AzuriaAccounts {
     busy: AtomicBool,
+    updating: AtomicBool,
     session: Mutex<Option<(Tokens, Instant, SystemTime)>>,
     pending: Mutex<Option<(String, Instant)>>,
     connection: Mutex<ConnectionUpdate>,
@@ -35,12 +36,16 @@ impl AzuriaAccounts {
     }
     // Callers hold operation(): token rotation and durable writes remain serial.
     async fn tokens(&self, config: &Config) -> Result<Tokens, String> {
-        let token = saved()?.ok_or("Sign in to your Azuria account first.")?;
         let cached = self.cached_tokens()?;
         if let Some(tokens) = cached {
             return Ok(tokens);
         }
+        let token = saved()?.ok_or("Sign in to your Azuria account first.")?;
         let tokens = refresh(config, token).await?;
+        self.remember(&tokens)?;
+        Ok(tokens)
+    }
+    fn remember(&self, tokens: &Tokens) -> Result<(), String> {
         // Commit the rotated token immediately, before any profile/social requests.
         save(&tokens.refresh_token)?;
         let lifetime =
@@ -53,7 +58,19 @@ impl AzuriaAccounts {
             Instant::now() + lifetime,
             SystemTime::now() + lifetime,
         ));
-        Ok(tokens)
+        Ok(())
+    }
+    pub fn reserve_update(&self) -> bool {
+        if self.busy.swap(true, Ordering::Acquire) {
+            return false;
+        }
+        self.updating.store(true, Ordering::Release);
+        true
+    }
+    pub fn release_update(&self) {
+        if self.updating.swap(false, Ordering::AcqRel) {
+            self.busy.store(false, Ordering::Release);
+        }
     }
     fn cached_tokens(&self) -> Result<Option<Tokens>, String> {
         let session = self
@@ -195,9 +212,6 @@ async fn profile(config: &Config, tokens: Tokens) -> Result<View, String> {
     if tokens.user.email_confirmed_at.is_none() {
         return Err("Verify your email before connecting the launcher.".into());
     }
-    // Save rotations before fetching optional profile data, so a transient failure
-    // never strands the launcher with a refresh token that has already rotated.
-    save(&tokens.refresh_token)?;
     let response = client()?
         .get(format!("{}/rest/v1/profiles", config.url))
         .header("apikey", config.key)
@@ -368,8 +382,11 @@ async fn complete(state: &AzuriaAccounts, code: &str) -> Result<View, String> {
         .json()
         .await
         .map_err(|_| "Could not read the account response. Start sign-in again.".to_string())?;
+    if tokens.user.email_confirmed_at.is_none() {
+        return Err("Verify your email before connecting the launcher.".into());
+    }
+    state.remember(&tokens)?;
     let result = profile(&config, tokens).await?;
-    state.forget_session()?;
     *state
         .completed_challenge
         .lock()
@@ -562,7 +579,6 @@ pub async fn azuria_friends(
     if tokens.user.email_confirmed_at.is_none() {
         return Err("Verify your email first.".into());
     }
-    save(&tokens.refresh_token)?;
     let value = friends_rpc(&config, &tokens.access_token, name, &body).await?;
     let mut result = FriendsView {
         account_id: tokens.user.id,
@@ -595,6 +611,26 @@ pub async fn azuria_friends(
 }
 
 #[tauri::command]
+pub async fn azuria_presence(
+    state: State<'_, AzuriaAccounts>,
+    status: Option<String>,
+    target: Option<String>,
+    typing: Option<bool>,
+) -> Result<serde_json::Value, String> {
+    let _operation = state.operation()?;
+    let config = config().ok_or("Azuria accounts are not configured in this build.")?;
+    let tokens = state.tokens(&config).await?;
+    let data = friends_rpc(
+        &config,
+        &tokens.access_token,
+        "launcher_presence",
+        &serde_json::json!({"p_status": status, "p_target": target, "p_typing": typing}),
+    )
+    .await?;
+    Ok(serde_json::json!({"accountId": tokens.user.id, "data": data}))
+}
+
+#[tauri::command]
 pub async fn azuria_messages(
     state: State<'_, AzuriaAccounts>,
     action: String,
@@ -623,6 +659,19 @@ mod tests {
         let operation = state.operation().unwrap();
         assert!(state.operation().is_err());
         drop(operation);
+        assert!(state.operation().is_ok());
+    }
+    #[test]
+    fn installer_reservation_and_account_requests_exclude_each_other() {
+        let state = AzuriaAccounts::default();
+        let request = state.operation().unwrap();
+        assert!(!state.reserve_update());
+        state.release_update();
+        assert!(state.operation().is_err());
+        drop(request);
+        assert!(state.reserve_update());
+        assert!(state.operation().is_err());
+        state.release_update();
         assert!(state.operation().is_ok());
     }
     #[test]

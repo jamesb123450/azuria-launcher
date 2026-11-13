@@ -4,6 +4,8 @@ import { MessageCircle, X, RefreshCw } from "@lucide/vue";
 import { useFriends } from "../stores/friends";
 import { useMessages } from "../stores/messages";
 import MessageConversation from "./MessageConversation.vue";
+import { statuses, usePresence } from "../stores/presence";
+const presence = usePresence();
 const friends = useFriends(),
   messages = useMessages();
 const open = ref(false),
@@ -26,7 +28,12 @@ watch(
     open.value = false;
   },
 );
+const refreshTimer = setInterval(() => {
+  if (open.value && document.visibilityState === "visible")
+    void messages.refresh();
+}, 5000);
 onBeforeUnmount(() => {
+  clearInterval(refreshTimer);
   if (open.value) {
     messages.active = false;
     messages.select(null);
@@ -109,13 +116,15 @@ onBeforeUnmount(() => {
 <style scoped>
 .chat-dock {
   position: fixed;
+  inset-inline-end: clamp(12px, 23vw, 290px);
   bottom: 0;
-  right: 290px;
-  width: 240px;
+  display: grid;
+  justify-items: end;
+  max-width: calc(100vw - 24px);
   z-index: 45;
 }
 .chat-dock-trigger {
-  width: 100%;
+  min-width: 124px;
   height: 42px;
   background: var(--panel);
   border: 1px solid var(--border-strong);
@@ -125,13 +134,16 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 -8px 30px #0002;
+  box-shadow: var(--shadow);
 }
 .chat-popup {
-  height: min(520px, calc(100dvh - 120px));
+  width: min(370px, calc(100vw - 36px));
+  height: min(550px, calc(100dvh - 86px));
+  min-height: 0;
   background: var(--panel);
   border: 1px solid var(--border-strong);
-  border-radius: 14px 14px 0 0;
+  border-radius: 16px;
+  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow);
@@ -139,95 +151,90 @@ onBeforeUnmount(() => {
 }
 .chat-popup > header {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 9px 14px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.chat-popup :deep(.conversation) {
-  min-height: 0;
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-}
-.chat-popup :deep(.message-feed) {
-  flex: 1;
-  min-height: 100px;
-  overflow: auto;
-}
 .chat-contacts {
-  padding: 18px;
+  padding: 12px;
+  min-height: 0;
   overflow: auto;
+  overflow-wrap: anywhere;
   font-size: 12px;
-  line-height: 1.7;
 }
 .chat-contact {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 12px 0;
+  padding: 9px;
   background: none;
   border: 0;
+  border-radius: 8px;
   color: var(--text);
   text-align: left;
 }
+.chat-contact:hover {
+  background: var(--hover);
+}
 .chat-contact > span {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
   background: var(--accent-wash);
   border-radius: 8px;
-  padding: 6px 10px;
 }
 .chat-contact > strong {
   flex: 1;
+  min-width: 0;
+}
+.chat-contact small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: normal;
 }
 .chat-contacts > .button {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 .chat-contacts > .text-link {
   display: flex;
   gap: 8px;
+  padding: 8px;
 }
-.chat-popup :deep(.conversation-header) {
+.chat-popup :deep(.conversation) {
+  min-width: 0;
+  gap: 8px;
   padding: 12px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.chat-popup :deep(.message-feed) {
+  min-height: 48px;
 }
 .chat-popup :deep(.message-composer) {
-  padding: 12px;
-}
-.chat-popup :deep(textarea) {
-  max-width: 100%;
+  flex: none;
   min-width: 0;
 }
-@media (max-width: 1100px) {
-  .chat-dock {
-    right: 230px;
-    width: 200px;
-  }
-}
-@media (max-width: 760px) {
-  .chat-dock {
-    right: 20px;
-    width: min(300px, calc(100vw - 90px));
-  }
-}
-</style>
-
-<style scoped>
 .chat-popup :deep(.message-composer textarea) {
   width: 100%;
-  min-height: 60px;
+  min-width: 0;
+  padding: 8px;
 }
-.chat-popup :deep(.message-composer) {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.chat-popup :deep(.conversation-security) {
-  font-size: 10px;
-  padding: 10px;
+.chat-popup :deep(.message-composer > div) {
+  flex-wrap: wrap;
 }
 .chat-popup :deep(.message-bubble) {
   max-width: 95%;
-  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .chat-dock {
+    inset-inline-end: 12px;
+  }
 }
 </style>
