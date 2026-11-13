@@ -25,6 +25,19 @@ it("notes describe only the supplied unpublished range and omit merge boilerplat
   expect(() => releaseNotes([])).toThrow();
 });
 
+it("uses public summaries and skips housekeeping commit titles", () => {
+  const item = (message: string) => ({ commit: { message } });
+  expect(
+    releaseNotes([
+      item("fix(launcher): keep profiles visible after updating"),
+      item("ci: revise runner labels"),
+    ]),
+  ).toBe("## What's new\n\n- Keep profiles visible after updating\n");
+  expect(releaseNotes([item("ci: revise runner labels")])).toContain(
+    "Includes maintenance and reliability updates.",
+  );
+});
+
 it("uses explicit release bullets without publishing internal commit details", () => {
   expect(
     releaseNotes([

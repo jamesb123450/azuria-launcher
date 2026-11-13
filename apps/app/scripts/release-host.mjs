@@ -41,7 +41,16 @@ export function releaseNotes(commits) {
               bullets.push(line.trim().slice(2));
             }
           }
-          return (bullets.length ? bullets : [lines[0]]).map((line) =>
+          const title = lines[0].trim();
+          const conventional = /^(\w+)(?:\([^)]+\))?!?:\s+(.+)$/.exec(title);
+          const summary = conventional
+            ? ["feat", "fix", "perf", "revert"].includes(
+                conventional[1].toLowerCase(),
+              )
+              ? conventional[2].replace(/^./, (first) => first.toUpperCase())
+              : ""
+            : title;
+          return (bullets.length ? bullets : [summary]).map((line) =>
             line.trim().replace(/[\x00-\x1f\x7f]/g, ""),
           );
         })
@@ -51,7 +60,8 @@ export function releaseNotes(commits) {
         ),
     ),
   ];
-  if (!changes.length) throw new Error("No release changes could be described");
+  if (!changes.length)
+    changes.push("Includes maintenance and reliability updates.");
   // Include only this release's comparison range, never a rolling release history.
   return (
     "## What's new\n\n" + changes.map((line) => `- ${line}`).join("\n") + "\n"

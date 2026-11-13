@@ -36,6 +36,7 @@ tauri-plugin-deep-link = "2"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 
 [target.'cfg(windows)'.dependencies]
+tauri-plugin-notification = "2"
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }
 rfd = "0.17"
 windows-sys = { version = "0.61", features = ["Win32_System_Com", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

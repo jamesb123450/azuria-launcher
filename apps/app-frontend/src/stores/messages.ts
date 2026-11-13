@@ -96,6 +96,17 @@ export const useMessages = defineStore("messages", () => {
       release();
     }
   }
+  async function refreshInbox(background = false) {
+    const token = generation;
+    const counts = await call<ConversationSummary[]>(
+      background ? "notification_inbox" : "inbox",
+    );
+    if (token !== generation) return;
+    inbox.value = counts;
+    unread.value = Object.fromEntries(
+      counts.map((row) => [row.account_id, row.unread]),
+    );
+  }
   async function refresh(older = false) {
     if (!active.value || !owner.value || busy.value || friends.busy) return;
     const token = generation;
@@ -130,13 +141,7 @@ export const useMessages = defineStore("messages", () => {
         if (last && document.visibilityState === "visible")
           await call("read", { before: String(last.id) });
       }
-      const counts = await call<ConversationSummary[]>("inbox");
-      if (token === generation) {
-        inbox.value = counts;
-        unread.value = Object.fromEntries(
-          counts.map((row) => [row.account_id, row.unread]),
-        );
-      }
+      await refreshInbox();
     } catch (cause) {
       if (token === generation)
         error.value =
@@ -245,6 +250,7 @@ export const useMessages = defineStore("messages", () => {
     busy,
     more,
     refresh,
+    refreshInbox,
     select,
     send,
   };

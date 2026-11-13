@@ -285,8 +285,30 @@ fn open_project_page() -> Result<(), String> {
         .map_err(|e| format!("Could not open the project in your browser: {e}"))
 }
 
+#[tauri::command]
+fn desktop_notification(app: tauri::AppHandle, message: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use tauri_plugin_notification::NotificationExt;
+        app.notification()
+            .builder()
+            .title("Azuria Launcher")
+            .body(message.chars().take(250).collect::<String>())
+            .show()
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, message);
+        Ok(())
+    }
+}
+
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(windows)]
+    let builder = builder.plugin(tauri_plugin_notification::init());
+    builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // Deep-link integration forwards callbacks to the existing process.
             if let Some(window) = app.get_webview_window("main") {
@@ -415,6 +437,8 @@ pub fn run() {
             game::prepare_instance,
             game::cancel_launch,
             game::game_launches,
+            game::update_can_install,
+            desktop_notification,
             monitor::open_game_monitor,
             profile::instance_directory,
             profile::get_instance_notes,

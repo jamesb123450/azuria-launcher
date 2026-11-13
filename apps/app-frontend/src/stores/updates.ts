@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef } from "vue";
+import { computed, onScopeDispose, ref, shallowRef } from "vue";
 import { defineStore } from "pinia";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
@@ -20,10 +20,11 @@ export const useUpdates = defineStore("updates", () => {
   const error = ref("");
   const received = ref(0);
   const total = ref<number>();
-  const deferred = ref(false);
+  let retryInstall: ReturnType<typeof setTimeout> | undefined;
+  onScopeDispose(() => clearTimeout(retryInstall));
   let initialized = false;
   const busy = computed(() =>
-    ["checking", "downloading", "verifying", "installing"].includes(
+    ["checking", "downloading", "verifying", "ready", "installing"].includes(
       status.value,
     ),
   );
@@ -49,6 +50,7 @@ export const useUpdates = defineStore("updates", () => {
         { timeout: 120000 },
       );
       status.value = "ready";
+      await install();
     } catch {
       status.value = "error";
       error.value =
@@ -59,7 +61,6 @@ export const useUpdates = defineStore("updates", () => {
     if (!desktop || busy.value) return;
     status.value = "checking";
     error.value = "";
-    deferred.value = false;
     try {
       const previous = update.value;
       update.value = null;
@@ -76,41 +77,29 @@ export const useUpdates = defineStore("updates", () => {
   async function init() {
     if (!desktop || initialized) return;
     initialized = true;
+    const checking = checkNow();
     try {
       version.value = await getVersion();
     } catch {
       /* Keep bundled version. */
     }
-    await checkNow();
+    await checking;
   }
   async function install() {
-    if (!desktop || busy.value || !update.value || status.value !== "ready")
-      return;
+    if (!update.value || status.value !== "ready") return;
     error.value = "";
-    status.value = "installing";
     try {
-      const games = await invoke<Array<{ stage: string }>>("game_launches");
-      if (
-        games.some(
-          (game) =>
-            !["exited", "crashed", "error", "cancelled"].includes(game.stage),
-        )
-      ) {
-        status.value = "ready";
-        deferred.value = true;
-        error.value =
-          "Close Minecraft or cancel game preparation before installing an update.";
+      if (!(await invoke<boolean>("update_can_install"))) {
+        retryInstall = setTimeout(() => void install(), 2000);
         return;
       }
+      status.value = "installing";
       await update.value.install({ restartAfterInstall: true });
     } catch {
       status.value = "error";
       error.value =
         "The installer could not start. Keep using this version and retry the update.";
     }
-  }
-  function defer() {
-    if (status.value === "ready") deferred.value = true;
   }
   return {
     version,
@@ -121,10 +110,7 @@ export const useUpdates = defineStore("updates", () => {
     total,
     busy,
     progress,
-    deferred,
     checkNow,
     init,
-    install,
-    defer,
   };
 });

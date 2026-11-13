@@ -136,6 +136,7 @@ const storageReady = ref(false);
 const booting = ref(true);
 async function storagePrepared() {
   storageReady.value = true;
+  void updates.init();
   void behaviour.load();
   await store.init();
   booting.value = false;
@@ -143,7 +144,6 @@ async function storagePrepared() {
   void content.init();
   void account.init();
   void useFriends().init();
-  void updates.init();
 }
 </script>
 <template>
@@ -162,9 +162,9 @@ async function storagePrepared() {
       <p>Opening your library…</p>
     </div>
     <StorageMigration v-if="!storageReady" @ready="storagePrepared" />
+    <StartupUpdate v-if="desktop && storageReady" />
     <div v-if="storageReady && !booting" class="app-shell">
       <SettingsView v-if="route.path === '/settings'" @close="closeSettings" />
-      <StartupUpdate v-if="desktop" />
       <a class="skip-link" href="#main-content" @click.prevent="focusMain"
         >Skip to content</a
       >

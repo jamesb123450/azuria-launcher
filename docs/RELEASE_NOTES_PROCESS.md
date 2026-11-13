@@ -14,7 +14,7 @@ Release notes:
 - Find launch controls in a simpler Versions sidebar.
 ```
 
-Only these bullets enter the release notes. Without a block, the commit's first line is used; merge boilerplate and duplicate lines are omitted. Keep commit titles suitable for public release notes. No previous release bodies are copied. `apps/app/docs/RELEASE_NOTES.md` remains the readable summary of the current work, not a rolling history or the packaging input.
+Write these bullets in terms of what players can do or what changed for them. When a commit has no release notes block, the generator uses its first line, removes conventional feature and fix prefixes, and omits conventional housekeeping commits, merge boilerplate and duplicate lines. Maintenance-only releases get a short maintenance summary. No previous release bodies are copied. `apps/app/docs/RELEASE_NOTES.md` remains the readable summary of the current work, not a rolling history or the packaging input.
 
 For a source repository that has not retained the previous public release tag, the first transition uses the triggering push's `before` SHA. Subsequent private-source publications retain a private source tag so comparisons cover the correct range. Source commit hashes and private source links are not added to the public mirror's target or generated metadata.
 
