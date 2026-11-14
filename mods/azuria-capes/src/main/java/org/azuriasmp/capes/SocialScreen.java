@@ -61,7 +61,7 @@ public final class SocialScreen extends Screen {
         String addValue = add == null ? "" : add.getText();
         String draftValue = draft == null ? "" : draft.getText();
         clearChildren();
-        button(statusLabel(status) + " ▾", sidebar - 78, 10, 70, () -> {
+        button("▾", sidebar - 29, 8, 21, () -> {
             statusMenu = !statusMenu;
             rebuild();
         });
@@ -180,14 +180,19 @@ public final class SocialScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        // Vanilla's screen background applies a full-frame blur. This overlay draws its own tint.
+    }
+
+    @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, width, height, 0x43060913);
         ctx.fill(0, 0, sidebar, height, BACKGROUND);
         ctx.fill(sidebar - 1, 0, sidebar, height, BORDER);
         if (client != null && client.player != null)
             PlayerSkinDrawer.draw(ctx, client.player.getSkinTextures(), 8, 8, 19);
-        label(ctx, name, 32, 8, sidebar - 112, WHITE);
-        label(ctx, statusLabel(status), 32, 20, sidebar - 112, MUTED);
+        label(ctx, name, 32, 8, sidebar - 65, WHITE);
+        label(ctx, statusLabel(status), 32, 20, sidebar - 65, MUTED);
         if (!statusMenu) {
             int tab = requests ? sidebar / 2 : 8;
             ctx.fill(tab, 55, tab + (sidebar - 18) / 2, 57, PINK);
@@ -219,6 +224,17 @@ public final class SocialScreen extends Screen {
         }
         if (target != null && draft != null) renderChat(ctx);
         else if (target != null) label(ctx, "Increase window size to open chat.", 8, height - 39, sidebar - 16, MUTED);
+        if (!statusMenu && visibleFriends().isEmpty()) {
+            String state = waiting ? "Connecting to Azuria…" :
+                !error.isEmpty() ? error : accountId == null ? "Checking your Azuria account…" :
+                requests ? "No pending requests" : "No friends found";
+            int y = 86;
+            for (var line : textRenderer.wrapLines(Text.literal(state), sidebar - 16)) {
+                if (y + 10 >= height - 43) break;
+                ctx.drawTextWithShadow(textRenderer, line, 8, y, MUTED);
+                y += 11;
+            }
+        }
         String feedback = error.isEmpty() ? notice : error;
         if (!feedback.isEmpty()) label(ctx, feedback, 8, height - 39, sidebar - 16, error.isEmpty() ? MUTED : 0xFFFFA3A9);
         super.render(ctx, mouseX, mouseY, delta);
@@ -368,6 +384,10 @@ public final class SocialScreen extends Screen {
             if (game.currentScreen != this) return;
             error = string(reply, "error");
             if (error.isEmpty()) apply.accept(object(reply, "data"));
+            else if (error.equals("An account request is already running.")) {
+                nextPoll = System.currentTimeMillis() + 500;
+                if (action.equals("friends")) nextFriends = 0;
+            }
             else if (error.startsWith("Sign in to your Azuria account") || error.startsWith("Your Azuria session has expired")) {
                 friends = new JsonArray();
                 availability = new JsonObject();
