@@ -13,10 +13,28 @@ use tauri::{Emitter, Manager, State};
 fn install_azuria_capes(game: &std::path::Path) -> Result<(), String> {
     use std::{fs, io::Write};
 
-    const JAR: &[u8] = include_bytes!("../bundled/azuria-capes-0.1.0.jar");
+    const JAR: &[u8] = include_bytes!("../bundled/azuria-capes-0.2.0.jar");
     let mods = azuria_launch::safe_join(game, "mods")?;
     fs::create_dir_all(&mods).map_err(|error| error.to_string())?;
-    let destination = azuria_launch::safe_join(game, "mods/azuria-capes-0.1.0.jar")?;
+    let destination = azuria_launch::safe_join(game, "mods/azuria-capes-0.2.0.jar")?;
+    const OLD_JAR: &[u8] = include_bytes!("../bundled/azuria-capes-0.1.0.jar");
+    let old = azuria_launch::safe_join(game, "mods/azuria-capes-0.1.0.jar")?;
+    match fs::symlink_metadata(&old) {
+        Ok(metadata)
+            if metadata.is_file()
+                && metadata.len() == OLD_JAR.len() as u64
+                && fs::read(&old).map_err(|error| error.to_string())? == OLD_JAR =>
+        {
+            fs::remove_file(old).map_err(|error| error.to_string())?;
+        }
+        Ok(_) => {
+            return Err(
+                "Move the modified Azuria Capes JAR out of the mods folder before updating.".into(),
+            )
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.to_string()),
+    }
     match fs::symlink_metadata(&destination) {
         Ok(metadata) => {
             if metadata.is_file()
@@ -372,13 +390,29 @@ fn start_task(app: tauri::AppHandle, id: String, prepare_only: bool) -> Result<(
                 .map_err(|e| e.message)?;
                 azuria_launch::cancelled(&cancel)?;
                 azuria_launch::report(&reporter, "launching", "Starting Minecraft", 0, 0);
-                let running = prepared.start(Credentials {
-                    username: session.account.username,
-                    uuid: session.account.minecraft_id,
-                    access_token: session.access_token,
-                    client_id: azuria_auth::CLIENT_ID.into(),
-                    xuid: session.xuid,
-                })?;
+                let companion = if instance.azuria_enabled {
+                    Some(crate::azuria_account::companion::Companion::start(
+                        app.clone(),
+                    )?)
+                } else {
+                    None
+                };
+                let environment = companion.as_ref().map(|(_, port, key)| {
+                    [
+                        ("AZURIA_COMPANION_PORT", port.as_str()),
+                        ("AZURIA_COMPANION_KEY", key.as_str()),
+                    ]
+                });
+                let running = prepared.start_with_environment(
+                    Credentials {
+                        username: session.account.username,
+                        uuid: session.account.minecraft_id,
+                        access_token: session.access_token,
+                        client_id: azuria_auth::CLIENT_ID.into(),
+                        xuid: session.xuid,
+                    },
+                    environment.as_ref().map_or(&[], |values| values.as_slice()),
+                )?;
                 azuria_launch::report(
                     &reporter,
                     "running",
@@ -410,12 +444,12 @@ mod tests {
     #[test]
     fn bundled_capes_install_retries_without_overwriting_user_files() {
         let game = tempfile::tempdir().unwrap();
-        let path = game.path().join("mods/azuria-capes-0.1.0.jar");
+        let path = game.path().join("mods/azuria-capes-0.2.0.jar");
         install_azuria_capes(game.path()).unwrap();
         let installed = fs::read(&path).unwrap();
         assert_eq!(
             installed,
-            include_bytes!("../bundled/azuria-capes-0.1.0.jar")
+            include_bytes!("../bundled/azuria-capes-0.2.0.jar")
         );
         install_azuria_capes(game.path()).unwrap();
 

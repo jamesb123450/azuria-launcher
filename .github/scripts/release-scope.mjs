@@ -14,6 +14,7 @@ export function affectsLauncher(paths) {
     }
     return (
       path.startsWith("packages/release-tools/") ||
+      path.startsWith("mods/azuria-capes/") ||
       /^packages\/azuria-(auth|core|content|launch)\//.test(path) ||
       ["package.json", "package-lock.json"].includes(path)
     );

@@ -1,5 +1,7 @@
 //! Azuria sessions are independent of Microsoft/Minecraft sessions.
 //! No sign-in passwords or refresh tokens are returned to the frontend.
+#[cfg(all(windows, target_arch = "x86_64"))]
+pub(crate) mod companion;
 pub(crate) mod cosmetics;
 mod messaging;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};

@@ -1,5 +1,6 @@
 import { computed, onScopeDispose, ref, watch } from "vue";
 import { defineStore } from "pinia";
+import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { desktop } from "../api";
 import { useMessages } from "./messages";
@@ -35,6 +36,8 @@ export const usePresence = defineStore("presence", () => {
   let announcedPeer: string | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
   let running = false;
+  let disposeStatus: (() => void) | undefined;
+  let disposed = false;
   let generation = 0;
 
   async function refresh() {
@@ -106,6 +109,20 @@ export const usePresence = defineStore("presence", () => {
   function init() {
     if (!desktop || timer) return;
     void refresh();
+    void listen<{ accountId: string; data: Presence }>(
+      "azuria-companion-status",
+      ({ payload }) => {
+        if (payload.accountId !== owner.value) return;
+        savedStatus = payload.data.status;
+        status.value = payload.data.status;
+        nextHeartbeat = Date.now() + 30000;
+      },
+    )
+      .then((dispose) => {
+        if (disposed) dispose();
+        else disposeStatus = dispose;
+      })
+      .catch(() => {});
     timer = setInterval(() => void refresh(), 2500);
   }
   function setStatus(value: Status) {
@@ -115,6 +132,10 @@ export const usePresence = defineStore("presence", () => {
     nextHeartbeat = 0;
     void refresh();
   }
-  onScopeDispose(() => clearInterval(timer));
+  onScopeDispose(() => {
+    disposed = true;
+    clearInterval(timer);
+    disposeStatus?.();
+  });
   return { status, friends, typing, error, init, setStatus };
 });
