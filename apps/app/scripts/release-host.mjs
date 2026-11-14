@@ -79,21 +79,33 @@ async function get(path, token, optional = false) {
     throw new Error(
       "Required Actions token is missing; configure AZURIA_RELEASES_TOKEN and GITHUB_TOKEN",
     );
-  const response = await fetch(`https://api.github.com/${path}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "Azuria-Release",
-      Authorization: `Bearer ${token}`,
-    },
-    signal: AbortSignal.timeout(20000),
-    redirect: "error",
-  });
-  if (optional && response.status === 404) return null;
-  if (!response.ok)
+  for (let attempt = 1; ; attempt++) {
+    const response = await fetch(`https://api.github.com/${path}`, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "Azuria-Release",
+        Authorization: `Bearer ${token}`,
+      },
+      signal: AbortSignal.timeout(20000),
+      redirect: "error",
+    });
+    if (optional && response.status === 404) return null;
+    if (response.ok) return response.json();
+
+    // GitHub can return 422 when a read endpoint has been spammed.
+    // A validation failure still stops the release after bounded retries.
+    if (attempt < 3 && [422, 500, 502, 503, 504].includes(response.status)) {
+      console.warn(
+        `Retrying release configuration GET ${path} (HTTP ${response.status})`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
+      continue;
+    }
+    const requestId = response.headers.get("x-github-request-id");
     throw new Error(
-      `GitHub release configuration request failed (${response.status}); check repository access`,
+      `GitHub release configuration GET ${path} failed (HTTP ${response.status})${requestId ? `; request ID ${requestId}` : ""}`,
     );
-  return response.json();
+  }
 }
 export async function configure() {
   const source = sourceRepository();

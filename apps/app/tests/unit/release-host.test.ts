@@ -70,12 +70,15 @@ it("configures public targets without exposing the source commit", async () => {
   vi.stubEnv("GITHUB_SHA", "c".repeat(40));
   vi.stubEnv("AZURIA_RELEASE_BEFORE", "b".repeat(40));
   vi.stubEnv("GITHUB_ENV", join(folder, "env"));
+  let compareAttempts = 0;
+  vi.useFakeTimers({ toFake: ["setTimeout"] });
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
       const path = url.replace("https://api.github.com/", "");
       let body: unknown;
-      if (path.includes("/compare/"))
+      if (path.includes("/compare/")) {
+        if (++compareAttempts === 1) return new Response(null, { status: 422 });
         body = {
           status: "ahead",
           commits: [
@@ -85,7 +88,7 @@ it("configures public targets without exposing the source commit", async () => {
             },
           ],
         };
-      else if (path.includes("git/ref/"))
+      } else if (path.includes("git/ref/"))
         body = { object: { sha: "a".repeat(40) } };
       else if (path.endsWith("/releases/latest"))
         body = { tag_name: "v0.2.150" };
@@ -99,7 +102,10 @@ it("configures public targets without exposing the source commit", async () => {
   );
   try {
     process.chdir(folder);
-    await configure();
+    const configured = configure();
+    await vi.advanceTimersByTimeAsync(2000);
+    await configured;
+    expect(compareAttempts).toBe(2);
     const env = readFileSync(join(folder, "env"), "utf8");
     expect(env).toContain("AZURIA_RELEASE_VERSION=0.2.151");
     expect(env).toContain("AZURIA_PUBLIC_RELEASE_TARGET=" + "a".repeat(40));
@@ -116,6 +122,7 @@ it("configures public targets without exposing the source commit", async () => {
     process.chdir(previous);
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
+    vi.useRealTimers();
     rmSync(folder, { recursive: true, force: true });
   }
 });
