@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "org.azuriasmp.capes.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["CapeFeatureRendererMixin", "KeyboardMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

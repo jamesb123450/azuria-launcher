@@ -178,6 +178,13 @@ impl Prepared {
         Ok(args)
     }
     pub fn start(&self, account: Credentials) -> Result<Running, String> {
+        self.start_with_environment(account, &[])
+    }
+    pub fn start_with_environment(
+        &self,
+        account: Credentials,
+        environment: &[(&str, &str)],
+    ) -> Result<Running, String> {
         let args = self.command_arguments(&account)?;
         let logs = safe_join(&self.game, "logs")?;
         fs::create_dir_all(&logs).map_err(|_| "Could not create the instance logs folder.")?;
@@ -196,6 +203,7 @@ impl Prepared {
             .current_dir(&self.game)
             .args(args)
             .envs(&self.options.environment)
+            .envs(environment.iter().copied())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -208,6 +216,7 @@ impl Prepared {
             "Could not start Java. Check the configured executable and antivirus permissions."
         })?;
         let mut secrets = vec![account.access_token];
+        secrets.extend(environment.iter().map(|(_, value)| value.to_string()));
         secrets.extend(
             self.options
                 .environment

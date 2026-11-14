@@ -7,6 +7,7 @@ on:
       - "apps/app-frontend/**"
       - "packages/azuria-*/**"
       - "packages/release-tools/**"
+      - "mods/azuria-capes/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/checks.yml"
@@ -17,6 +18,7 @@ on:
       - "apps/app-frontend/**"
       - "packages/azuria-*/**"
       - "packages/release-tools/**"
+      - "mods/azuria-capes/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/checks.yml"
@@ -84,6 +86,17 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.12.1"
+      - name: Build bundled Azuria companion mod
+        run: |
+          gradle -p ../../mods/azuria-capes --no-daemon build
+          Copy-Item ../../mods/azuria-capes/build/libs/azuria-capes-0.2.0.jar bundled/
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -132,6 +145,17 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.12.1"
+      - name: Build bundled Azuria companion mod
+        run: |
+          gradle -p ../../mods/azuria-capes --no-daemon build
+          Copy-Item ../../mods/azuria-capes/build/libs/azuria-capes-0.2.0.jar bundled/
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
