@@ -1,4 +1,4 @@
-# Azuria Capes
+# Azuria Companion Mod
 
 Client-side companion mod for **Minecraft Java 1.21.1 and Fabric Loader 0.16.14 or
 later**. It displays the equipped Azuria Starter cape when the player's Minecraft
@@ -13,7 +13,7 @@ Use JDK 21 and Gradle 8.12.1. From the repository root:
 gradle -p mods/azuria-capes --no-daemon build
 ```
 
-Copy `mods/azuria-capes/build/libs/azuria-capes-0.1.0.jar` into the Fabric instance's
+Copy `mods/azuria-capes/build/libs/azuria-companion-mod.jar` into the Fabric instance's
 `mods` folder. In Azuria Launcher, claim and select the starter cape, then link
 your current Minecraft account. Start the instance and switch to third person.
 Keep Capes enabled under Minecraft's Skin Customisation settings.

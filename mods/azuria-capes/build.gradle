@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.9.2'
 }
 
-version = '0.2.1'
+version = '0.2.2'
 group = 'org.azuriasmp'
 
 dependencies {
@@ -26,7 +26,7 @@ processResources {
 }
 
 tasks.named('remapJar') {
-    archiveFileName = 'azuria-companion.jar'
+    archiveFileName = 'azuria-companion-mod.jar'
     preserveFileTimestamps = false
     reproducibleFileOrder = true
 }

@@ -96,7 +96,7 @@ jobs:
       - name: Build bundled Azuria companion mod
         run: |
           gradle -p ../../mods/azuria-capes --no-daemon build
-          Copy-Item ../../mods/azuria-capes/build/libs/azuria-companion.jar bundled/
+          Copy-Item ../../mods/azuria-capes/build/libs/azuria-companion-mod.jar bundled/
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -155,7 +155,7 @@ jobs:
       - name: Build bundled Azuria companion mod
         run: |
           gradle -p ../../mods/azuria-capes --no-daemon build
-          Copy-Item ../../mods/azuria-capes/build/libs/azuria-companion.jar bundled/
+          Copy-Item ../../mods/azuria-capes/build/libs/azuria-companion-mod.jar bundled/
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:

@@ -8,6 +8,7 @@ import net.minecraft.client.gui.PlayerSkinDrawer;
 import net.minecraft.client.util.DefaultSkinHelper;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
@@ -26,11 +27,23 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public final class SocialScreen extends Screen {
-    private static final int BACKGROUND = 0xEF191C28;
+    private static final int BACKGROUND = 0xEB151C2E;
+    private static final int HEADER = 0xFF222C42;
+    private static final int PANEL = 0xF52A344B;
+    private static final int ONLINE = 0xFF62DF9E;
+    private static final int ROW_HEIGHT = 23;
+    private static final int LIST_TOP = 72;
     private static final int BORDER = 0xFF464B60;
     private static final int WHITE = 0xFFF0F1F8;
     private static final int MUTED = 0xFFABB0C5;
     private static final int PINK = 0xFFDF3BA9;
+
+    private record PositionedWidget(ClickableWidget widget, int x, int y, boolean chat) {}
+    private final List<PositionedWidget> widgets = new ArrayList<>();
+    private final long openedAt = System.nanoTime();
+    private long closingAt, chatOpenedAt;
+    private int slideX, chatSlideY;
+    private float closingFrom = 1;
 
     private JsonArray friends = new JsonArray(), messages = new JsonArray();
     private JsonObject availability = new JsonObject();
@@ -48,11 +61,11 @@ public final class SocialScreen extends Screen {
 
     @Override
     protected void init() {
-        sidebar = Math.min(200, Math.max(104, width / 3));
-        chatX = sidebar + 8;
-        chatY = 12;
+        sidebar = Math.min(176, Math.max(102, width * 29 / 100));
+        chatX = sidebar + Math.min(28, width / 24);
+        chatY = Math.max(10, height / 14);
         chatWidth = Math.min(330, width - chatX - 8);
-        chatHeight = Math.min(222, height - chatY - 8);
+        chatHeight = Math.min(216, height - chatY - 12);
         rebuild();
     }
 
@@ -61,7 +74,8 @@ public final class SocialScreen extends Screen {
         String addValue = add == null ? "" : add.getText();
         String draftValue = draft == null ? "" : draft.getText();
         clearChildren();
-        button("▾", sidebar - 29, 8, 21, () -> {
+        widgets.clear();
+        button("▾", sidebar - 26, 6, 18, () -> {
             statusMenu = !statusMenu;
             rebuild();
         });
@@ -77,19 +91,19 @@ public final class SocialScreen extends Screen {
                 y += 22;
             }
         } else {
-            button("Friends", 8, 34, (sidebar - 18) / 2, () -> selectTab(false));
-            button("Requests", sidebar / 2, 34, (sidebar - 16) / 2, () -> selectTab(true));
+            button("Friends", 0, 28, sidebar / 2, () -> selectTab(false));
+            button("Requests", sidebar / 2, 28, sidebar - sidebar / 2, () -> selectTab(true));
         }
-        search = field("Search friends…", 8, 60, sidebar - 16, searchValue, 64);
+        search = field("Search friends…", 8, 51, sidebar - 16, searchValue, 64);
         search.setVisible(!statusMenu);
         search.setChangedListener(value -> friendOffset = 0);
         add = field("Add friend…", 8, height - 25, sidebar - 56, addValue, 24);
         button("Add", sidebar - 44, height - 26, 36, this::addFriend);
         draft = null;
-        if (target != null && chatWidth >= 100 && chatHeight >= 75) {
+        if (target != null && chatWidth >= 145 && chatHeight >= 75) {
             button("×", chatX + chatWidth - 25, chatY + 5, 20, this::closeChat);
-            draft = field("Write a message…", chatX + 8, chatY + chatHeight - 25,
-                chatWidth - 64, draftValue, 2000);
+            draft = field("Write a message…", chatX + 29, chatY + chatHeight - 25,
+                chatWidth - 85, draftValue, 2000);
             draft.setChangedListener(value -> {
                 lastInput = System.currentTimeMillis();
                 sendId = null;
@@ -103,21 +117,35 @@ public final class SocialScreen extends Screen {
         field.setPlaceholder(Text.literal(label));
         field.setMaxLength(max);
         field.setText(value);
+        widgets.add(new PositionedWidget(field, x, y, x >= chatX));
         return addDrawableChild(field);
     }
 
     private void button(String label, int x, int y, int w, Runnable action) {
         boolean accent = label.equals("Send");
-        addDrawableChild(new ButtonWidget(x, y, w, 20, Text.literal(label), b -> action.run(), text -> text.get()) {
+        var widget = new ButtonWidget(x, y, w, 20, Text.literal(label), b -> action.run(), text -> text.get()) {
             @Override
             protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+                boolean tab = label.equals("Friends") || label.equals("Requests");
+                boolean selected = tab && requests == label.equals("Requests");
                 int background = accent ? (isHovered() ? 0xFFCF389E : 0xFFAD227E)
-                    : isHovered() || isFocused() ? 0xFF41465D : 0xFF2B2F40;
+                    : selected || isHovered() || isFocused() ? 0xFF39465F : HEADER;
                 context.fill(getX(), getY(), getRight(), getBottom(), background);
                 context.drawBorder(getX(), getY(), getWidth(), getHeight(), BORDER);
-                drawScrollableText(context, textRenderer, 4, WHITE);
+                if (selected) context.fill(getX(), getBottom() - 2, getRight(), getBottom(), PINK);
+                if (tab) {
+                    String kind = label.equals("Friends") ? "friend" : "incoming";
+                    int count = 0;
+                    for (var entry : friends) {
+                        if (kind.equals(string(entry.getAsJsonObject(), "kind"))) count++;
+                    }
+                    drawScrollableText(context, textRenderer, Text.literal(count + " " + label),
+                        getX() + 3, getY(), getRight() - 3, getBottom(), WHITE);
+                } else drawScrollableText(context, textRenderer, 4, WHITE);
             }
-        });
+        };
+        widgets.add(new PositionedWidget(widget, x, y, x >= chatX));
+        addDrawableChild(widget);
     }
 
     private void selectTab(boolean value) {
@@ -131,7 +159,27 @@ public final class SocialScreen extends Screen {
     }
 
     @Override
+    public void close() {
+        if (closingAt != 0) return;
+        closingAt = System.nanoTime();
+        closingFrom = easeOut(progress(closingAt, openedAt, 225));
+    }
+
+    private static float progress(long now, long start, int millis) {
+        return Math.clamp((now - start) / (millis * 1_000_000f), 0f, 1f);
+    }
+
+    private static float easeOut(float progress) {
+        float remaining = 1 - progress;
+        return 1 - remaining * remaining * remaining;
+    }
+
+    @Override
     public void tick() {
+        if (closingAt != 0) {
+            if (progress(System.nanoTime(), closingAt, 165) >= 1) super.close();
+            return;
+        }
         long now = System.currentTimeMillis();
         if (waiting || now < nextPoll) return;
         nextPoll = now + 2300;
@@ -186,49 +234,87 @@ public final class SocialScreen extends Screen {
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        ctx.fill(0, 0, width, height, 0x43060913);
+        long time = System.nanoTime();
+        float transition = closingAt == 0 ? easeOut(progress(time, openedAt, 225))
+            : closingFrom * (1 - easeOut(progress(time, closingAt, 165)));
+        slideX = Math.round(-sidebar * (1 - transition));
+        chatSlideY = closingAt == 0
+            ? Math.round(-12 * (1 - easeOut(progress(time, chatOpenedAt, 175))))
+            : Math.round(-chatHeight * easeOut(progress(time, closingAt, 165)));
+        ctx.fill(0, 0, width, height, (Math.round(51 * transition) << 24) | 0x060913);
+        for (var item : widgets) {
+            item.widget().setX(item.x() + (item.chat() ? 0 : slideX));
+            item.widget().setY(item.y() + (item.chat() ? chatSlideY : 0));
+        }
+
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(slideX, 0, 0);
+        renderSidebar(ctx, mouseX - slideX, mouseY);
+        ctx.getMatrices().pop();
+        if (target != null && draft != null) {
+            ctx.getMatrices().push();
+            ctx.getMatrices().translate(0, chatSlideY, 0);
+            renderChat(ctx);
+            ctx.getMatrices().pop();
+        }
+        super.render(ctx, mouseX, mouseY, delta);
+    }
+
+    private int listBottom() {
+        return height - 43;
+    }
+
+    private int rowsOnScreen() {
+        return Math.max(0, (listBottom() - LIST_TOP) / ROW_HEIGHT);
+    }
+
+    private void renderSidebar(DrawContext ctx, int mouseX, int mouseY) {
         ctx.fill(0, 0, sidebar, height, BACKGROUND);
+        ctx.fill(0, 0, sidebar, 28, HEADER);
+        ctx.fill(0, height - 31, sidebar, height, HEADER);
         ctx.fill(sidebar - 1, 0, sidebar, height, BORDER);
         if (client != null && client.player != null)
-            PlayerSkinDrawer.draw(ctx, client.player.getSkinTextures(), 8, 8, 19);
-        label(ctx, name, 32, 8, sidebar - 65, WHITE);
-        label(ctx, statusLabel(status), 32, 20, sidebar - 65, MUTED);
+            PlayerSkinDrawer.draw(ctx, client.player.getSkinTextures(), 7, 5, 18);
+        label(ctx, name, 30, 5, sidebar - 62, accountId == null ? WHITE : statusColor(status));
+        label(ctx, accountId == null ? "" : statusLabel(status), 30, 16, sidebar - 62, MUTED);
         if (!statusMenu) {
-            int tab = requests ? sidebar / 2 : 8;
-            ctx.fill(tab, 55, tab + (sidebar - 18) / 2, 57, PINK);
             List<JsonObject> rows = visibleFriends();
-            int y = 86;
-            for (int i = Math.min(friendOffset, rows.size()); i < rows.size() && y + 25 < height - 43; i++, y += 26) {
+            int visible = rowsOnScreen();
+            friendOffset = Math.min(friendOffset, Math.max(0, rows.size() - visible));
+            int y = LIST_TOP;
+            for (int i = friendOffset; i < Math.min(rows.size(), friendOffset + visible); i++, y += ROW_HEIGHT) {
                 var row = rows.get(i);
                 String id = string(row, "account_id");
                 String state = string(availability, id);
-                if (mouseX >= 8 && mouseX < sidebar - 8 && mouseY >= y && mouseY < y + 25
-                    || id.equals(target)) ctx.fill(8, y, sidebar - 8, y + 25, 0xFF292D40);
-                int color = switch (state) {
-                    case "online" -> 0xFF55D69A;
-                    case "away" -> 0xFFFFC36C;
-                    case "busy" -> 0xFFFF7985;
-                    default -> MUTED;
-                };
-                PlayerSkinDrawer.draw(ctx, DefaultSkinHelper.getSkinTextures(UUID.fromString(id)), 10, y + 4, 17);
-                ctx.fill(sidebar - 17, y + 9, sidebar - 12, y + 14, color);
-                label(ctx, string(row, "display_name"), 32, y + 3, sidebar - 52, WHITE);
+                if (mouseX >= 5 && mouseX < sidebar - 8 && mouseY >= y && mouseY < y + ROW_HEIGHT
+                    || id.equals(target)) ctx.fill(4, y, sidebar - 7, y + ROW_HEIGHT, 0xFF303B54);
+                int color = statusColor(state);
+                PlayerSkinDrawer.draw(ctx, DefaultSkinHelper.getSkinTextures(UUID.fromString(id)), 8, y + 3, 17);
+                ctx.fill(sidebar - 17, y + 8, sidebar - 12, y + 13, color);
+                label(ctx, string(row, "display_name"), 31, y + 2, sidebar - 51, state.isEmpty() ? WHITE : color);
                 if (requests) {
-                    label(ctx, "Accept", 32, y + 14, sidebar / 2 - 18, 0xFF55D69A);
-                    label(ctx, "Decline", sidebar * 65 / 100, y + 14, sidebar / 3, MUTED);
+                    label(ctx, "Accept", 31, y + 12, sidebar / 2 - 18, 0xFF55D69A);
+                    label(ctx, "Decline", sidebar * 65 / 100, y + 12, sidebar / 3, MUTED);
                 } else {
                     label(ctx, state.isEmpty() ? "Offline" : statusLabel(state),
-                        32, y + 14, sidebar - 52, MUTED);
+                        31, y + 12, sidebar - 52, MUTED);
                 }
             }
+            if (visible > 0 && rows.size() > visible) {
+                int track = visible * ROW_HEIGHT;
+                int handle = Math.max(8, track * visible / rows.size());
+                int top = LIST_TOP + (track - handle) * friendOffset / (rows.size() - visible);
+                ctx.fill(sidebar - 4, LIST_TOP, sidebar - 2, LIST_TOP + track, HEADER);
+                ctx.fill(sidebar - 4, top, sidebar - 2, top + handle, BORDER);
+            }
         }
-        if (target != null && draft != null) renderChat(ctx);
-        else if (target != null) label(ctx, "Increase window size to open chat.", 8, height - 39, sidebar - 16, MUTED);
+        if (target != null && draft == null)
+            label(ctx, "Increase window size for chat.", 8, height - 41, sidebar - 16, MUTED);
         if (!statusMenu && visibleFriends().isEmpty()) {
             String state = waiting ? "Connecting to Azuria…" :
                 !error.isEmpty() ? error : accountId == null ? "Checking your Azuria account…" :
                 requests ? "No pending requests" : "No friends found";
-            int y = 86;
+            int y = LIST_TOP;
             for (var line : textRenderer.wrapLines(Text.literal(state), sidebar - 16)) {
                 if (y + 10 >= height - 43) break;
                 ctx.drawTextWithShadow(textRenderer, line, 8, y, MUTED);
@@ -237,33 +323,40 @@ public final class SocialScreen extends Screen {
         }
         String feedback = error.isEmpty() ? notice : error;
         if (!feedback.isEmpty()) label(ctx, feedback, 8, height - 39, sidebar - 16, error.isEmpty() ? MUTED : 0xFFFFA3A9);
-        super.render(ctx, mouseX, mouseY, delta);
     }
 
     private void renderChat(DrawContext ctx) {
         int right = chatX + chatWidth, bottom = chatY + chatHeight;
-        ctx.fill(chatX, chatY, right, bottom, BACKGROUND);
+        ctx.fill(chatX + 2, chatY + 3, right + 2, bottom + 3, 0x50060913);
+        ctx.fill(chatX, chatY, right, bottom, PANEL);
+        ctx.fill(chatX + 1, chatY + 1, chatX + 24, bottom - 1, BACKGROUND);
+        ctx.fill(chatX + 24, chatY + 1, right - 1, chatY + 30, HEADER);
+        ctx.fill(chatX + 24, bottom - 31, right - 1, bottom - 1, HEADER);
+        ctx.fill(chatX + 23, chatY + 1, chatX + 24, bottom - 1, BORDER);
+        PlayerSkinDrawer.draw(ctx, DefaultSkinHelper.getSkinTextures(UUID.fromString(target)), chatX + 5, chatY + 7, 14);
         ctx.drawBorder(chatX, chatY, chatWidth, chatHeight, BORDER);
         ctx.fill(chatX + 1, chatY + 30, right - 1, chatY + 31, BORDER);
         ctx.fill(chatX + 1, bottom - 43, right - 1, bottom - 42, BORDER);
-        label(ctx, targetName, chatX + 10, chatY + 11, chatWidth - 42, WHITE);
-        ctx.enableScissor(chatX + 8, chatY + 34, right - 8, bottom - 41);
+        String state = string(availability, target);
+        label(ctx, targetName, chatX + 30, chatY + 6, chatWidth - 60, state.isEmpty() ? WHITE : statusColor(state));
+        label(ctx, state.isEmpty() ? "Offline" : statusLabel(state), chatX + 30, chatY + 17, chatWidth - 60, MUTED);
+        ctx.enableScissor(chatX + 29, chatY + 34, right - 8, bottom - 41);
         int y = bottom - 45;
         for (int i = Math.min(messageOffset, messages.size()); i < messages.size() && y > chatY + 27; i++) {
             var message = messages.get(i).getAsJsonObject();
-            var lines = textRenderer.wrapLines(Text.literal(string(message, "body")), chatWidth - 22);
+            var lines = textRenderer.wrapLines(Text.literal(string(message, "body")), chatWidth - 43);
             y -= lines.size() * 10;
             int rowY = y;
             for (var line : lines) {
-                ctx.drawTextWithShadow(textRenderer, line, chatX + 10, rowY, WHITE);
+                ctx.drawTextWithShadow(textRenderer, line, chatX + 30, rowY, WHITE);
                 rowY += 10;
             }
             y -= 17;
             label(ctx, target.equals(string(message, "sender_id")) ? targetName : "You",
-                chatX + 10, y + 3, chatWidth - 22, MUTED);
+                chatX + 30, y + 3, chatWidth - 43, MUTED);
         }
         ctx.disableScissor();
-        if (peerTyping) label(ctx, targetName + " is typing…", chatX + 8, bottom - 38, chatWidth - 16, MUTED);
+        if (peerTyping) label(ctx, targetName + " is typing…", chatX + 30, bottom - 40, chatWidth - 38, MUTED);
     }
 
     private List<JsonObject> visibleFriends() {
@@ -283,11 +376,14 @@ public final class SocialScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double x, double y, int button) {
+        if (closingAt != 0) return true;
         if (super.mouseClicked(x, y, button)) return true;
-        if (button != 0 || statusMenu || x < 8 || x >= sidebar - 8 || y < 86 || y >= height - 43) return false;
-        int i = (int) (y - 86) / 26 + friendOffset;
+        x -= slideX;
+        if (button != 0 || statusMenu || x < 8 || x >= sidebar - 8 || y < LIST_TOP || y >= listBottom()) return false;
+        int rowIndex = (int) (y - LIST_TOP) / ROW_HEIGHT;
+        int i = rowIndex + friendOffset;
         var rows = visibleFriends();
-        if (i >= rows.size() || 86 + (i - friendOffset) * 26 + 25 >= height - 43) return false;
+        if (i >= rows.size() || rowIndex >= rowsOnScreen()) return false;
         var row = rows.get(i);
         String id = string(row, "account_id");
         if (requests) {
@@ -295,6 +391,7 @@ public final class SocialScreen extends Screen {
         } else {
             closeChat();
             target = id;
+            chatOpenedAt = System.nanoTime();
             targetName = string(row, "display_name");
             rebuild();
             history(id);
@@ -304,11 +401,14 @@ public final class SocialScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
-        if (x < sidebar && y >= 86 && y < height - 43) {
-            friendOffset = Math.clamp(friendOffset + (vertical < 0 ? 1 : -1), 0, Math.max(0, visibleFriends().size() - 1));
+        if (closingAt != 0) return true;
+        if (vertical != 0 && x < sidebar + slideX && y >= LIST_TOP && y < listBottom() && !statusMenu) {
+            friendOffset = Math.clamp(friendOffset + (vertical < 0 ? 1 : -1), 0,
+                Math.max(0, visibleFriends().size() - rowsOnScreen()));
             return true;
         }
-        if (target != null && x >= chatX && x < chatX + chatWidth) {
+        if (vertical != 0 && draft != null && x >= chatX && x < chatX + chatWidth
+            && y >= chatY + chatSlideY && y < chatY + chatHeight + chatSlideY) {
             messageOffset = Math.clamp(messageOffset + (vertical > 0 ? 1 : -1), 0, Math.max(0, messages.size() - 1));
             return true;
         }
@@ -317,6 +417,7 @@ public final class SocialScreen extends Screen {
 
     @Override
     public boolean keyPressed(int key, int scan, int modifiers) {
+        if (closingAt != 0) return true;
         if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
             if (draft != null && draft.isFocused()) { send(); return true; }
             if (add.isFocused()) { addFriend(); return true; }
@@ -423,6 +524,15 @@ public final class SocialScreen extends Screen {
 
     private void label(DrawContext ctx, String text, int x, int y, int maxWidth, int color) {
         ctx.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(text, Math.max(0, maxWidth)), x, y, color);
+    }
+
+    private static int statusColor(String state) {
+        return switch (state) {
+            case "online" -> ONLINE;
+            case "away" -> 0xFFFFC36C;
+            case "busy" -> 0xFFFF7985;
+            default -> MUTED;
+        };
     }
 
     private static String statusLabel(String value) {
