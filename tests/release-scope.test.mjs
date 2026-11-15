@@ -8,6 +8,8 @@ test("other products cannot trigger a launcher publication", () => {
     "apps/studios-website/index.html",
     "apps/new-product/index.ts",
     "services/curseforge/worker.mjs",
+    "mods/azuria-capes/build.gradle",
+    ".github/workflows/companion-release.yml",
     "infrastructure/server.yml",
     "docs/MONOREPO.md",
     "README.md",

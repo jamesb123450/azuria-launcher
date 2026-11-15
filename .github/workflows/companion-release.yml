@@ -1,0 +1,39 @@
+name: Publish companion mod
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azuria-companion-feed-v1
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.12.1"
+      - run: npm ci
+      - run: gradle -p mods/azuria-capes --no-daemon build
+      - name: Sign the companion JAR
+        run: npx --no-install tauri signer sign mods/azuria-capes/build/libs/azuria-companion.jar
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      - name: Publish the companion feed
+        run: node apps/app/scripts/publish-companion.mjs
+        env:
+          GH_TOKEN: ${{ secrets.AZURIA_RELEASES_TOKEN }}

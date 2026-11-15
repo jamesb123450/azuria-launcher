@@ -2,6 +2,8 @@ mod auth_callback;
 mod azuria_account;
 mod behaviour;
 mod browser;
+#[cfg(all(windows, target_arch = "x86_64"))]
+mod companion_update;
 mod content;
 mod cosmetics;
 mod game;

@@ -24,3 +24,9 @@ processResources {
         into 'assets/azuria_capes/textures'
     }
 }
+
+tasks.named('remapJar') {
+    archiveFileName = 'azuria-companion.jar'
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
