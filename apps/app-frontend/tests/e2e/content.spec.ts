@@ -633,7 +633,6 @@ test("installation notification has a compact one-line cancel action", async ({
     "nowrap",
   );
   expect((await button.boundingBox())!.height).toBeLessThan(36);
-  await page.screenshot({ path: "test-results/content-notification.png" });
   await button.click();
   await expect(
     page.getByText("Installation cancelled.", { exact: true }),
