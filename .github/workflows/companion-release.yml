@@ -29,7 +29,7 @@ jobs:
       - run: npm ci
       - run: gradle -p mods/azuria-capes --no-daemon build
       - name: Sign the companion JAR
-        run: npx --no-install tauri signer sign mods/azuria-capes/build/libs/azuria-companion.jar
+        run: npx --no-install tauri signer sign mods/azuria-capes/build/libs/azuria-companion-mod.jar
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}

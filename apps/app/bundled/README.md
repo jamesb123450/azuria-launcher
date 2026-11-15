@@ -1,11 +1,11 @@
 # Azuria companion mod
 
-The launcher installs `mods/azuria-companion.jar` in Azuria-enabled Fabric 1.21.1
+The launcher installs `mods/azuria-companion-mod.jar` in Azuria-enabled Fabric 1.21.1
 profiles. Existing installations are migrated using the checksums of the
 previously published bundled JARs. Custom profiles keep their own mods.
 
 Build the fallback from `mods/azuria-capes` with JDK 21 and Gradle 8.12.1.
-Copy `build/libs/azuria-companion.jar` here before building the Windows launcher.
+Copy `build/libs/azuria-companion-mod.jar` here before building the Windows launcher.
 Launcher CI does this automatically.
 
 ## Publish a companion update

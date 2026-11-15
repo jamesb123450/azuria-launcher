@@ -19,8 +19,8 @@ public abstract class KeyboardMixin {
     private void azuriaOverlay(long window, int key, int scan, int action, int modifiers, CallbackInfo ci) {
         if (window != client.getWindow().getHandle() || key != GLFW.GLFW_KEY_TAB
             || action != GLFW.GLFW_PRESS || (modifiers & GLFW.GLFW_MOD_SHIFT) == 0) return;
-        if (client.currentScreen instanceof SocialScreen) {
-            client.setScreen(null);
+        if (client.currentScreen instanceof SocialScreen social) {
+            social.close();
         } else if (client.currentScreen == null && client.player != null) {
             client.setScreen(new SocialScreen());
         } else {

@@ -6,7 +6,7 @@ import { publicRepository } from "@azuria/release-tools";
 
 const tag = "companion-feed-v1";
 const asset = "companion.json";
-const jar = resolve("mods/azuria-capes/build/libs/azuria-companion.jar");
+const jar = resolve("mods/azuria-capes/build/libs/azuria-companion-mod.jar");
 const work = mkdtempSync(join(tmpdir(), "azuria-companion-"));
 const gh = (...args) =>
   execFileSync("gh", [...args, "--repo", publicRepository], {

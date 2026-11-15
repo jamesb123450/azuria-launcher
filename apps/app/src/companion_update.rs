@@ -11,7 +11,7 @@ use std::{
 };
 
 const FEED: &str = "https://github.com/jamesb123450/azuria-releases/releases/download/companion-feed-v1/companion.json";
-const BUNDLED: &[u8] = include_bytes!("../bundled/azuria-companion.jar");
+const BUNDLED: &[u8] = include_bytes!("../bundled/azuria-companion-mod.jar");
 const MAX_JAR: usize = 1024 * 1024;
 const MAX_FEED: usize = 2 * MAX_JAR;
 const LEGACY: [(&str, &str); 3] = [
@@ -156,10 +156,10 @@ fn install_from(game: &Path, fetch: impl FnOnce() -> Option<Vec<u8>>) -> Result<
         |_: io::Error| "Could not update the managed Azuria companion files.".to_string();
     let mods = azuria_launch::safe_join(game, "mods")?;
     fs::create_dir_all(&mods).map_err(io_error)?;
-    let destination = azuria_launch::safe_join(game, "mods/azuria-companion.jar")?;
+    let destination = azuria_launch::safe_join(game, "mods/azuria-companion-mod.jar")?;
     let cache = azuria_launch::safe_join(game, "mods/.azuria-companion-cache.json")?;
     let ownership = azuria_launch::safe_join(game, "mods/.azuria-companion-managed")?;
-    let known = read(&ownership, 130).map_err(io_error)?.unwrap_or_default();
+    let known = read(&ownership, 195).map_err(io_error)?.unwrap_or_default();
     let known = String::from_utf8_lossy(&known);
 
     let current = read(&destination, MAX_JAR).map_err(io_error)?;
@@ -167,9 +167,24 @@ fn install_from(game: &Path, fetch: impl FnOnce() -> Option<Vec<u8>>) -> Result<
     if let Some(digest) = &current_hash {
         if !known.lines().any(|line| line == digest) && digest != &hash(BUNDLED) {
             return Err(
-                "Move the unmanaged azuria-companion.jar out of the mods folder and retry.".into(),
+                "Move the unmanaged azuria-companion-mod.jar out of the mods folder and retry."
+                    .into(),
             );
         }
+    }
+
+    let previous = azuria_launch::safe_join(game, "mods/azuria-companion.jar")?;
+    let previous_hash = read(&previous, MAX_JAR)
+        .map_err(io_error)?
+        .as_deref()
+        .map(hash);
+    if previous_hash
+        .as_deref()
+        .is_some_and(|digest| !known.lines().any(|line| line == digest))
+    {
+        return Err(
+            "Move the unmanaged azuria-companion.jar out of the mods folder and retry.".into(),
+        );
     }
 
     let mut legacy = Vec::new();
@@ -209,10 +224,17 @@ fn install_from(game: &Path, fetch: impl FnOnce() -> Option<Vec<u8>>) -> Result<
 
     let digest = hash(&selected);
     if current_hash.as_deref() != Some(&digest) {
-        // Either hash is owned if replacing the JAR is interrupted.
-        let journal = format!("{digest}\n{}\n", current_hash.as_deref().unwrap_or(""));
+        // Keep both previous paths recognised if the migration is interrupted.
+        let journal = format!(
+            "{digest}\n{}\n{}\n",
+            current_hash.as_deref().unwrap_or(""),
+            previous_hash.as_deref().unwrap_or(""),
+        );
         replace(&ownership, journal.as_bytes()).map_err(io_error)?;
         replace(&destination, &selected).map_err(io_error)?;
+    }
+    if previous_hash.is_some() {
+        fs::remove_file(previous).map_err(io_error)?;
     }
     for path in legacy {
         fs::remove_file(path).map_err(io_error)?;
@@ -231,7 +253,7 @@ mod tests {
         fs::create_dir(&mods).unwrap();
         let old = mods.join("azuria-capes-0.1.0.jar");
         fs::write(&old, include_bytes!("../bundled/azuria-capes-0.1.0.jar")).unwrap();
-        let current = mods.join("azuria-companion.jar");
+        let current = mods.join("azuria-companion-mod.jar");
         let custom = mods.join("other-mod.jar");
         fs::write(&custom, b"unrelated").unwrap();
 
@@ -247,11 +269,34 @@ mod tests {
     }
 
     #[test]
+    fn upgrade_renames_only_the_previous_managed_jar() {
+        let game = tempfile::tempdir().unwrap();
+        let mods = game.path().join("mods");
+        fs::create_dir(&mods).unwrap();
+        let old = mods.join("azuria-companion.jar");
+        fs::write(&old, b"previous build").unwrap();
+        assert!(install_from(game.path(), || None).is_err());
+        assert_eq!(fs::read(&old).unwrap(), b"previous build");
+
+        fs::write(
+            mods.join(".azuria-companion-managed"),
+            hash(b"previous build"),
+        )
+        .unwrap();
+        install_from(game.path(), || None).unwrap();
+        assert!(!old.exists());
+        assert_eq!(
+            fs::read(mods.join("azuria-companion-mod.jar")).unwrap(),
+            BUNDLED
+        );
+    }
+
+    #[test]
     fn interrupted_replacement_keeps_the_previous_managed_copy_upgradeable() {
         let game = tempfile::tempdir().unwrap();
         let mods = game.path().join("mods");
         fs::create_dir(&mods).unwrap();
-        let current = mods.join("azuria-companion.jar");
+        let current = mods.join("azuria-companion-mod.jar");
         fs::write(&current, b"previous build").unwrap();
         fs::write(
             mods.join(".azuria-companion-managed"),
