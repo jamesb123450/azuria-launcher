@@ -1,11 +1,25 @@
-# Bundled Azuria companion mod
+# Azuria companion mod
 
-The Windows launcher installs the Fabric 1.21.1 companion mod when preparing
-an Azuria-enabled profile. The mod retains the equipped cape renderer and adds
-the in-game social overlay. Build it with JDK 21 and Gradle 8.12.1 at
-`mods/azuria-capes`, then copy `build/libs/azuria-capes-0.2.1.jar` here before
-building the Windows launcher. CI performs both steps.
+The launcher installs `mods/azuria-companion.jar` in Azuria-enabled Fabric 1.21.1
+profiles. Existing installations are migrated using the checksums of the
+previously published bundled JARs. Custom profiles keep their own mods.
 
-The launcher checks the size and SHA-256 of previously shipped JARs before
-removing them from managed profiles. The 0.2.0 digest was verified against the
-JAR embedded in the Azuria Launcher v0.2.262 installer.
+Build the fallback from `mods/azuria-capes` with JDK 21 and Gradle 8.12.1.
+Copy `build/libs/azuria-companion.jar` here before building the Windows launcher.
+Launcher CI does this automatically.
+
+## Publish a companion update
+
+1. Bump the version in `mods/azuria-capes/build.gradle` and merge the mod change.
+2. Run **Publish companion mod** on `main` in GitHub Actions.
+
+The workflow uses the existing launcher signing credentials and publishes a
+separate prerelease feed on the public releases repository. Its assets must be
+mutable. The feed is independent of the latest launcher release.
+
+Play checks the feed for up to four seconds. The launcher verifies the signature
+and checks the version, Minecraft target, Fabric requirement and launcher bridge
+protocol from inside the signed JAR. If the feed is unavailable or invalid, it
+uses the newest verified cached or bundled JAR. The bundle is also available
+during offline preparation. A launcher update is required when changing the
+bridge protocol or signing key.
